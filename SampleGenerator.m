@@ -150,7 +150,7 @@ end
 
 %% Help function for generating samples
 
-function molecular = generate_molecular(foldpath, m)
+function single_molecular = generate_single_molecular(foldpath, m)
     % load basic and sample parameters we will use
     load(fullfile(foldpath, "paras.mat"), "paras");
     DimFrame    = paras.DimFrame;
@@ -192,25 +192,25 @@ function molecular = generate_molecular(foldpath, m)
     pdf_values = pdf_values * lum / max(pdf_values(:));
 
     % put the slice back to whole frame to get single molecular frame
-    molecular = zeros(DimFrame);
+    single_molecular = zeros(DimFrame);
     for i = 1:prod(diameter)
         idx = cellfun(@(x) x(i), grid_cell, 'UniformOutput', false);
-        molecular(idx{:}) = pdf_values(i);
+        single_molecular(idx{:}) = pdf_values(i);
     end
 end
 
-function [] = generate_molecular_set(foldpath)
+function [] = generate_molecular(foldpath)
     % load basic and sample parameters we will use
     load(fullfile(foldpath, "paras.mat"), "paras");
     NumMolecule = paras.NumMolecule;
 
     for m = 1:NumMolecule
-        molecular = generate_molecular(foldpath, m);
+        single_molecular = generate_single_molecular(foldpath, m);
 
         % save as .mat and .tif
         filename = m + "_molecular_" + foldpath;
         path = fullfile(foldpath, "molecular", filename);
-        save_frame(path, molecular, true, true);
+        save_frame(path, single_molecular, true, true);
     end
 end
 
@@ -243,6 +243,10 @@ function [] = generate_sample(foldpath)
         save_frame(path, sample, true, true);
     end
 end
+
+%% Help function for further processing
+
+
 
 %% Help function for save frame into .tif file
 
