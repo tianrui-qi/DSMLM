@@ -1,8 +1,7 @@
-# generated sample
-paras.mat
-label/*
-molecular/*
-sample/*
+# data
+generated/* # sample we generate using SampleGenerator.m
+dataset/*   # real dataset
+psf/*       # store the PSF
 
-# FLFPSF
-PSFFLFint_20230310_Red_Gly_10um.mat
+# compile file
+*.asv       # matlab compile file
