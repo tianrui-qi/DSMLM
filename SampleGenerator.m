@@ -1,3 +1,4 @@
+%% Main function for the whole pipline of sample generation and processing
 function [] = SampleGenerator()
     paraspath = "paras.mat";
     
@@ -19,9 +20,9 @@ function [] = basic_paras(paraspath)
     paras = [];
 
     % dimensional parameters that need to consider memory size
-    paras.NumMolecule = 256;                % number of Gaussian we create to simulate molecule
-    paras.NumFrame    = 5;                  % number of frames we have
-    paras.DimFrame    = [128, 128, 64];    % dimensions of each frame, row-column-(depth); yx(z)
+    paras.NumMolecule = 256;            % number of Gaussian we create to simulate molecule
+    paras.NumFrame    = 5;              % number of frames we have
+    paras.DimFrame    = [128, 128, 64]; % dimensions of each frame, row-column-(depth); yx(z)
     paras.UpSampling  = [8, 8, 4];
     paras.BitDepth    = 'uint8';  
     
@@ -30,7 +31,7 @@ function [] = basic_paras(paraspath)
     paras.MaxStd      = 2;              % parameter to adjust the size of covariance of Gaussian
     paras.LumRange    = [64, 255];
     paras.AppearRange = [1/8, 1/2];     % min/max % of moleculars appear in each frame
-
+    
     save(paraspath, "paras")
 end
 
