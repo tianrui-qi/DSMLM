@@ -1,7 +1,7 @@
 # data
-generated/  # sample we generate using SampleGenerator.m
-dataset/    # real dataset
-psf/        # store the PSF
+generated/
+dataset/ 
+psf/ 
 
 # compile file
-*.asv       # matlab compile file
+*.asv
