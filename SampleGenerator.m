@@ -1,10 +1,9 @@
 %% Main function for the whole pipline of sample generation and processing
 function [label, sample] = SampleGenerator()
+    % fold preperation
+    % any file we want save will store in fold or foldpath
     foldpath = "generated";
-
-    if exist(foldpath, 'dir')
-        rmdir("generated", 's')  % !!!!!!!warning!!!!!!!!, delete file
-    end
+    if exist(foldpath, 'dir'), rmdir("generated", 's'); end
     mkdir(foldpath);
     mkdir(fullfile(foldpath, "label"));
     mkdir(fullfile(foldpath, "sample"));
@@ -13,14 +12,13 @@ function [label, sample] = SampleGenerator()
     % Set parameters
     basic_paras(foldpath);
     sample_paras(foldpath);
-
     % Generate label/ground truth
-    label = generate_label(foldpath);
-    fprintf("Lable  size (MB): " + ((whos("label").bytes) / (1024^2)) + "\n")
-    
+    label = generate_label(foldpath);   
     % Generate samples
     sample = generate_sample(foldpath);
-    fprintf("Sample size (MB): " + ((whos("sample").bytes) / (1024^2)) + "\n")
+    
+    fprintf("lable  (MB): " + ((whos("label").bytes)/(1024^2)) + "\n")
+    fprintf("sample (MB): " + ((whos("sample").bytes)/(1024^2)) + "\n")
 end
 
 %% Help function for setting parameters 
@@ -38,12 +36,12 @@ function [] = basic_paras(foldpath)
     % parameter that adjust distribution of sample parameters
     paras.PixelSize   = [65, 65, 100];  % we will use this to correct the covariance
     paras.MaxStd      = 2;              % parameter to adjust the size of covariance of Gaussian
-    paras.LumRange    = [64, 255];
+    paras.LumRange    = [128, double(intmax(paras.BitDepth))];
     paras.AppearRange = [1/4, 1/1];     % min/max % of moleculars appear in each frame
     
     % others
     % .tif is for illustration purposes only
-    paras.SaveTif     = false;
+    paras.SaveTif     = true;
 
     save(fullfile(foldpath, "paras.mat"), "paras")
 end
@@ -75,11 +73,11 @@ function [] = sample_paras(foldpath)
     % load the basic parameters we will use
     load(fullfile(foldpath, "paras.mat"), "paras");
     NumMolecule = paras.NumMolecule;
+    NumFrame    = paras.NumFrame; 
+    DimFrame    = paras.DimFrame;
     PixelSize   = paras.PixelSize;
     MaxStd      = paras.MaxStd;
     LumRange    = paras.LumRange;
-    DimFrame    = paras.DimFrame;
-    NumFrame    = paras.NumFrame; 
     AppearRange = paras.AppearRange;
 
     D = length(DimFrame);  % number of dimensions
@@ -211,6 +209,7 @@ function molecular = generate_molecular(foldpath)
     load(fullfile(foldpath, "paras.mat"), "paras");
     NumMolecule = paras.NumMolecule;
     DimFrame    = paras.DimFrame;
+    BitDepth    = paras.BitDepth;
     SaveTif     = paras.SaveTif;
     
     molecular = zeros([NumMolecule, DimFrame]);
@@ -224,7 +223,7 @@ function molecular = generate_molecular(foldpath)
         if SaveTif == true
             filename = m + "_molecular_" + foldpath;
             path = fullfile(foldpath, "molecular", filename);
-            save_tif(path, reshape(molecular(m, :), DimFrame));
+            save_tif(path, feval(BitDepth, single_molecular));
         end
     end
 end
@@ -259,15 +258,16 @@ end
 
 %% Help function for further processing
 
-
+function sample_noised = add_noise(foldpath, sample)
+    
+end
 
 %% Help function for save frame into .tif file
 
 function [] = save_tif(path, frame)
     % .tif is for illustration purpose so we will force to round it
     % and convert to uint8. 
-
-    frame = uint8(round(frame));
+    frame = uint8(double(frame) * (2^8) / double(intmax(class(frame))));
     DimFrame = size(frame);
     if length(DimFrame) == 2
         imwrite(frame, path+".tif", 'WriteMode', 'overwrite',  'Compression','none');
