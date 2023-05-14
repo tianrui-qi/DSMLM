@@ -1,21 +1,24 @@
 %% Main function for the whole pipline of sample generation and processing
-function [label, sample] = SampleGenerator()
+function [] = SampleGenerator()
     % fold preperation
     % any file we want save will store in fold or foldpath
     foldpath = "generated";
     if exist(foldpath, 'dir'), rmdir("generated", 's'); end
     mkdir(foldpath);
     mkdir(fullfile(foldpath, "label"));
-    mkdir(fullfile(foldpath, "sample"));
     mkdir(fullfile(foldpath, "molecular"));
-
-    % Set parameters
+    mkdir(fullfile(foldpath, "sample"));
+    mkdir(fullfile(foldpath, "sample_noised"));
+    
+    % set parameters
     basic_paras(foldpath);
     sample_paras(foldpath);
-    % Generate label/ground truth
+    % generate label/ground truth
     label = generate_label(foldpath);   
-    % Generate samples
+    % generate samples
     sample = generate_sample(foldpath);
+    % further processing
+    sample = add_noise(foldpath, sample);
     
     fprintf("lable  (MB): " + ((whos("label").bytes)/(1024^2)) + "\n")
     fprintf("sample (MB): " + ((whos("sample").bytes)/(1024^2)) + "\n")
@@ -33,15 +36,19 @@ function [] = basic_paras(foldpath)
     paras.UpSampling  = [8, 8, 4];
     paras.BitDepth    = 'uint16';  
     
-    % parameter that adjust distribution of sample parameters
+    % parameters that adjust distribution of sample parameters
     paras.PixelSize   = [65, 65, 100];  % we will use this to correct the covariance
     paras.MaxStd      = 2;              % parameter to adjust the size of covariance of Gaussian
     paras.LumRange    = [128, double(intmax(paras.BitDepth))];
-    paras.AppearRange = [1/4, 1/1];     % min/max % of moleculars appear in each frame
+    paras.AppearRange = [1/8, 1/1];     % min/max % of moleculars appear in each frame
     
+    % parameters for further processing
+    paras.noise_mu  = 0;
+    paras.noise_var = 1/2^8;
+
     % others
     % .tif is for illustration purposes only
-    paras.SaveTif     = true;
+    paras.SaveTif = true;
 
     save(fullfile(foldpath, "paras.mat"), "paras")
 end
@@ -165,8 +172,8 @@ function single_molecular = generate_single_molecular(foldpath, m)
 
     D = length(DimFrame);  % number of dimensions
 
-    % take a slice around the mu where the radia is 4 * std
-    radius      = ceil(4 * sqrt(diag(cov)));
+    % take a slice around the mu where the radia is 5 * std
+    radius      = ceil(5 * sqrt(diag(cov)));
     lower       = floor(max(mu - radius, ones(D, 1)));
     upper       = ceil(min(mu + radius, DimFrame'));
     diameter    = upper - lower + 1; 
@@ -259,7 +266,30 @@ end
 %% Help function for further processing
 
 function sample_noised = add_noise(foldpath, sample)
+    % load basic and sample parameters we will use
+    load(fullfile(foldpath, "paras.mat"), "paras");
+    NumFrame    = paras.NumFrame;
+    DimFrame    = paras.DimFrame;
+    BitDepth    = paras.BitDepth;
+    noise_mu    = paras.noise_mu;
+    noise_var   = paras.noise_var;
+    SaveTif     = paras.SaveTif;
     
+    sample_noised = zeros([NumFrame, DimFrame], BitDepth);
+    for f = 1:NumFrame
+        single_sample = reshape(sample(f, :), DimFrame);
+        noised = imnoise(single_sample, "gaussian", noise_mu, noise_var);
+        sample_noised(f, :)  = noised(:);
+
+        % save as .tif
+        % .tif is for illustration purposes only, the files saved are not
+        % dependence of other function
+        if SaveTif == true
+            filename = f + "_sample_noised_" + foldpath;
+            path = fullfile(foldpath, "sample_noised", filename);
+            save_tif(path, feval(BitDepth, noised));
+        end
+    end
 end
 
 %% Help function for save frame into .tif file
