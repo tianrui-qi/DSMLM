@@ -17,7 +17,7 @@ function [label, sample] = SampleGenerator()
     
     % further processing samples
     sample = add_noise(foldpath, sample);
-
+    
     % generate labels/ground truth
     label = generate_label(foldpath);   
     
@@ -33,7 +33,7 @@ function [] = basic_paras(foldpath)
     
     % dimensional parameters that need to consider memory
     paras.NumMolecule = 64;             % big affect on running time
-    paras.NumFrame    = 16;
+    paras.NumFrame    = 4;
     paras.DimFrame    = [128, 128, 64]; % row-column-(depth); yx(z)
     paras.UpSampling  = [8, 8, 8];
     paras.BitDepth    = 'uint16';  
@@ -52,7 +52,7 @@ function [] = basic_paras(foldpath)
     % if SaveTif is true, each section will creat a subfold to store the
     % .tif of frames that the section generates, for illustration purposes
     % only. 
-    paras.SaveTif = true;   
+    paras.SaveTif = false;   
 
     save(fullfile(foldpath, "paras.mat"), "paras")
 end
