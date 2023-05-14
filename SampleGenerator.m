@@ -191,7 +191,7 @@ function single_molecular = generate_single_molecular(foldpath, m)
     Above, for mu/lower/upper, we use matrix coordinate system, thus here
     we use 'ndgrid'
     %}
-    index = arrayfun(@(low, up) low:up, lower, upper, 'UniformOutput', false);
+    index = arrayfun(@(l, u) l:u, lower, upper, 'UniformOutput', false);
     grid_cell = cell(1, D);
     [grid_cell{:}] = ndgrid(index{:}); 
     coord = cat(D+1, grid_cell{:});                 % [y, x, (z), D]
@@ -300,12 +300,15 @@ function [] = save_tif(path, frame)
     frame = uint8(double(frame) * (2^8) / double(intmax(class(frame))));
     DimFrame = size(frame);
     if length(DimFrame) == 2
-        imwrite(frame, path+".tif", 'WriteMode', 'overwrite',  'Compression','none');
+        imwrite(frame, path+".tif", ...
+            'WriteMode', 'overwrite',  'Compression','none');
     end
     if length(DimFrame) == 3
-        imwrite(frame(:, :, 1), path+".tif", 'WriteMode', 'overwrite',  'Compression','none');
+        imwrite(frame(:, :, 1), path+".tif", ...
+            'WriteMode', 'overwrite',  'Compression','none');
         for d = 2:DimFrame(3)
-            imwrite(frame(:, :, d), path+".tif", 'WriteMode', 'append',  'Compression','none');
+            imwrite(frame(:, :, d), path+".tif", ...
+                'WriteMode', 'append',  'Compression','none');
         end
     end
 
