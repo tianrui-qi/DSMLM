@@ -1,5 +1,5 @@
 %% Main function for the whole pipline of sample generation and processing
-function [] = SampleGenerator()
+function [label, sample] = SampleGenerator()
     % fold preperation
     % any file we want save will store in fold or foldpath
     foldpath = "generated";
@@ -30,25 +30,25 @@ function [] = basic_paras(foldpath)
     paras = [];
     
     % dimensional parameters that need to consider memory
-    paras.NumMolecule = 128;            % number of Gaussian we create to simulate molecule
-    paras.NumFrame    = 16;           % number of frames we have
-    paras.DimFrame    = [128, 128, 64]; % dimensions of each frame, row-column-(depth); yx(z)
+    paras.NumMolecule = 64;             % big affect on running time
+    paras.NumFrame    = 16;
+    paras.DimFrame    = [128, 128, 64]; % row-column-(depth); yx(z)
     paras.UpSampling  = [8, 8, 4];
     paras.BitDepth    = 'uint16';  
     
     % parameters that adjust distribution of sample parameters
-    paras.PixelSize   = [65, 65, 100];  % we will use this to correct the covariance
-    paras.MaxStd      = 2;              % parameter to adjust the size of covariance of Gaussian
+    paras.PixelSize   = [65, 65, 100];  % use to correct the covariance
+    paras.MaxStd      = 2;              % adjust covariance of moleculars
     paras.LumRange    = [128, double(intmax(paras.BitDepth))];
-    paras.AppearRange = [1/8, 1/1];     % min/max % of moleculars appear in each frame
+    paras.AppearRange = [1/8, 1/1];     % min, max % of moleculars/frame
     
     % parameters for further processing
     paras.noise_mu  = 0;
-    paras.noise_var = 1/2^8;
+    paras.noise_var = 1/256;
 
     % others
     % .tif is for illustration purposes only
-    paras.SaveTif = true;
+    paras.SaveTif = false;
 
     save(fullfile(foldpath, "paras.mat"), "paras")
 end
