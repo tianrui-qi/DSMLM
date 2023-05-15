@@ -1,67 +1,67 @@
 % This file is not used to generate sample when training:
-% - We add SaveTif component in this file for illustration purpose, which 
-%   increase the running time due to I/O performance and many if statement. 
-%   This comoponent will be deleted in the file we use to generate sample 
-%   when training. 
+% - We add SaveTif component in this file for illustration purpose, which
+%   increase the running time due to I/O performance and many if statement.
+%   This comoponent will be deleted in the file we use to generate sample
+%   when training.
 % - The pipeline design is not efficient in this file. For the pipeline we
 %   use in function 'SampleGenerator' (main function), we first generate
 %   molecular and then generate label and sample. However, generate
-%   molecular will cost most of time where in training process we need to 
-%   generate new sample and label in each branch. Creat a molecular set 
-%   every time we generate sample and label is not efficient. Thus, in the 
-%   file we use to generate sample when training, we will set a larger 
-%   NumMolecular in paras and run generate_molecular for one time before 
-%   training. Then, during the training, we just need to generate sample 
-%   and label where molecular is a input. 
-% We use this file to test the sample generating pipline and process. 
+%   molecular will cost most of time where in training process we need to
+%   generate new sample and label in each branch. Creat a molecular set
+%   every time we generate sample and label is not efficient. Thus, in the
+%   file we use to generate sample when training, we will set a larger
+%   NumMolecular in paras and run generateMolecular for one time before
+%   training. Then, during the training, we just need to generate sample
+%   and label where molecular is a input.
+% We use this file to test the sample generating pipline and process.
 % The paras we use in this file is not the final paras we use in training.
 
 %% Main function for the pipline of sample generation
 
-function [label, sample] = SampleGenerator()
+function [label, sample] = sampleGenerator()
     % set parameters
     paras = [];
-    paras = basic_paras(paras);
-    paras = sample_paras(paras);
+    paras = setBasicParas(paras);
+    paras = generateSampleParas(paras);
     % generate moleculars
-    molecular = generate_molecular(paras);
+    molecular = generateMolecular(paras);
     % generate samples
-    sample = generate_sample(paras, molecular);
+    sample = generateSample(paras, molecular);
     % further processing samples
-    sample = add_noise(paras, sample);  
+    sample = addNoise(paras, sample);
     % generate labels/ground truth
-    label = generate_label(paras);  
-    
+    label = generateLabel(paras);
+
     fprintf("molecular (MB): " + ((whos("molecular").bytes)/(1024^2)) + "\n")
     fprintf("sample    (MB): " + ((whos("sample").bytes)/(1024^2)) + "\n")
     fprintf("lable     (MB): " + ((whos("label").bytes)/(1024^2)) + "\n")
 end
 
-%% Set parameters 
+%% Set parameters
 
-function paras = basic_paras(paras)
+function paras = setBasicParas(paras)
     % dimensional parameters that need to consider memory
     paras.NumMolecule = 64;             % big affect on running time
     paras.NumFrame    = 4;
     paras.DimFrame    = [128, 128, 64]; % row-column-(depth); yx(z)
     paras.UpSampling  = [8, 8, 8];
     paras.BitDepth    = 'uint16';  
-    
+
     % parameters that adjust distribution of sample parameters
     paras.PixelSize   = [65, 65, 100];  % use to correct the covariance
     paras.MaxStd      = 2;              % adjust covariance of moleculars
     paras.LumRange    = [128, double(intmax(paras.BitDepth))];
     paras.AppearRange = [1/8, 1/1];     % min, max % of moleculars/frame
-    
+
     % parameters for adding noise
     paras.noise_mu  = 0;
     paras.noise_var = 1/512;
-    
+
     % others
-    % if SaveTif is string, each section will creat a subfold in folad 
+    % if SaveTif is string, each section will creat a subfold in folad
     % paras.SaveTif to store the .tif of frames that the section generates.
-    % The .tif are for illustration purposes only. 
-    paras.SaveTif = "generated";   
+    % The .tif are for illustration purposes only.
+    paras.SaveTif = false; % "generated";
 
     if isstring(paras.SaveTif)
         if exist(paras.SaveTif, 'dir'), rmdir(paras.SaveTif, 's'); end
@@ -69,22 +69,22 @@ function paras = basic_paras(paras)
     end
 end
 
-function paras = sample_paras(paras)
+function paras = generateSampleParas(paras)
     % Descriptions:
-    % - This function will use basic parameters to randomly generate 
-    %   sample parameters that used to generate sample. 
-    % - Basic parameters can help us generate sample with same 
-    %   distribution but not exatly same. To save a dataset, sample 
+    % - This function will use basic parameters to randomly generate
+    %   sample parameters that used to generate sample.
+    % - Basic parameters can help us generate sample with same
+    %   distribution but not exatly same. To save a dataset, sample
     %   parameters generated by this function need to be saved so that we
     %   do not need to save the save to save memeory and avoid I/O
     %   performance.
     % Rules:
-    % - We load all basic parameters needed at begining and save all the 
+    % - We load all basic parameters needed at begining and save all the
     %   sample parameters at the end of function. We won't access or modity
     %   the paras during function.
     % - When generting parameters, we use double and do not round the
-    %   data. We will do all the dtype change or round the float at the 
-    %   end of function, when saving parameter. 
+    %   data. We will do all the dtype change or round the float at the
+    %   end of function, when saving parameter.
     % Output:
     %   (D stands for number of dimensions, i.e., length(DimFrame))
     % - mu_set    [D * NumMolecule]           double  non-rounded
@@ -94,7 +94,7 @@ function paras = sample_paras(paras)
 
     % load the basic parameters we will use
     NumMolecule = paras.NumMolecule;
-    NumFrame    = paras.NumFrame; 
+    NumFrame    = paras.NumFrame;
     DimFrame    = paras.DimFrame;
     PixelSize   = paras.PixelSize;
     MaxStd      = paras.MaxStd;
@@ -113,11 +113,11 @@ function paras = sample_paras(paras)
     for n = 1:NumMolecule
         cov_set(:, :, n) = diag((MaxStd.^2) .* rand([1, D]));
     end
-    
+
     % 3. luminance set, [NumMolecule]
     lum_set = (LumRange(2) - LumRange(1)) * rand([1, NumMolecule]);
     lum_set = lum_set + LumRange(1);
-    
+
     % 4. mask set, [NumFrame, NumMolecule]
     % determine how many moleculars will appear in each frame
     NumRange = round(NumMolecule * AppearRange);
@@ -151,31 +151,29 @@ function single_molecular = generate_single_molecular(paras, m)
     radius      = ceil(5 * sqrt(diag(cov)));
     lower       = floor(max(mu - radius, ones(D, 1)));
     upper       = ceil(min(mu + radius, DimFrame'));
-    diameter    = upper - lower + 1; 
-    
+    diameter    = upper - lower + 1;
+
     % build coordinate system of the slice
-    %{ 
-    We use 'ndgrid' instead of 'meshgrid' to match the coordinate system of
-    the mu/lower/upper above.
-    For example, if diameter is [11 13 8], meshgrid will return three 
-    [13 11 8] matrix but ndgrid return three [11 13 8] matrix.
-    'meshgrid' use Cartesian coordinate system, i.e. 11 is range of 
-    x-axis/column, 13 is range of y-axis/row.
-    'ndgrid' use matrix coordinate system, i.e. 11 is range of y-axis/row 
-    and 13 is range of x-axis/column. 
-    Above, for mu/lower/upper, we use matrix coordinate system, thus here
-    we use 'ndgrid'
-    %}
+    % We use 'ndgrid' instead of 'meshgrid' to match the coordinate system 
+    % of the mu/lower/upper above.
+    % For example, if diameter is [11 13 8], meshgrid will return three
+    % [13 11 8] matrix but ndgrid return three [11 13 8] matrix.
+    % 'meshgrid' use Cartesian coordinate system, i.e. 11 is range of
+    % x-axis/column, 13 is range of y-axis/row.
+    % 'ndgrid' use matrix coordinate system, i.e. 11 is range of y-axis/row
+    % and 13 is range of x-axis/column.
+    % Above, for mu/lower/upper, we use matrix coordinate system, thus here
+    % we use 'ndgrid'
     index = arrayfun(@(l, u) l:u, lower, upper, 'UniformOutput', false);
     grid_cell = cell(1, D);
-    [grid_cell{:}] = ndgrid(index{:}); 
+    [grid_cell{:}] = ndgrid(index{:});
     coord = cat(D+1, grid_cell{:});                 % [y, x, (z), D]
     coord = reshape(coord, [], D);                  % [yx(z), D]
 
     % compute the probability density for each point/pixel in slice
     pdf_values = mvnpdf(coord, mu', cov);           % [yx(z), D]
-    
-    % set the luminate 
+
+    % set the luminate
     pdf_values = pdf_values * lum / max(pdf_values(:));
 
     % put the slice back to whole frame to get single molecular frame
@@ -186,7 +184,7 @@ function single_molecular = generate_single_molecular(paras, m)
     end
 end
 
-function molecular = generate_molecular(paras)
+function molecular = generateMolecular(paras)
     % load basic and sample parameters we will use
     NumMolecule = paras.NumMolecule;
     DimFrame    = paras.DimFrame;
@@ -198,32 +196,32 @@ function molecular = generate_molecular(paras)
         single_molecular = generate_single_molecular(paras, m);
         molecular(m, :) = single_molecular(:);
     end
-    
+
     % save as .tif if SaveTif stores a string represent the fold name
     % .tif is for illustration purposes only, the files saved are not
     % dependence of other function
     if isstring(SaveTif)
-        % creat the subfold to store tif 
+        % creat the subfold to store tif
         subfolad = "molecular";
         mkdir(fullfile(SaveTif, subfolad));
         for m = 1:NumMolecule
             filename = m + "_" + subfolad + "_" + SaveTif;
             path = fullfile(SaveTif, subfolad, filename);
-            save_tif(path, feval(BitDepth, reshape(molecular(m, :), DimFrame)));
+            saveTif(path, feval(BitDepth, reshape(molecular(m, :), DimFrame)));
         end
     end
 end
 
 %% Generate samples
 
-function sample = generate_sample(paras, molecular)
+function sample = generateSample(paras, molecular)
     % load basic and sample parameters we will use
     NumFrame    = paras.NumFrame;
     DimFrame    = paras.DimFrame;
     BitDepth    = paras.BitDepth;
     SaveTif     = paras.SaveTif;
     mask_set    = paras.mask_set;
-    
+
     % Perform the einsum operations
     sample = reshape(mask_set * molecular(:, :), [NumFrame, DimFrame]);
     sample = feval(BitDepth, sample);
@@ -232,20 +230,20 @@ function sample = generate_sample(paras, molecular)
     % .tif is for illustration purposes only, the files saved are not
     % dependence of other function
     if isstring(SaveTif)
-        % creat the subfold to store tif 
+        % creat the subfold to store tif
         subfolad = "sample";
         mkdir(fullfile(SaveTif, subfolad));
         for f = 1:NumFrame
             filename = f + "_" + subfolad + "_" + SaveTif;
             path = fullfile(SaveTif, subfolad, filename);
-            save_tif(path, reshape(sample(f, :), DimFrame));
+            saveTif(path, reshape(sample(f, :), DimFrame));
         end
     end
 end
 
 %% Further processing samples
 
-function sample_noised = add_noise(paras, sample)
+function sample_noised = addNoise(paras, sample)
     % load basic and sample parameters we will use
     NumFrame    = paras.NumFrame;
     DimFrame    = paras.DimFrame;
@@ -253,7 +251,7 @@ function sample_noised = add_noise(paras, sample)
     noise_mu    = paras.noise_mu;
     noise_var   = paras.noise_var;
     SaveTif     = paras.SaveTif;
-    
+
     sample_noised = zeros([NumFrame, DimFrame], BitDepth);
     for f = 1:NumFrame
         single_sample = reshape(sample(f, :), DimFrame);
@@ -265,23 +263,23 @@ function sample_noised = add_noise(paras, sample)
     % .tif is for illustration purposes only, the files saved are not
     % dependence of other function
     if isstring(SaveTif)
-        % creat the subfold to store tif 
+        % creat the subfold to store tif
         subfolad = "sample_noised";
         mkdir(fullfile(SaveTif, subfolad));
         for f = 1:NumFrame
             filename = f + "_" + subfolad + "_" + SaveTif;
             path = fullfile(SaveTif, subfolad, filename);
-            save_tif(path, reshape(sample_noised(f, :), DimFrame));
+            saveTif(path, reshape(sample_noised(f, :), DimFrame));
         end
     end
 end
 
 %% Generate labels/ground truth
 
-function label = generate_label(paras)
+function label = generateLabel(paras)
     % load basic and sample parameters we will use
     NumMolecule = paras.NumMolecule;
-    NumFrame    = paras.NumFrame; 
+    NumFrame    = paras.NumFrame;
     DimFrame    = paras.DimFrame;
     UpSampling  = paras.UpSampling;
     BitDepth    = paras.BitDepth;
@@ -289,10 +287,10 @@ function label = generate_label(paras)
     mu_set      = paras.mu_set;
     lum_set     = paras.lum_set;
     mask_set    = paras.mask_set;
-    
+
     DimFrame_up = UpSampling .* DimFrame;
     mu_set_up   = UpSampling' .* mu_set;
-    
+
     label = zeros([NumFrame, DimFrame_up], BitDepth);
     for f = 1:NumFrame
         for m = 1:NumMolecule
@@ -306,22 +304,22 @@ function label = generate_label(paras)
     % .tif is for illustration purposes only, the files saved are not
     % dependence of other function
     if isstring(SaveTif)
-        % creat the subfold to store tif 
+        % creat the subfold to store tif
         subfolad = "label";
         mkdir(fullfile(SaveTif, subfolad));
         for f = 1:NumFrame
             filename = f + "_" + subfolad + "_" + SaveTif;
             path = fullfile(SaveTif, subfolad, filename);
-            save_tif(path, reshape(label(f, :), DimFrame_up));
+            saveTif(path, reshape(label(f, :), DimFrame_up));
         end
     end
 end
 
 %% Help function for save frame into .tif file
 
-function [] = save_tif(path, frame)
+function [] = saveTif(path, frame)
     % .tif is for illustration purpose so we will force to round it
-    % and convert to uint8. 
+    % and convert to uint8.
     frame = uint8(double(frame) * (2^8) / double(intmax(class(frame))));
     DimFrame = size(frame);
     if length(DimFrame) == 2
