@@ -13,8 +13,8 @@
 %   NumMolecular in paras and run generate_molecular for one time before 
 %   training. Then, during the training, we just need to generate sample 
 %   and label where molecular is a input. 
-% We use this file to test the sample generating pipline and process. The
-% paras we use in this file is not the final paras we use in training.
+% We use this file to test the sample generating pipline and process. 
+% The paras we use in this file is not the final paras we use in training.
 
 %% Main function for the pipline of sample generation
 
@@ -61,7 +61,7 @@ function paras = basic_paras(paras)
     % if SaveTif is string, each section will creat a subfold in folad 
     % paras.SaveTif to store the .tif of frames that the section generates.
     % The .tif are for illustration purposes only. 
-    paras.SaveTif = "SaveTif";   
+    paras.SaveTif = "generated";   
 
     if isstring(paras.SaveTif)
         if exist(paras.SaveTif, 'dir'), rmdir(paras.SaveTif, 's'); end
