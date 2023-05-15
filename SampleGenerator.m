@@ -1,25 +1,36 @@
-%% Main function for the whole pipline of sample generation and processing
+% This file is not used to generate sample when training:
+% - We add SaveTif component in this file for illustration purpose, which 
+%   increase the running time due to I/O performance and many if statement. 
+%   This comoponent will be deleted in the file we use to generate sample 
+%   when training. 
+% - The pipeline design is not efficient in this file. For the pipeline we
+%   use in function 'SampleGenerator' (main function), we first generate
+%   molecular and then generate label and sample. However, generate
+%   molecular will cost most of time where in training process we need to 
+%   generate new sample and label in each branch. Creat a molecular set 
+%   every time we generate sample and label is not efficient. Thus, in the 
+%   file we use to generate sample when training, we will set a larger 
+%   NumMolecular in paras and run generate_molecular for one time before 
+%   training. Then, during the training, we just need to generate sample 
+%   and label where molecular is a input. 
+% We use this file to test the sample generating pipline and process. The
+% paras we use in this file is not the final paras we use in training.
+
+%% Main function for the pipline of sample generation
+
 function [label, sample] = SampleGenerator()
-    % any file we want save will store in foldpath
-    foldpath = "generated";
-    if exist(foldpath, 'dir'), rmdir("generated", 's'); end
-    mkdir(foldpath);
-    
     % set parameters
-    basic_paras(foldpath);
-    sample_paras(foldpath);
-
+    paras = [];
+    paras = basic_paras(paras);
+    paras = sample_paras(paras);
     % generate moleculars
-    molecular = generate_molecular(foldpath);
-
+    molecular = generate_molecular(paras);
     % generate samples
-    sample = generate_sample(foldpath, molecular);
-    
+    sample = generate_sample(paras, molecular);
     % further processing samples
-    sample = add_noise(foldpath, sample);
-    
+    sample = add_noise(paras, sample);  
     % generate labels/ground truth
-    label = generate_label(foldpath);   
+    label = generate_label(paras);  
     
     fprintf("molecular (MB): " + ((whos("molecular").bytes)/(1024^2)) + "\n")
     fprintf("sample    (MB): " + ((whos("sample").bytes)/(1024^2)) + "\n")
@@ -28,9 +39,7 @@ end
 
 %% Set parameters 
 
-function [] = basic_paras(foldpath)
-    paras = [];
-    
+function paras = basic_paras(paras)    
     % dimensional parameters that need to consider memory
     paras.NumMolecule = 64;             % big affect on running time
     paras.NumFrame    = 4;
@@ -49,15 +58,18 @@ function [] = basic_paras(foldpath)
     paras.noise_var = 1/256;
 
     % others
-    % if SaveTif is true, each section will creat a subfold to store the
-    % .tif of frames that the section generates, for illustration purposes
-    % only. 
-    paras.SaveTif = false;   
+    % if SaveTif is string, each section will creat a subfold in folad 
+    % paras.SaveTif to store the .tif of frames that the section generates.
+    % The .tif are for illustration purposes only. 
+    paras.SaveTif = "SaveTif";   
 
-    save(fullfile(foldpath, "paras.mat"), "paras")
+    if isstring(paras.SaveTif)
+        if exist(paras.SaveTif, 'dir'), rmdir(paras.SaveTif, 's'); end
+        mkdir(paras.SaveTif);
+    end
 end
 
-function [] = sample_paras(foldpath)
+function paras = sample_paras(paras)
     % Descriptions:
     % - This function will use basic parameters to randomly generate 
     %   sample parameters that used to generate sample. 
@@ -67,10 +79,9 @@ function [] = sample_paras(foldpath)
     %   do not need to save the save to save memeory and avoid I/O
     %   performance.
     % Rules:
-    % - Every parameters will save in .mat file in 'foldpath.' We load 
-    %   all basic parameters needed at begining and save all the sample
+    % - We load all basic parameters needed at begining and save all the sample
     %   parameters at the end of function. We won't access or modity the
-    %   .mat file during function.
+    %   paras during function.
     % - When generting parameters, we use double and do not round the
     %   data. We will do all the dtype change or round the float at the 
     %   end of function, when saving parameter. 
@@ -82,7 +93,6 @@ function [] = sample_paras(foldpath)
     % - mask_set  [NumFrame * NumMolecule]    logical
 
     % load the basic parameters we will use
-    load(fullfile(foldpath, "paras.mat"), "paras");
     NumMolecule = paras.NumMolecule;
     NumFrame    = paras.NumFrame; 
     DimFrame    = paras.DimFrame;
@@ -124,14 +134,12 @@ function [] = sample_paras(foldpath)
     paras.cov_set   = cov_set;
     paras.lum_set   = lum_set;
     paras.mask_set  = logical(mask_set);
-    save(fullfile(foldpath, "paras.mat"), "paras")
 end
 
 %% Generate moleculars
 
-function single_molecular = generate_single_molecular(foldpath, m)
+function single_molecular = generate_single_molecular(paras, m)
     % load basic and sample parameters we will use
-    load(fullfile(foldpath, "paras.mat"), "paras");
     DimFrame    = paras.DimFrame;
     mu          = paras.mu_set(:, m);
     cov         = paras.cov_set(:, :, m);
@@ -178,60 +186,58 @@ function single_molecular = generate_single_molecular(foldpath, m)
     end
 end
 
-function molecular = generate_molecular(foldpath)
+function molecular = generate_molecular(paras)
     % load basic and sample parameters we will use
-    load(fullfile(foldpath, "paras.mat"), "paras");
     NumMolecule = paras.NumMolecule;
     DimFrame    = paras.DimFrame;
     BitDepth    = paras.BitDepth;
     SaveTif     = paras.SaveTif;
-    
-    % creat the subfold to store tif 
-    subfoldname = "molecular";
-    mkdir(fullfile(foldpath, subfoldname));
-    
+
     molecular = zeros([NumMolecule, DimFrame]);
     for m = 1:NumMolecule
-        single_molecular = generate_single_molecular(foldpath, m);
+        single_molecular = generate_single_molecular(paras, m);
         molecular(m, :) = single_molecular(:);
-        
-        % save as .tif
-        % .tif is for illustration purposes only, the files saved are not
-        % dependence of other function
-        if SaveTif == true
-            filename = m + "_" + subfoldname + "_" + foldpath;
-            path = fullfile(foldpath, subfoldname, filename);
-            save_tif(path, feval(BitDepth, single_molecular));
+    end
+    
+    % save as .tif if SaveTif stores a string represent the fold name
+    % .tif is for illustration purposes only, the files saved are not
+    % dependence of other function
+    if isstring(SaveTif)
+        % creat the subfold to store tif 
+        subfolad = "molecular";
+        mkdir(fullfile(SaveTif, subfolad));
+        for m = 1:NumMolecule
+            filename = m + "_" + subfolad + "_" + SaveTif;
+            path = fullfile(SaveTif, subfolad, filename);
+            save_tif(path, feval(BitDepth, reshape(molecular(m, :), DimFrame)));
         end
     end
 end
 
 %% Generate samples
 
-function sample = generate_sample(foldpath, molecular)
+function sample = generate_sample(paras, molecular)
     % load basic and sample parameters we will use
-    load(fullfile(foldpath, "paras.mat"), "paras");
     NumFrame    = paras.NumFrame;
     DimFrame    = paras.DimFrame;
     BitDepth    = paras.BitDepth;
     SaveTif     = paras.SaveTif;
     mask_set    = paras.mask_set;
     
-    % creat the subfold to store tif 
-    subfoldname = "sample";
-    mkdir(fullfile(foldpath, subfoldname));
-
     % Perform the einsum operations
     sample = reshape(mask_set * molecular(:, :), [NumFrame, DimFrame]);
     sample = feval(BitDepth, sample);
 
-    % save as .tif
+    % save as .tif if SaveTif stores a string represent the fold name
     % .tif is for illustration purposes only, the files saved are not
     % dependence of other function
-    if SaveTif == true
+    if isstring(SaveTif)
+        % creat the subfold to store tif 
+        subfolad = "sample";
+        mkdir(fullfile(SaveTif, subfolad));
         for f = 1:NumFrame
-            filename = f + "_" + subfoldname + "_" + foldpath;
-            path = fullfile(foldpath, subfoldname, filename);
+            filename = f + "_" + subfolad + "_" + SaveTif;
+            path = fullfile(SaveTif, subfolad, filename);
             save_tif(path, reshape(sample(f, :), DimFrame));
         end
     end
@@ -239,42 +245,41 @@ end
 
 %% Further processing samples
 
-function sample_noised = add_noise(foldpath, sample)
+function sample_noised = add_noise(paras, sample)
     % load basic and sample parameters we will use
-    load(fullfile(foldpath, "paras.mat"), "paras");
     NumFrame    = paras.NumFrame;
     DimFrame    = paras.DimFrame;
     BitDepth    = paras.BitDepth;
     noise_mu    = paras.noise_mu;
     noise_var   = paras.noise_var;
     SaveTif     = paras.SaveTif;
-    
-    % creat the subfold to store tif 
-    subfoldname = "sample_noised";
-    mkdir(fullfile(foldpath, subfoldname)); 
 
     sample_noised = zeros([NumFrame, DimFrame], BitDepth);
     for f = 1:NumFrame
         single_sample = reshape(sample(f, :), DimFrame);
         noised = imnoise(single_sample, "gaussian", noise_mu, noise_var);
         sample_noised(f, :)  = noised(:);
+    end
 
-        % save as .tif
-        % .tif is for illustration purposes only, the files saved are not
-        % dependence of other function
-        if SaveTif == true
-            filename = f + "_" + subfoldname + "_" + foldpath;
-            path = fullfile(foldpath, subfoldname, filename);
-            save_tif(path, feval(BitDepth, noised));
+    % save as .tif if SaveTif stores a string represent the fold name
+    % .tif is for illustration purposes only, the files saved are not
+    % dependence of other function
+    if isstring(SaveTif)
+        % creat the subfold to store tif 
+        subfolad = "sample_noised";
+        mkdir(fullfile(SaveTif, subfolad));
+        for f = 1:NumFrame
+            filename = f + "_" + subfolad + "_" + SaveTif;
+            path = fullfile(SaveTif, subfolad, filename);
+            save_tif(path, reshape(sample_noised(f, :), DimFrame));
         end
     end
 end
 
 %% Generate labels/ground truth
 
-function label = generate_label(foldpath)
+function label = generate_label(paras)
     % load basic and sample parameters we will use
-    load(fullfile(foldpath, "paras.mat"), "paras");
     NumMolecule = paras.NumMolecule;
     NumFrame    = paras.NumFrame; 
     DimFrame    = paras.DimFrame;
@@ -288,10 +293,6 @@ function label = generate_label(foldpath)
     DimFrame_up = UpSampling .* DimFrame;
     mu_set_up   = UpSampling' .* mu_set;
     
-    % creat the subfold to store tif 
-    subfoldname = "label";
-    mkdir(fullfile(foldpath, subfoldname)); 
-
     label = zeros([NumFrame, DimFrame_up], BitDepth);
     for f = 1:NumFrame
         for m = 1:NumMolecule
@@ -299,13 +300,18 @@ function label = generate_label(foldpath)
             index = arrayfun(@(x) x, mu_up, 'UniformOutput', false);
             label(f, index{:}) = lum_set(m) * mask_set(f, m);
         end
-        
-        % save as .tif
-        % .tif is for illustration purposes only, the files saved are not
-        % dependence of other function
-        if SaveTif == true
-            filename = f + "_" + subfoldname + "_" + foldpath;
-            path = fullfile(foldpath, subfoldname, filename);
+    end
+
+    % save as .tif if SaveTif stores a string represent the fold name
+    % .tif is for illustration purposes only, the files saved are not
+    % dependence of other function
+    if isstring(SaveTif)
+        % creat the subfold to store tif 
+        subfolad = "label";
+        mkdir(fullfile(SaveTif, subfolad));
+        for f = 1:NumFrame
+            filename = f + "_" + subfolad + "_" + SaveTif;
+            path = fullfile(SaveTif, subfolad, filename);
             save_tif(path, reshape(label(f, :), DimFrame_up));
         end
     end
