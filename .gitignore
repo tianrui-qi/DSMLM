@@ -5,3 +5,4 @@ psf/
 
 # compile file
 *.asv
+.idea/
