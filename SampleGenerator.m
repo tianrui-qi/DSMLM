@@ -39,7 +39,7 @@ end
 
 %% Set parameters 
 
-function paras = basic_paras(paras)    
+function paras = basic_paras(paras)
     % dimensional parameters that need to consider memory
     paras.NumMolecule = 64;             % big affect on running time
     paras.NumFrame    = 4;
@@ -53,10 +53,10 @@ function paras = basic_paras(paras)
     paras.LumRange    = [128, double(intmax(paras.BitDepth))];
     paras.AppearRange = [1/8, 1/1];     % min, max % of moleculars/frame
     
-    % parameters for further processing
+    % parameters for adding noise
     paras.noise_mu  = 0;
-    paras.noise_var = 1/256;
-
+    paras.noise_var = 1/512;
+    
     % others
     % if SaveTif is string, each section will creat a subfold in folad 
     % paras.SaveTif to store the .tif of frames that the section generates.
@@ -79,9 +79,9 @@ function paras = sample_paras(paras)
     %   do not need to save the save to save memeory and avoid I/O
     %   performance.
     % Rules:
-    % - We load all basic parameters needed at begining and save all the sample
-    %   parameters at the end of function. We won't access or modity the
-    %   paras during function.
+    % - We load all basic parameters needed at begining and save all the 
+    %   sample parameters at the end of function. We won't access or modity
+    %   the paras during function.
     % - When generting parameters, we use double and do not round the
     %   data. We will do all the dtype change or round the float at the 
     %   end of function, when saving parameter. 
@@ -253,7 +253,7 @@ function sample_noised = add_noise(paras, sample)
     noise_mu    = paras.noise_mu;
     noise_var   = paras.noise_var;
     SaveTif     = paras.SaveTif;
-
+    
     sample_noised = zeros([NumFrame, DimFrame], BitDepth);
     for f = 1:NumFrame
         single_sample = reshape(sample(f, :), DimFrame);
