@@ -19,7 +19,7 @@
 
 %% Main function for the pipline of sample generation
 
-function [label, sample_noised] = sampleGenerator()
+function [sample_noised, label] = sampleGenerator()
     % set parameters
     paras = [];
     paras = setBasicParas(paras);
@@ -56,8 +56,8 @@ function paras = setBasicParas(paras)
     % dimensional parameters that need to consider memory
     paras.NumMolecule = 64;             % big affect on running time
     paras.NumFrame    = 1;
-    paras.DimFrame    = [128, 128, 64]; % row-column-(depth); yx(z)
-    paras.UpSampling  = [8, 8, 8];
+    paras.DimFrame    = [64, 64, 64]; % row-column-(depth); yx(z)
+    paras.UpSampling  = [8, 8, 4];
 
     % parameters that adjust distribution of sample parameters
     paras.PixelSize   = [65, 65, 100];  % use to correct the covariance
