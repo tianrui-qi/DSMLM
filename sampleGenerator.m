@@ -1,74 +1,33 @@
-% This file is not used to generate sample when training:
-% - We add SaveTif component in the main function for illustration purpose, 
-%   which increase the running time due to I/O performance. This comoponent 
-%   will be deleted in the file we use to generate sample when training,
-%   including two help functions for saving .tif and save statement in
-%   main function. 
-% - The pipeline design is not efficient in this file. For the pipeline we
-%   use in function 'SampleGenerator' (main function), we first generate
-%   molecular and then generate label and sample. However, generate
-%   molecular will cost most of time where in training process we need to
-%   generate new sample and label in each branch. Creat a molecular set
-%   every time we generate sample and label is not efficient. Thus, in the
-%   file we use to generate sample when training, we will set a larger
-%   NumMolecular in paras and run generateMolecular for one time before
-%   training. Then, during the training, we just need to generate sample
-%   and label where molecular is a input.
-% We use this file to test the sample generating pipline and process.
-% The paras we use in this file is not the final paras we use in training.
-
 %% Main function for the pipline of sample generation
-
-function [sample_noised, label] = sampleGenerator()
-    % set parameters
-    paras = [];
-    paras = setBasicParas(paras);
+function [samples_noised, labels_up] = sampleGenerator(paras)
+    % generate Sample parameters
     paras = generateSampleParas(paras);
     % generate moleculars
-    molecular = generateMolecular(paras);       % double
+    moleculars = generateMoleculars(paras);       % double normalized
     % generate samples
-    sample = generateSample(paras, molecular);  % double normalized
-    % further processing samples
-    sample_noised = addNoise(paras, sample);    % double normalized
+    samples = generateSamples(paras, moleculars); % double normalized
+    samples_noised = addNoise(paras, samples);    % double normalized
     % generate labels/ground truth
-    label = generateLabel(paras);               % double normalized
+    labels_up = generateLabelsUp(paras);          % double normalized
     
-    % print status
-    fprintf("molecular (MB): " + ((whos("molecular").bytes)/(1024^2)) + "\n")
-    fprintf("sample    (MB): " + ((whos("sample").bytes)/(1024^2)) + "\n")
-    fprintf("lable     (MB): " + ((whos("label").bytes)/(1024^2)) + "\n")
-    
-    % return
+    return
 
+    % print status
+    fprintf("moleculars (MB): " + ((whos("moleculars").bytes)/(1024^2)) + "\n")
+    fprintf("samples    (MB): " + ((whos("samples").bytes)/(1024^2)) + "\n")
+    fprintf("labels_up  (MB): " + ((whos("labels_up").bytes)/(1024^2)) + "\n")
+    
     % save
     if exist(mfilename, 'dir'), rmdir(mfilename, 's'); end
     mkdir(mfilename);
     save(fullfile(mfilename, "paras"), "paras")
-    saveFrames(mfilename, "molecular", molecular)
-    saveFrames(mfilename, "sample", sample)
-    saveFrames(mfilename, "sample_noised", sample_noised)
-    saveFrames(mfilename, "label", label)
+    saveFrames(mfilename, "moleculars", moleculars)
+    saveFrames(mfilename, "samples", samples)
+    saveFrames(mfilename, "samples_noised", samples_noised)
+    saveFrames(mfilename, "labels_up", labels_up)
 end
 
-%% Set parameters
-
-function paras = setBasicParas(paras)
-    % dimensional parameters that need to consider memory
-    paras.NumMolecule = 64;             % big affect on running time
-    paras.NumFrame    = 1;
-    paras.DimFrame    = [64, 64, 64]; % row-column-(depth); yx(z)
-    paras.UpSampling  = [8, 8, 4];
-
-    % parameters that adjust distribution of sample parameters
-    paras.PixelSize   = [65, 65, 100];  % use to correct the covariance
-    paras.MaxStd      = 2;              % adjust covariance of moleculars
-    paras.LumRange    = [1/512, 1];
-    paras.AppearRange = [1/8, 1/1];     % min, max % of moleculars/frame
-
-    % parameters for adding noise
-    paras.noise_mu  = 0;
-    paras.noise_var = 1/512;
-end
+%% Generate Sample parameters
 
 function paras = generateSampleParas(paras)
     % Descriptions:
@@ -88,17 +47,17 @@ function paras = generateSampleParas(paras)
     %   end of function, when saving parameter.
     % Output:
     %   (D stands for number of dimensions, i.e., length(DimFrame))
-    % - mu_set    [D * NumMolecule]           double  non-rounded
-    % - cov_set   [D * D * NumMolecule]       double  non-rounded
-    % - lum_set   [NumMolecule]               double  non-rounded
-    % - mask_set  [NumFrame * NumMolecule]    logical
+    % - mu_set    [D         *  NumMolecule]    double  non-rounded
+    % - cov_set   [D         *  NumMolecule]    double  non-rounded
+    % - lum_set   [             NumMolecule]    double  non-rounded
+    % - mask_set  [NumFrame  *  NumMolecule]    logical
 
     % load the basic parameters we will use
     NumMolecule = paras.NumMolecule;
     NumFrame    = paras.NumFrame;
     DimFrame    = paras.DimFrame;
     PixelSize   = paras.PixelSize;
-    MaxStd      = paras.MaxStd;
+    StdRange    = paras.StdRange;
     LumRange    = paras.LumRange;
     AppearRange = paras.AppearRange;
 
@@ -106,13 +65,16 @@ function paras = generateSampleParas(paras)
 
     % 1. mu set, [D * NumMolecule]
     mu_set = (DimFrame-1)' .* rand([D, NumMolecule]) + 1;
+    mu_set = sortrows(mu_set');
+    mu_set = mu_set';
 
     % 2. covariance set, [D * D * NumMolecule]
-    cov_set = zeros(D, D, NumMolecule);
+    cov_set = zeros(D, NumMolecule);
     % pixel size correction
-    MaxStd = MaxStd * (PixelSize(1) ./ PixelSize);
+    StdRange = StdRange .* (PixelSize(1) ./ PixelSize');  % [D * 2]
     for n = 1:NumMolecule
-        cov_set(:, :, n) = diag((MaxStd.^2) .* rand([1, D]));
+        cov_set(:, n) = (StdRange(:, 2) - StdRange(:, 1)) .* rand([D, 1]);
+        cov_set(:, n) = cov_set(:, n) + StdRange(:, 1);
     end
 
     % 3. luminance set, [NumMolecule]
@@ -139,17 +101,17 @@ end
 
 %% Generate moleculars
 
-function single_molecular = generate_single_molecular(paras, m)
+function molecular = generateMolecular(paras, m)
     % load parameters we will use
     DimFrame    = paras.DimFrame;
     mu          = paras.mu_set(:, m);
-    cov         = paras.cov_set(:, :, m);
+    cov         = paras.cov_set(:, m);
     lum         = paras.lum_set(m);
 
     D = length(DimFrame);  % number of dimensions
 
     % take a slice around the mu where the radia is 5 * std
-    radius      = ceil(5 * sqrt(diag(cov)));
+    radius      = ceil(5 * sqrt(cov));
     lower       = floor(max(mu - radius, ones(D, 1)));
     upper       = ceil(min(mu + radius, DimFrame'));
     diameter    = upper - lower + 1;
@@ -172,55 +134,53 @@ function single_molecular = generate_single_molecular(paras, m)
     coord = reshape(coord, [], D);                  % [yx(z), D]
 
     % compute the probability density for each point/pixel in slice
-    pdf_values = mvnpdf(coord, mu', cov);           % [yx(z), D]
+    pdf_values = mvnpdf(coord, mu', diag(cov));           % [yx(z), D]
 
     % set the luminate
     pdf_values = pdf_values * lum / max(pdf_values(:));
 
     % put the slice back to whole frame to get single molecular frame
-    single_molecular = zeros(DimFrame);
+    molecular = zeros(DimFrame);
     for i = 1:prod(diameter)
         idx = cellfun(@(x) x(i), grid_cell, 'UniformOutput', false);
-        single_molecular(idx{:}) = pdf_values(i);
+        molecular(idx{:}) = pdf_values(i);
     end
 end
 
-function molecular = generateMolecular(paras)
+function moleculars = generateMoleculars(paras)
     % load parameters we will use
     NumMolecule = paras.NumMolecule;
     DimFrame    = paras.DimFrame;
 
-    molecular = zeros([NumMolecule, DimFrame]);
+    moleculars = zeros([NumMolecule, DimFrame]);
     for m = 1:NumMolecule
-        single_molecular = generate_single_molecular(paras, m);
-        molecular(m, :) = single_molecular(:);
+        molecular = generateMolecular(paras, m);
+        moleculars(m, :) = molecular(:);
     end
 end
 
 %% Generate samples
 
-function sample = generateSample(paras, molecular)
+function samples = generateSamples(paras, moleculars)
     % load parameters we will use
     NumFrame    = paras.NumFrame;
     DimFrame    = paras.DimFrame;
     mask_set    = paras.mask_set;
 
-    sample = reshape(mask_set * molecular(:, :), [NumFrame, DimFrame]);
+    samples = reshape(mask_set * moleculars(:, :), [NumFrame, DimFrame]);
 end
 
-%% Further processing samples
-
-function sample_noised = addNoise(paras, sample)
+function samples_noised = addNoise(paras, samples)
     % load parameters we will use
     noise_mu    = paras.noise_mu;
     noise_var   = paras.noise_var;
     
-    sample_noised = imnoise(sample, "gaussian", noise_mu, noise_var);
+    samples_noised = imnoise(samples, "gaussian", noise_mu, noise_var);
 end
 
 %% Generate labels/ground truth
 
-function label = generateLabel(paras)
+function labels_up = generateLabelsUp(paras)
     % load parameters we will use
     NumMolecule = paras.NumMolecule;
     NumFrame    = paras.NumFrame;
@@ -230,15 +190,15 @@ function label = generateLabel(paras)
     lum_set     = paras.lum_set;
     mask_set    = paras.mask_set;
 
-    DimFrame_up = UpSampling .* DimFrame;
+    DimFrame_up = UpSampling  .* DimFrame;
     mu_set_up   = UpSampling' .* mu_set;
-
-    label = zeros([NumFrame, DimFrame_up]);
+    
+    labels_up = zeros([NumFrame, DimFrame_up]);
     for f = 1:NumFrame
         for m = 1:NumMolecule
             mu_up = round(mu_set_up(:, m));
             index = arrayfun(@(x) x, mu_up, 'UniformOutput', false);
-            label(f, index{:}) = lum_set(m) * mask_set(f, m);
+            labels_up(f, index{:}) = lum_set(m) * mask_set(f, m);
         end
     end
 end

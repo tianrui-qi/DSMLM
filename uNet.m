@@ -1,9 +1,7 @@
 function lgraph = uNet()
 lgraph = layerGraph();
 
-% Add Layer Branches
-
-tempLayers = imageInputLayer([128 128 64],"Name","imageinput");
+tempLayers = imageInputLayer([64 64 64],"Name","imageinput");
 lgraph = addLayers(lgraph,tempLayers);
 
 tempLayers = [
@@ -75,8 +73,6 @@ lgraph = addLayers(lgraph,tempLayers);
 
 % clean up helper variable
 clear tempLayers;
-
-% Connect Layer Branches
 
 lgraph = connectLayers(lgraph,"imageinput","conv");
 lgraph = connectLayers(lgraph,"imageinput","transposed-conv_2");
