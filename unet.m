@@ -1,4 +1,4 @@
-function lgraph = uNet()
+function lgraph = unet()
     lgraph = layerGraph();
     
     tempLayers = imageInputLayer([64 64 64],"Name","imageinput");
