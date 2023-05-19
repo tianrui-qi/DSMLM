@@ -1,5 +1,5 @@
 %% Main function for the pipline of sample generation
-function [samples_noised, labels_up] = sampleGenerator(paras)
+function [samples_noised, labels_up] = sampleGeneratorHelper(paras)
     % generate Sample parameters
     paras = generateSampleParas(paras);
     % generate moleculars
@@ -12,12 +12,12 @@ function [samples_noised, labels_up] = sampleGenerator(paras)
     
     return
 
-    % print status
+    % print size of file
     fprintf("moleculars (MB): " + ((whos("moleculars").bytes)/(1024^2)) + "\n")
     fprintf("samples    (MB): " + ((whos("samples").bytes)/(1024^2)) + "\n")
     fprintf("labels_up  (MB): " + ((whos("labels_up").bytes)/(1024^2)) + "\n")
     
-    % save
+    % save as .tif for illustration
     if exist(mfilename, 'dir'), rmdir(mfilename, 's'); end
     mkdir(mfilename);
     save(fullfile(mfilename, "paras"), "paras")
