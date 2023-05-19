@@ -52,7 +52,7 @@ function paras = generateSampleParas(paras)
     % - lum_set   [             NumMolecule]    double  non-rounded
     % - mask_set  [NumFrame  *  NumMolecule]    logical
 
-    % load the basic parameters we will use
+    % load parameters we will use
     NumMolecule = paras.NumMolecule;
     NumFrame    = paras.NumFrame;
     DimFrame    = paras.DimFrame;
