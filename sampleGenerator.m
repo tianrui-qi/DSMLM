@@ -8,7 +8,7 @@ function [] = sampleGenerator()
     mkdir(fullfile(mfilename, "labels_up"));
     
     current_idx = 1;
-    for i = 1:10
+    for i = 1:30
         [samples_noised, labels_up] = sampleGeneratorHelper(paras);
         for f = 1:paras.NumFrame
             shape = size(samples_noised);
