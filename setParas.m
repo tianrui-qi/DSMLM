@@ -1,25 +1,3 @@
-%% Set parameters for all files
-
-paras = setParas();
-
-%% generating samples and labels
-
-sampleGenerator(paras);                     
-
-%% load generated samples and labels and split to train and validation data
-
-[trainData, valData] = dataLoader(paras);   
-
-%% load the checkpoint net or init a new net
-
-net = netLoader(paras);
-
-%% train the net
-
-trainer(paras, net, trainData, valData)
-
-%% Help function for set parameters
-
 function paras = setParas()
     paras = [];
 

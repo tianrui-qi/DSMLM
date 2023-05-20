@@ -1,5 +1,14 @@
-function [] = trainer(paras, net, trainData, valData)
-    % Options for training
+function [] = trainer(paras)
+    % generating samples and labels
+    sampleGenerator(paras);
+
+    % load generated samples and labels and split to train and validation
+    [trainData, valData] = dataLoader(paras);
+
+    % load the checkpoint net or init a new net
+    net = netLoader(paras);
+
+    % options for training
     options = trainingOptions('adam', ...
         'Plots', 'training-progress', ...
         'Verbose', true, ...
@@ -18,6 +27,6 @@ function [] = trainer(paras, net, trainData, valData)
         'CheckpointFrequencyUnit', 'iteration', ...
         'ResetInputNormalization', 0 );
     
-    % Start to train
+    % start to train
     trainNetwork(trainData, net, options);
 end
