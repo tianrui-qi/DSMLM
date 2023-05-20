@@ -1,3 +1,29 @@
+function net = netLoader(paras)
+    % load parameters we will use
+    CheckpointDir   = paras.CheckpointDir;  % dir to store checkpoint
+    Checkpoint      = paras.Checkpoint;     % checkpoint file name
+
+    if exist(CheckpointDir, 'dir') == false
+        mkdir(CheckpointDir);
+        fprintf("netLoader: Creat checkpoint dictionary\n");
+        net = unet;
+        fprintf("netLoader: Init a new net")
+    elseif isstring(Checkpoint) == false
+        fprintf("netLoader: Given checkpoint file name is not string\n");
+        net = unet;
+        fprintf("netLoader: Init a new net")
+    elseif any(strcmp({dir(CheckpointDir).name}, Checkpoint))
+        load(fullfile(CheckpointDir, Checkpoint), "net");
+        fprintf("netLoader: Load checkpoint file success\n");
+        net = layerGraph(net);
+        fprintf("netLoader: Init the net using checkpoint file\n");
+    else
+        fprintf("netLoader: File to load the given checkpoint file\n");
+        net = unet;
+        fprintf("netLoader: Init a new net")
+    end
+end
+
 function lgraph = unet()
     lgraph = layerGraph();
     

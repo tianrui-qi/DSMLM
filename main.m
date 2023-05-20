@@ -1,11 +1,35 @@
-function paras = setParas(paras)
+%% Set parameters for all files
+
+paras = setParas();
+
+%% generating samples and labels
+
+sampleGenerator(paras);                     
+
+%% load generated samples and labels and split to train and validation data
+
+[trainData, valData] = dataLoader(paras);   
+
+%% load the checkpoint net or init a new net
+
+net = netLoader(paras);
+
+%% train the net
+
+trainer(paras, net, trainData, valData)
+
+%% Help function for set parameters
+
+function paras = setParas()
+    paras = [];
+
+    % Parameters for netLoader
+    paras.CheckpointDir = "checkpoints";
+    paras.Checkpoint    = "net_checkpoint__9000__2023_05_20__04_22_03.mat";
+    
     % Parameters for dataloader and sampleGenerator
-    % Path
     paras.SampleDir     = "sampleGenerator\samples";
     paras.LabelDir      = "sampleGenerator\labels";
-    paras.CheckpointDir = "checkpoint";
-    paras.Checkpoint    = "net_checkpoint__9000__2023_05_20__04_22_03.mat";
-    % sample info
     paras.NumSample     = 4000;
     paras.NumTrain      = 3600;
     

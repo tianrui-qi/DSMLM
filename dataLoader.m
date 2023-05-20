@@ -1,4 +1,4 @@
-function [trainData, valData] = dataloader(paras)
+function [trainData, valData] = dataLoader(paras)
     % load parameters we will use
     SampleDir   = paras.SampleDir;
     LabelDir    = paras.LabelDir;

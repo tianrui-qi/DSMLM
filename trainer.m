@@ -1,25 +1,4 @@
-function [] = trainer(paras)
-    % prepare train and validation dataset including samples and labels
-    sampleGenerator(paras);                     % generating samples/labels
-    [trainData, valData] = dataloader(paras);   % load generated samples
-    
-    % Load a checkpoint net or create a new net
-    if exist(paras.CheckpointDir, 'dir') == false
-        mkdir(paras.CheckpointDir);
-        net = unet;
-        fprintf("trainer: Checkpoint dictionary does not exist\n");
-    elseif isstring(paras.Checkpoint) == false
-        net = unet;
-        fprintf("trainer: Choose to not load checkpoint file\n");
-    elseif any(strcmp({dir(paras.CheckpointDir).name}, paras.Checkpoint))
-        load(fullfile(paras.CheckpointDir, paras.Checkpoint), "net");
-        net = layerGraph(net);
-        fprintf("trainer: Load checkpoint file success\n");
-    else
-        net = unet;
-        fprintf("trainer: Checkpoint file does not exist\n");
-    end
-    
+function [] = trainer(paras, net, trainData, valData)
     % Options for training
     options = trainingOptions('adam', ...
         'Plots', 'training-progress', ...
