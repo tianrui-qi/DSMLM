@@ -1,5 +1,6 @@
 %% Main function for the pipline of sample generation
-function [samples_noised, labels_up] = sampleGeneratorHelper(paras)
+
+function generated = sampleGeneratorHelper(paras)
     % generate Sample parameters
     paras = generateSampleParas(paras);
     % generate moleculars
@@ -9,6 +10,13 @@ function [samples_noised, labels_up] = sampleGeneratorHelper(paras)
     samples_noised = addNoise(paras, samples);    % double normalized
     % generate labels/ground truth
     labels_up = generateLabelsUp(paras);          % double normalized
+    
+    generated = [];
+    generated.paras = paras;
+    generated.moleculars = moleculars;
+    generated.samples = samples;
+    generated.samples_noised = samples_noised;
+    generated.labels_up = labels_up;
     
     return
 
@@ -52,7 +60,7 @@ function paras = generateSampleParas(paras)
     % - lum_set   [             NumMolecule]    double  non-rounded
     % - mask_set  [NumFrame  *  NumMolecule]    logical
 
-    % load the basic parameters we will use
+    % load parameters we will use
     NumMolecule = paras.NumMolecule;
     NumFrame    = paras.NumFrame;
     DimFrame    = paras.DimFrame;
@@ -224,8 +232,20 @@ function [] = saveTif(path, frame)
 end
 
 function [] = saveFrames(fold, subfold, frames)
-    % .tif is for illustration purposes only, the files saved are not
-    % dependence of other function
+    % Descriptions:
+    % - This function will save NumFrame number of 2D or 3D frames store in
+    %   input frames as .tif 
+    % - All .tif are for illustration purposes only. Files saved are not 
+    %   dependence of other function
+    % - This function will use help function saveTif to store each single
+    %   frame.
+    % Input:
+    % - fold: the fold using to store all the file that creat in this
+    %   function
+    % - subfold: the subfold in fold that store the "frames"
+    % - frames: [NumFrame * DimFrame] matrix normalized to [0, 1], 
+    %   contains NumFrame number of 2D or 3D frames that we want to save
+
     shape = size(frames);
     NumFrame = shape(1);
     DimFrame = shape(2:end);
