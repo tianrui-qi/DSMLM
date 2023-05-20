@@ -1,6 +1,6 @@
 %% Main function for the pipline of sample generation
 
-function [samples_noised, labels_up] = sampleGeneratorHelper(paras)
+function generated = sampleGeneratorHelper(paras)
     % generate Sample parameters
     paras = generateSampleParas(paras);
     % generate moleculars
@@ -10,6 +10,13 @@ function [samples_noised, labels_up] = sampleGeneratorHelper(paras)
     samples_noised = addNoise(paras, samples);    % double normalized
     % generate labels/ground truth
     labels_up = generateLabelsUp(paras);          % double normalized
+    
+    generated = [];
+    generated.paras = paras;
+    generated.moleculars = moleculars;
+    generated.samples = samples;
+    generated.samples_noised = samples_noised;
+    generated.labels_up = labels_up;
     
     return
 
