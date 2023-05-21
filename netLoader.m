@@ -2,7 +2,8 @@ function net = netLoader(paras)
     % load parameters we will use
     CheckpointDir   = paras.CheckpointDir;  % dir to store checkpoint
     Checkpoint      = paras.Checkpoint;     % checkpoint file name
-
+    
+    % load the checkpoint net or init a new net
     if exist(CheckpointDir, 'dir') == false
         mkdir(CheckpointDir);
         fprintf("netLoader: Creat checkpoint dictionary\n");

@@ -1,6 +1,7 @@
 # data
-sampleGenerator/
-sampleGeneratorHelper/
+datas/
+generated/
+dataGeneratorHelper/
 
 # compile file
 *.asv
