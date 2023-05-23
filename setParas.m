@@ -2,11 +2,12 @@ function paras = setParas()
     paras = [];
 
     % Parameters for netLoader
+    paras.WhichNet      = "unet";   % "unet" or "cnn"
     paras.CheckpointDir = "checkpoints";
-    paras.Checkpoint    = "net_checkpoint_2800.mat";
+    paras.Checkpoint    = false;
     
     % Parameters for dataloader and dataGenerator
-    paras.Noised        = True;  % generate clean sample or noised sample
+    paras.Noised        = true;  % generate clean sample or noised sample
     paras.DataDir       = "generated_noised";  % _noised or _clean
     paras.SampleDir     = fullfile(paras.DataDir, "samples");
     paras.LabelDir      = fullfile(paras.DataDir, "labels");

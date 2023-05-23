@@ -1,6 +1,6 @@
 function [trainData, valData] = dataLoader()
     % load parameters we will use
-    paras       = setParas;
+    paras       = setParas();
     SampleDir   = paras.SampleDir;
     LabelDir    = paras.LabelDir;
     NumSample   = paras.NumSample;  % total number of datas we want

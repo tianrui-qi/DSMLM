@@ -1,6 +1,6 @@
 function [] = trainer()
     % load parameters we will use
-    paras = setParas;
+    paras = setParas();
     
     % generating samples and labels
     dataGenerator();

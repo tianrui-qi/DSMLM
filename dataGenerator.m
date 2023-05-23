@@ -1,6 +1,6 @@
 function [] = dataGenerator()
     % load parameters we will use
-    paras       = setParas;
+    paras       = setParas();
     Noised      = paras.Noised;
     SampleDir   = paras.SampleDir;
     LabelDir    = paras.LabelDir;
@@ -9,21 +9,19 @@ function [] = dataGenerator()
     % Get the index of data we want to generate next, 'current_idx,' by
     % check 'SampleDir' and 'LabelDir'
     if exist(SampleDir, 'dir') == 0 || exist(LabelDir, 'dir') == 0
-        % dir do not exist, we do not have any data
         mkdir(SampleDir);
         mkdir(LabelDir);
         current_idx = 1;
         fprintf("dataGenerator: Create dictionary SampleDir & LabelDir\n");
     else
-        % if exist, get the number of samples and labels we have
         num_sample  = length(dir(SampleDir)) - 2;
         num_label   = length(dir(LabelDir))  - 2;
         current_idx = min(num_sample, num_label) + 1;
     end
     
     fprintf("dataGenerator: Start; " + ...
-        "Existing datas: " + (current_idx-1) + "\n");
-    
+       "Existing datas: " + (current_idx-1) + "\n");
+
     % If we do not have enough datas
     % We may generate more than paras.NumSample since in each while loop,
     % we generate paras.NumFrame number of datas instead of number of
