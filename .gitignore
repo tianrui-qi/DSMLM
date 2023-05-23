@@ -1,6 +1,13 @@
-# data
-sampleGenerator/
-sampleGeneratorHelper/
+# raw data
+raw/
+
+# generate data
+generated_clean/
+generated_noised/
+dataGeneratorHelper/
+
+# checkpoints
+checkpoints/
 
 # compile file
 *.asv
