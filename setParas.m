@@ -2,7 +2,7 @@ function paras = setParas()
     paras = [];
 
     % Parameters for netLoader
-    paras.CheckpointDir = "checkpoints_unet_noised";
+    paras.CheckpointDir = "checkpoints";
     paras.Checkpoint    = "net_checkpoint_2800.mat";
     
     % Parameters for dataloader and dataGenerator
