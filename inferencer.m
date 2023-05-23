@@ -1,9 +1,9 @@
 %% load network
-load(fullfile("checkpoints_cnn_noised", ...
-    "net_checkpoint__7000__2023_05_22__19_38_02.mat"), "net");
+load(fullfile("checkpoints", ...
+    "checkpoint_unet_noised_2800.mat"), "net");
 
 %% get a sample 512 512 64
-filename = "raw\sample\FLFM_stack_00001.tif";
+filename = "raw\samples\FLFM_stack_00001.tif";
 info = imfinfo(filename);  % file info
 num_images = numel(info);  % depth
 image = imread(filename, 1, 'Info', info);  % first layer
