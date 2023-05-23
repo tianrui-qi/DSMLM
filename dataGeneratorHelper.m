@@ -18,7 +18,7 @@ function generated = dataGeneratorHelper(paras)
     generated.samples_noised = samples_noised;
     generated.labels_up = labels_up;
     
-    % return
+    return
 
     % print size of file
     fprintf("moleculars (MB): " + ((whos("moleculars").bytes)/(1024^2)) + "\n")
@@ -116,8 +116,8 @@ function molecular = generateMolecular(paras, m)
 
     % take a slice around the mu where the radia is 5 * std
     radius      = ceil(5 * sqrt(cov));
-    lower       = floor(max(mu - radius, ones(D, 1)));
-    upper       = ceil(min(mu + radius, DimFrame'));
+    lower       = floor(max(round(mu) - radius, ones(D, 1)));
+    upper       = ceil(min(round(mu) + radius, DimFrame'));
     diameter    = upper - lower + 1;
 
     % build coordinate system of the slice
