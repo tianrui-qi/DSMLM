@@ -1,6 +1,7 @@
 # data
-datas/
-generated/
+raw/
+generated_clean/
+generated_noised/
 dataGeneratorHelper/
 
 # compile file
