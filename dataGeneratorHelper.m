@@ -1,6 +1,9 @@
 %% Main function for the pipline of datas generation
 
-function generated = dataGeneratorHelper(paras)
+function generated = dataGeneratorHelper()
+    % load parameters we will use
+    paras       = setParas();
+
     % generate data parameters
     paras = generateDataParas(paras);
     % generate moleculars

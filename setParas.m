@@ -16,7 +16,7 @@ function paras = setParas()
     % Parameters for dataGeneratorHelper
     % dimensional parameters that need to consider memory
     paras.NumMolecule   = 32;             % big affect on running time
-    paras.NumFrame      = 100;            % generate NumFrame each time
+    paras.NumFrame      = 20;             % generate NumFrame each time
     paras.DimFrame      = [64, 64, 64];   % row-column-(depth); yx(z)
     paras.UpSampling    = [8,  8,  4];
     % parameters that adjust distribution of sample
