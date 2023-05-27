@@ -7,13 +7,11 @@ function paras = setParas()
     paras.WhichNet      = "cnnFocal";   % "cnn" / "unet" / "cnnFocal"
     
     % Parameters for dataLoader and dataGenerator
-    paras.DataDir       = "generated_noised";  % _noised or _clean
-    paras.SampleDir     = fullfile(paras.DataDir, "samples");
-    paras.LabelDir      = fullfile(paras.DataDir, "labels");
+    paras.DataDir       = "generated";
     paras.NumSample     = 6000;
     paras.NumTrain      = 5600;
-    paras.Binary        = true;  % Binary ? classification : regression
     paras.Noised        = true;  % Noised ? noised sample : clean sample
+    paras.Binary        = true;  % Binary ? classification : regression
 
     % Parameters for dataGeneratorHelper
     % dimensional parameters that need to consider memory
