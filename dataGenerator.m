@@ -1,10 +1,10 @@
 function [] = dataGenerator()
     % load parameters we will use
     paras       = setParas();
-    Noised      = paras.Noised;
     SampleDir   = paras.SampleDir;
     LabelDir    = paras.LabelDir;
     NumSample   = paras.NumSample;   % total number of datas we want
+    Noised      = paras.Noised;
 
     % Get the index of data we want to generate next, 'current_idx,' by
     % check 'SampleDir' and 'LabelDir'

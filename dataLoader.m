@@ -5,10 +5,15 @@ function [trainData, valData] = dataLoader()
     LabelDir    = paras.LabelDir;
     NumSample   = paras.NumSample;  % total number of datas we want
     NumTrain    = paras.NumTrain;   % number of data splite to train
+    Binary      = paras.Binary;
     
     % reading function
     sampleReader    = @(filename) load(filename).sample;
-    labelReader     = @(filename) load(filename).label;
+    if Binary
+        labelReader = @(filename) categorical(load(filename).label ~= 0);
+    else
+        labelReader = @(filename) load(filename).label;
+    end
 
     % training datastore
     % file name, idx from 1 to NumTrain
