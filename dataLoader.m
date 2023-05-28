@@ -14,21 +14,25 @@ function [trainData, valData] = dataLoader()
     % here we use same name "samples_dir" since we just use one of it.
     % Same rule apply to labels as well.
     if Noised
-        samples_dir = fullfile(DataDir, "samples");
-    else
         samples_dir = fullfile(DataDir, "samples_noised");
+    else
+        samples_dir = fullfile(DataDir, "samples");
     end
     if Binary
-        labels_dir = fullfile(DataDir, "labels");
-    else
         labels_dir = fullfile(DataDir, "labels_binary");
+    else
+        labels_dir = fullfile(DataDir, "labels");
     end
 
     % reading function
     % in dataGenerator.m, we name each sample in samples and samples_noised 
     % as "sample" and each label in labels and labels_bianry as "label". 
     sampleReader = @(filename) load(filename).sample;
-    labelReader  = @(filename) load(filename).label;
+    if Binary
+        labelReader  = @(filename) categorical(load(filename).label);
+    else
+        labelReader  = @(filename) load(filename).label;
+    end
 
     % training datastore
     % file name, idx from 1 to NumTrain
