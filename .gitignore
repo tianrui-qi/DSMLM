@@ -8,6 +8,11 @@ dataGeneratorHelper/
 # checkpoints
 checkpoints/
 
-# compile file
+# matlab compile file
 *.asv
+
+# pycharm compile file
 .idea/
+
+# vscode compile file
+.vscode
