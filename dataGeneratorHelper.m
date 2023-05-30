@@ -1,6 +1,9 @@
 %% Main function for the pipline of datas generation
 
-function generated = dataGeneratorHelper(paras)
+function generated = dataGeneratorHelper()
+    % load parameters we will use
+    paras       = setParas();
+
     % generate data parameters
     paras = generateDataParas(paras);
     % generate moleculars
@@ -9,21 +12,23 @@ function generated = dataGeneratorHelper(paras)
     samples = generateSamples(paras, moleculars); % double normalized
     samples_noised = addNoise(paras, samples);    % double normalized
     % generate labels/ground truth
-    labels_up = generateLabelsUp(paras);          % double normalized
+    labels = generateLabels(paras);               % double normalized
+    labels_binary = generatedLabelsBinary(paras); % double normalized
     
     generated = [];
-    generated.paras = paras;
-    generated.moleculars = moleculars;
-    generated.samples = samples;
-    generated.samples_noised = samples_noised;
-    generated.labels_up = labels_up;
+    generated.paras             = paras;
+    generated.moleculars        = moleculars;
+    generated.samples           = samples;
+    generated.samples_noised    = samples_noised;
+    generated.labels            = labels;
+    generated.labels_binary     = labels_binary;
     
     return
 
     % print size of file
-    fprintf("moleculars (MB): " + ((whos("moleculars").bytes)/(1024^2)) + "\n")
-    fprintf("samples    (MB): " + ((whos("samples").bytes)/(1024^2)) + "\n")
-    fprintf("labels_up  (MB): " + ((whos("labels_up").bytes)/(1024^2)) + "\n")
+    fprintf("moleculars (MB): "+((whos("moleculars").bytes)/(1024^2))+"\n")
+    fprintf("samples    (MB): "+((whos("samples").bytes)/(1024^2))+"\n")
+    fprintf("labels     (MB): "+((whos("labels").bytes)/(1024^2))+"\n")
     
     % save as .tif for illustration
     if exist(mfilename, 'dir'), rmdir(mfilename, 's'); end
@@ -32,7 +37,8 @@ function generated = dataGeneratorHelper(paras)
     saveFrames(mfilename, "moleculars", moleculars)
     saveFrames(mfilename, "samples", samples)
     saveFrames(mfilename, "samples_noised", samples_noised)
-    saveFrames(mfilename, "labels_up", labels_up)
+    saveFrames(mfilename, "labels", labels)
+    saveFrames(mfilename, "labels_binary", labels_binary)
 end
 
 %% Generate Data parameters
@@ -184,7 +190,7 @@ end
 
 %% Generate labels/ground truth
 
-function labels_up = generateLabelsUp(paras)
+function labels = generateLabels(paras)
     % load parameters we will use
     NumMolecule = paras.NumMolecule;
     NumFrame    = paras.NumFrame;
@@ -198,12 +204,35 @@ function labels_up = generateLabelsUp(paras)
     DimFrame_up = UpSampling  .* DimFrame;
     mu_set_up   = UpSampling' .* mu_set;
     
-    labels_up = zeros([NumFrame, DimFrame_up]);
+    labels = zeros([NumFrame, DimFrame_up]);
     for f = 1:NumFrame
         for m = 1:NumMolecule
             mu_up = round(mu_set_up(:, m));
             index = arrayfun(@(x) x, mu_up, 'UniformOutput', false);
-            labels_up(f, index{:}) = lum_set(m) * mask_set(f, m);
+            labels(f, index{:}) = lum_set(m) * mask_set(f, m);
+        end
+    end
+end
+
+function labels_binary = generatedLabelsBinary(paras)
+    % load parameters we will use
+    NumMolecule = paras.NumMolecule;
+    NumFrame    = paras.NumFrame;
+    DimFrame    = paras.DimFrame;
+    UpSampling  = paras.UpSampling;
+    mu_set      = paras.mu_set;
+    mask_set    = paras.mask_set;
+    
+    % dimension after upsampling
+    DimFrame_up = UpSampling  .* DimFrame;
+    mu_set_up   = UpSampling' .* mu_set;
+                                
+    labels_binary = zeros([NumFrame, DimFrame_up]);
+    for f = 1:NumFrame
+        for m = 1:NumMolecule
+            mu_up = round(mu_set_up(:, m));
+            index = arrayfun(@(x) x, mu_up, 'UniformOutput', false);
+            labels_binary(f, index{:}) = mask_set(f, m);
         end
     end
 end

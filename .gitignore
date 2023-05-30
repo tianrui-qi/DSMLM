@@ -2,8 +2,7 @@
 raw/
 
 # generate data
-generated_clean/
-generated_noised/
+generated/
 dataGeneratorHelper/
 
 # checkpoints
