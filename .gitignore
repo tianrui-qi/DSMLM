@@ -11,3 +11,4 @@ checkpoints/
 # compile file
 *.asv
 .idea/
+.vscode

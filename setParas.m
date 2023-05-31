@@ -4,18 +4,18 @@ function paras = setParas()
     % Parameters for netLoader
     paras.CheckpointDir = "checkpoints";
     paras.Checkpoint    = false;
-    paras.WhichNet      = "cnnFocal";   % "cnn" / "unet" / "cnnFocal"
+    paras.WhichNet      = "unet";   % "cnn" / "unet" / "cnnFocal"
     
     % Parameters for dataLoader and dataGenerator
     paras.DataDir       = "generated";
     paras.NumSample     = 6000;
     paras.NumTrain      = 5600;
-    paras.Noised        = true;  % Noised ? noised sample : clean sample
-    paras.Binary        = true;  % Binary ? classification : regression
+    paras.Noised        = 1;  % Noised ? noised sample : clean sample
+    paras.Binary        = 0;  % Binary ? classification : regression
 
     % Parameters for dataGeneratorHelper
     % dimensional parameters that need to consider memory
-    paras.NumMolecule   = 32;             % big affect on running time
+    paras.NumMolecule   = 32;             % big effect on running time
     paras.NumFrame      = 20;             % generate NumFrame each time
     paras.DimFrame      = [64, 64, 64];   % row-column-(depth); yx(z)
     paras.UpSampling    = [8,  8,  4];
