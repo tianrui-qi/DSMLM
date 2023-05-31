@@ -1,5 +1,5 @@
 # DL-SMLFM
-This branch has been achieved and is no longer updated; we implemented the data generation and networks by MATLAB in this branch and have switched all the code to Python.
+This branch has been achieved and is no longer updated; we implemented the data generation and networks by MATLAB in this branch and have switched all the code to Python. Note that this documentation is only for this achieved MATLAB code. We may change the logic of data generation, file saving, and architecture of networks in main or other branches. 
 
 ## [setParas.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/setParas.m) 
 
