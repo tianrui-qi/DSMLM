@@ -27,6 +27,14 @@ after setup parameters in [setParas.m](https://github.com/tianrui-qi/DL-SMLFM/bl
 
 - Due to limited memory, we will not generate `paras.NumSample` at the same time. Instead, we will keep calling [dataGeneratorHelper.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/dataGeneratorHelper.m) in the while loop until we get enough amount of data where each time we generate `paras.NumFrame` amount of data. 
 
+## [dataGeneratorHelper.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/dataGeneratorHelper.m)
+
+- This file is the most important file that the define the logic / distribution of the samples and labels we generate. We may change the logic of samples and labels generation in other branches. 
+
+- By running this file, we will generate `paras.NumFrame` number of samples and labels pair. Note that we will first generate `paras.NumMolecular` number of molecular where each follows gaussian distribution and has random mu and variance (not covariance). Then, we generate each sample by random pick part of molecular and sum them up. Thus, although we generate `paras.NumFrame` number of data, they share same molecular set. 
+
+- It's better to set a larger `paras.NumMolecular`, i.e., 256, if you want to generate `paras.NumFrame` number of data that share same molecular list, i.e., simulate the STORM since all the frames in STORM also share same molecular list. However, this may cost lot's of memory, need longer running time, and the samples we generate are not generalize enought for network training since they all share the same molecular list. During training, we may set a small `paras.NumMolecular`, i.e., 16 or 32, and small `paras.NumFrame`, i.e., 20 or 100, and calling this file multiple time. 
+
 ## [dataLoader.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/dataLoader.m)
 
 - This is a standard datastore for network training in MATLAB. Please check MATLAB documentation for more detail. 
