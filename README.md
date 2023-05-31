@@ -11,4 +11,4 @@ This branch has been achieved and is no longer updated; we implemented the data 
 	- This is a standard datastore for network training in MATLAB. Please check MATLAB documentation for more detail. 
 	- In this file, we generate a training datastore and validation datastore. More specifically, we read files from index 1 (`1.mat`) to `paras.NumTrain` as training data and `paras.NumTrain`+1 to `paras.NumSample` as validation data. 
 	- Note that we will not perform dictionary/file checking in this function, so please generate enough data by calling the `dataGenerator` function in the previous file before calling this function.
-- `netLoader.m`: This file will first check if we have a valid checkpoint file to load by checking `paras.CheckpointDir` and `paras.Checkpoint`. If not, it will init a new network we choose: `cnn.m`, `unet.m`, or `cnnFocal`.
+- `netLoader.m`: This file will first check if we have a valid checkpoint file to load by checking `paras.CheckpointDir` and `paras.Checkpoint`. If not, it will init a new network we choose: [cnn.m](https://github.com/tianrui-qi/DL-SMLFM/blob/3329956e9a1f08b2940c3de1007bd1e2c00f9efa/cnn.m), `unet.m`, or `cnnFocal`.
