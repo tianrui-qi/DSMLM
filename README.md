@@ -31,7 +31,7 @@ after setup parameters in [setParas.m](https://github.com/tianrui-qi/DL-SMLFM/bl
 
 - In this file, we generate a training datastore and validation datastore. More specifically, we read files from index 1 (`1.mat`) to `paras.NumTrain` as training data and `paras.NumTrain+1` to `paras.NumSample` as validation data. 
 
-- Note that we will not perform dictionary/file checking in this function, so please generate enough data by calling the [dataGenerator](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/dataGenerator.m) function in the previous file before calling this function.
+- Note that we will not perform dictionary or file checking in this function, so please generate enough data by calling the [dataGenerator](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/dataGenerator.m) function in the previous file before calling this function.
 
 ### [netLoader.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/netLoader.m)
 
