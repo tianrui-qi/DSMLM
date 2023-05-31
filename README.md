@@ -7,11 +7,11 @@ This file contains parameters to control all other files (except the train optio
 ```matlab
 paras = setParas;
 ``` 
-at the beginning to load parameters they will use so that we do not need to run this file separately before running other files. Make sure to setup this file properly before run other file.
+at the beginning to load parameters they will use so that we do not need to run this file separately before running other files. Make sure to set up this file properly before running other files.
 
 ## [trainer.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/trainer.m)
 
-This is the main file that contain all the pipeline: generate data by [dataGenerator.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/dataGenerator.m), load data by [dataLoader.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/dataLoader.m), load network by [netLoader.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/netLoader.m), and then start to train. Thus, to train a network, direct run 
+This is the main file that contains all the pipeline: generate data by [dataGenerator.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/dataGenerator.m), load data by [dataLoader.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/dataLoader.m), load network by [netLoader.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/netLoader.m), and then start to train. Thus, to train a network, direct run 
 ```matlab
 trainer
 ```
@@ -35,12 +35,12 @@ after setup parameters in [setParas.m](https://github.com/tianrui-qi/DL-SMLFM/bl
 
 ## [netLoader.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/netLoader.m)
 
-This file will first check if we have a valid checkpoint file to load by checking `paras.CheckpointDir` and `paras.Checkpoint`. If not, it will init a new network we choose( [cnn.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/cnn.m), [unet.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/unet.m), or [cnnFocal](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/cnnFocal.m)) that control by `paras.WhichNet`. For architecture of each network, please check each network's file or run the file in MATLAB to add them in workspace first and then use [Deep Network Designer](https://www.mathworks.com/help/deeplearning/gs/get-started-with-deep-network-designer.html) to check them. 
+This file will first check if we have a valid checkpoint file to load by checking `paras.CheckpointDir` and `paras.Checkpoint`. If not, it will init a new network we choose( [cnn.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/cnn.m), [unet.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/unet.m), or [cnnFocal](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/cnnFocal.m)) that control by `paras.WhichNet`. For the architecture of each network, please check each network's file or run the file in MATLAB to add them in the workspace first and then use [Deep Network Designer](https://www.mathworks.com/help/deeplearning/gs/get-started-with-deep-network-designer.html) to check them. 
 
 ## [inferencer.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/inferencer.m), [gmmFit.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/gmmFit.m)
 
-These two files are not well define, i.e., they are still temp script and have not write into function. The parameters in these two files need to be setup manually and not control by [setParas.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/setParas.m). 
+These two files are not well defined, i.e., they are still temp scripts and have not been written into function. The parameters in these two files need to be set up manually and not controlled by [setParas.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/setParas.m). 
 
-- [inferencer.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/inferencer.m) will cut a `512 512 64` raw sample into 121 number of `64 64 64` samples and predict each of them by network store in checkpoint. 
+- [inferencer.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/inferencer.m) will cut a `512 512 64` raw sample into 121 number of `64 64 64` samples and predict each of them by network store in the checkpoint. 
 
-- [gmmFit.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/gmmFit.m) implements a traditional method for Gaussian fitting where we transfer the pixel map to point cloud space first and then fit the mu and cov of each Gaussian by Gaussian Mixture Model (GMM). This method is not functioning properly and still have large error due to the transferring error from pixel map to point cloud space. 
+- [gmmFit.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/gmmFit.m) implements a traditional method for Gaussian fitting where we transfer the pixel map to point cloud space first and then fit the mu and covariance of each Gaussian by Gaussian Mixture Model (GMM). This method is not functioning correctly and still has a large error due to the transferring error from pixel map to point cloud space. 
