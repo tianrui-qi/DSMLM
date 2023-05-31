@@ -5,10 +5,11 @@ raw/
 generated/
 dataGeneratorHelper/
 
-# checkpoints
-checkpoints/
-
-# compile file
+# MATLAB compile file
 *.asv
+
+# Pycharm compile file
 .idea/
-.vscode
+
+# VSCode compile file
+.vscode/
