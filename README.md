@@ -7,7 +7,7 @@ This file contains parameters to control all other files (except the train optio
 ```matlab
 paras = setParas;
 ``` 
-at the beginning to load parameters they will use so that we do not need to run this file separately before running other files.  
+at the beginning to load parameters they will use so that we do not need to run this file separately before running other files. Make sure to setup this file properly before run other file.
 
 ### [trainer.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/trainer.m)
 
