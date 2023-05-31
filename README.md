@@ -41,6 +41,6 @@ This file will first check if we have a valid checkpoint file to load by checkin
 
 These two files are not well define, i.e., they are still temp script and have not write into function. The parameters in these two files need to be setup manually and not control by [setParas.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/setParas.m). 
 
-- [inferencer.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/inferencer.m) will cut a `512 512 64` raw sample into 121 number of `64 64 64` samples and predict each of them by load checkpoint. 
+- [inferencer.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/inferencer.m) will cut a `512 512 64` raw sample into 121 number of `64 64 64` samples and predict each of them by network store in checkpoint. 
 
 - [gmmFit.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/gmmFit.m) implements a traditional method for Gaussian fitting where we transfer the pixel map to point cloud space first and then fit the mu and cov of each Gaussian by Gaussian Mixture Model (GMM). This method is not functioning properly and still have large error due to the transferring error from pixel map to point cloud space. 
