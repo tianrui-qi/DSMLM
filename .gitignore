@@ -1,7 +1,7 @@
-# raw data
+# raw data we want to predict
 raw/
 
-# generate data
+# generated data by dataGenerator and dataGeneratorHelper
 generated/
 dataGeneratorHelper/
 
