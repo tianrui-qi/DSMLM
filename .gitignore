@@ -1,14 +1,15 @@
-# raw data
+# raw data we want to predict
 raw/
 
-# generate data
+# generated data by dataGenerator.m and dataGeneratorHelper.m
+# in branch matlab-achieve
 generated/
 dataGeneratorHelper/
 
-# checkpoints
-checkpoints/
-
 # compile file
+## MATLAB
 *.asv
+## Pycharm
 .idea/
-.vscode
+## VSCode
+.vscode/
