@@ -5,7 +5,7 @@ This branch has been achieved and is no longer updated; we implemented the data 
 
 This file contains parameters to control all other files (except the train option in [trainer.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/trainer.m)). All other functions will call 
 ```matlab
-paras = setParas();
+paras = setParas;
 ``` 
 at the beginning to load parameters they will use so that we do not need to run this file separately before running other files.  
 
