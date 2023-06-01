@@ -7,9 +7,7 @@ generated/
 dataGeneratorHelper/
 
 # compile file
-## MATLAB
 *.asv
-## Pycharm
+__pycache__/
 .idea/
-## VSCode
 .vscode/
