@@ -3,15 +3,15 @@ class Config:
         self.num_sample = 10000
         self.num_train  = 7000
         # dimensional config that need to consider memory
-        self.dim_frame  = [64, 64, 64]  # row-column-(depth)
-        self.up_sample  = [8, 8, 4]
+        self.dim_frame  = [64, 64, 64]  # [C, H, W]
+        self.up_sample  = [4, 8, 8]
         # config for adjust distribution of molecular
-        self.mol_range  = [0, 16]  # min, max number of molecular per frame
-        self.std_range  = [0.5, 3]  # adjust variance of molecular
-        self.lum_range  = [1/512, 1]
+        self.mol_range  = [0, 16]    # min, max number of molecular per frame
+        self.std_range  = [0.5, 3]   # adjust variance of molecular
+        self.lum_range  = [1/32, 1]  # since input of net is normalized
         # config for reducing resolution and adding noise
-        self.bitdepth   = 16
+        self.bitdepth   = 12
         self.qe         = 0.82
         self.sen        = 5.88
-        self.noise_mu   = 1/512
-        self.noise_var  = 1/128
+        self.noise_mu   = 32
+        self.noise_var  = 32

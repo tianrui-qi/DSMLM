@@ -1,6 +1,7 @@
-import numpy as np
 import torch
 from torch.utils.data import Dataset
+import numpy as np
+from scipy.ndimage import zoom
 from scipy.stats import multivariate_normal
 from typing import Tuple  # for type annotations only
 
@@ -24,9 +25,10 @@ class SimDataset(Dataset):
 
     def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor]:
         mean_set, var_set, lum_set = self.generateParas()
-        frame = self.generateFrame(mean_set, var_set, lum_set)
-        frame = self.generateNoise(frame)
-        label = self.generateLabel(mean_set, lum_set)
+        frame = self.generateFrame(mean_set, var_set, lum_set)  # [dim_frame]
+        frame = self.generateNoise(frame)                       # [dim_frame]
+        frame = self.generateSclup(frame)                       # [dim_frame_up]
+        label = self.generateLabel(mean_set, lum_set)           # [dim_frame_up]
 
         return torch.from_numpy(frame), torch.from_numpy(label)
 
@@ -64,7 +66,7 @@ class SimDataset(Dataset):
             lum  = lum_set[m]
 
             # take a slice around the mean where the radia is 5 * std
-            ra = np.ceil(2 * np.sqrt(var))  # radius, [D]
+            ra = np.ceil(5 * np.sqrt(var))  # radius, [D]
             lo = np.floor(np.maximum(np.round(mean) - ra, np.zeros(D)))
             up = np.ceil(np.minimum(np.round(mean) + ra, self.dim_frame - 1))
 
@@ -83,33 +85,30 @@ class SimDataset(Dataset):
             # put the slice back to whole frame
             frame[tuple(coord.astype(int).T)] += pdf
 
-        # prevent lum exceeding 1 or below 0
-        frame[frame > 1] = 1 
-        frame[frame < 0] = 0 
-
-        return frame
+        return np.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
     
     def generateNoise(self, frame) -> np.ndarray:
         frame *= 2**self.bitdepth - 1  # clean    -> gray
         frame /= self.sen              # gray     -> electons
         frame /= self.qe               # electons -> photons
-        # add shot noise / poisson noise
+        # shot noise / poisson noise
         frame = np.random.poisson(frame, size=frame.shape).astype(np.float64)
         frame *= self.qe               # photons  -> electons
         frame *= self.sen              # electons -> gray
+        # dark noise / gaussian noise
+        frame += np.random.normal(
+            self.noise_mu  * np.random.rand(1), 
+            self.noise_var * np.random.rand(1), frame.shape)
         # reducing resolution casue by limit bitdepth when store data
         frame  = np.round(frame)
         frame /= 2**self.bitdepth - 1  # gray     -> noised
-        
-        # manually add noise to improve robustness of network
-        frame += np.random.normal(
-            self.noise_mu, self.noise_var, frame.shape) * np.random.rand(1)
 
-        # prevent lum exceeding 1 or below 0
-        frame[frame > 1] = 1 
-        frame[frame < 0] = 0 
+        return np.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
-        return frame
+    def generateSclup(self, frame) -> np.ndarray:
+        frame = zoom(frame, self.up_sample, order=2)
+
+        return np.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
     def generateLabel(self, mean_set, lum_set) -> np.ndarray:
         dim_frame_up = self.dim_frame * self.up_sample
