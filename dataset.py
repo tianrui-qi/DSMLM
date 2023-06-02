@@ -75,7 +75,8 @@ class SimDataset(Dataset):
             coord     = np.column_stack([c.ravel() for c in grid_cell])
 
             # compute the probability density for each point/pixel in slice
-            pdf = multivariate_normal.pdf(coord, mean=mean, cov=np.diag(var))
+            pdf = multivariate_normal.pdf(
+                coord, mean=mean, cov=np.diag(var)) # type: ignore
 
             # set the luminate
             pdf = pdf * lum / np.amax(pdf)
