@@ -33,3 +33,12 @@ class UNet2D(nn.Module):
         dec2 = torch.cat((enc1, enc2), dim=1)
         dec2 = self.decoder1(dec2)
         return self.output(dec2)
+
+
+class DeepSTORM(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.mse = nn.MSELoss()
+        
+    def forward(self, frame, label):
+        return self.mse(frame, label) + torch.norm(label, p=1)
