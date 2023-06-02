@@ -13,5 +13,5 @@ class Config:
         self.bitdepth   = 16
         self.qe         = 0.82
         self.sen        = 5.88
-        self.noise_mu   = self.lum_range[0]
+        self.noise_mu   = 1/512
         self.noise_var  = 1/128
