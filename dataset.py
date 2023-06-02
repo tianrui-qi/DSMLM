@@ -7,7 +7,6 @@ from typing import Tuple  # for type annotations only
 class SimDataset(Dataset):
     def __init__(self, config, num):
         super(SimDataset, self).__init__()
-
         self.num        = int(num)
         # dimensional config that need to consider memory
         self.dim_frame  = np.array(config.dim_frame).astype(int)     # [D]
