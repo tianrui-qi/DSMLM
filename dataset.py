@@ -6,22 +6,22 @@ from scipy.stats import multivariate_normal
 from typing import Tuple  # for type annotations only
 
 class SimDataset(Dataset):
-    def __init__(self, config, num):
+    def __init__(self, config, num) -> None:
         super(SimDataset, self).__init__()
-        self.num        = int(num)
+        self.num        = num
         # dimensional config that need to consider memory
-        self.dim_frame  = np.array(config.dim_frame).astype(int)     # [D]
-        self.up_sample  = np.array(config.up_sample).astype(int)     # [D]
+        self.dim_frame  = np.array(config.dim_frame)    # [D]
+        self.up_sample  = np.array(config.up_sample)    # [D]
         # config for adjust distribution of molecular
-        self.mol_range  = np.array(config.mol_range).astype(int)     # [2]
-        self.std_range  = np.array(config.std_range).astype(float)   # [2]
-        self.lum_range  = np.array(config.lum_range).astype(float)   # [2]
+        self.mol_range  = np.array(config.mol_range)    # [2]
+        self.std_range  = np.array(config.std_range)    # [2]
+        self.lum_range  = np.array(config.lum_range)    # [2]
         # config for adding camera noise
-        self.bitdepth   = int(config.bitdepth)
-        self.qe         = float(config.qe)
-        self.sen        = float(config.sen)
-        self.noise_mu   = float(config.noise_mu)
-        self.noise_var  = float(config.noise_var)
+        self.bitdepth   = config.bitdepth
+        self.qe         = config.qe
+        self.sen        = config.sen
+        self.noise_mu   = config.noise_mu
+        self.noise_var  = config.noise_var
 
     def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor]:
         mean_set, var_set, lum_set = self.generateParas()

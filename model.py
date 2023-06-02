@@ -35,7 +35,7 @@ class UNet2D(nn.Module):
         return self.output(dec2)
 
 
-class DeepSTORM(torch.nn.Module):
+class DeepSTORMLoss(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.mse = nn.MSELoss()
