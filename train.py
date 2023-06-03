@@ -18,14 +18,12 @@ class EarlyStopping:
 
     def __call__(self, val_loss):
         if self.best_loss is None:
-            print(f'EarlyStopping: valid loss ({self.best_loss:.6f} --> {val_loss:.6f})')
             self.best_loss = val_loss
         elif val_loss >= self.best_loss:
             self.counter += 1
             print(f'EarlyStopping: counter {self.counter} / {self.patience}')
             if self.counter >= self.patience: self.early_stop = True
         else:
-            print(f'EarlyStopping: valid loss ({self.best_loss:.6f} --> {val_loss:.6f})')
             self.best_loss = val_loss
             self.counter = 0
 
@@ -37,9 +35,9 @@ if __name__ == "__main__":
 
     # dataset
     trainDataloader = DataLoader(
-        SimDataset(config, config.num_train), batch_size=1, num_workers=1)
+        SimDataset(config, config.num_train), batch_size=1)
     valitDataloader = DataLoader(
-        SimDataset(config, config.num_valid), batch_size=1, num_workers=1)
+        SimDataset(config, config.num_valid), batch_size=1)
 
     net  = UNet2D()
     criterion = DeepSTORMLoss()

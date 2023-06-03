@@ -41,4 +41,4 @@ class DeepSTORMLoss(torch.nn.Module):
         self.mse = nn.MSELoss()
         
     def forward(self, frame, label):
-        return self.mse(frame, label) + torch.norm(label, p=1)
+        return self.mse(frame, label) + torch.norm(frame, p=1)

@@ -1,9 +1,9 @@
 class Config:
     def __init__(self):
-        self.num_train = 7000
-        self.num_valid = 3000
+        self.num_train = 700
+        self.num_valid = 300
         self.epoch     = 100
-        self.lr        = 0.01  # initial lr
+        self.lr        = 0.0001  # initial lr
         self.gamma     = 0.95   # for exponential lr scheduler
         self.patience  = 5
         self.checkpoint_path = "checkpoints"
