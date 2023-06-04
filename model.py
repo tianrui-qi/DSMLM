@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+
 class UNet2D(nn.Module):
     def __init__(self):
         super(UNet2D, self).__init__()

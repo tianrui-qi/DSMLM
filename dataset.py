@@ -5,6 +5,7 @@ from scipy.ndimage import zoom
 from scipy.stats import multivariate_normal
 from typing import Tuple  # for type annotations only
 
+
 class SimDataset(Dataset):
     def __init__(self, config, num) -> None:
         super(SimDataset, self).__init__()

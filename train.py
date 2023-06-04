@@ -10,7 +10,7 @@ from model import UNet2D, DeepSTORMLoss
 
 
 class EarlyStopping:
-    def __init__(self, patience=5):
+    def __init__(self, patience):
         self.patience   = patience
         self.counter    = 0
         self.best_loss  = None
@@ -35,20 +35,26 @@ if __name__ == "__main__":
 
     # dataset
     trainDataloader = DataLoader(
-        SimDataset(config, config.num_train), batch_size=1)
+        SimDataset(config, config.num_train), 
+        batch_size=config.batch_size, 
+        num_workers=config.batch_size, 
+        pin_memory=True
+        )
     valitDataloader = DataLoader(
-        SimDataset(config, config.num_valid), batch_size=1)
+        SimDataset(config, config.num_valid), 
+        batch_size=config.batch_size, 
+        num_workers=config.batch_size, 
+        pin_memory=True
+        )
 
-    net  = UNet2D()
-    criterion = DeepSTORMLoss()
+    # model and other helper for training
+    net  = UNet2D().to(device)
+    criterion = DeepSTORMLoss().to(device)
     optimizer = optim.Adam(net.parameters(), lr=config.lr)
     scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=config.gamma)
     stopper   = EarlyStopping(config.patience)
-    
-    # put net and criterion in GPU
-    net = net.to(device)
-    criterion = criterion .to(device)
 
+    # record training
     writer = SummaryWriter()
 
     for epoch in range(config.epoch):
@@ -63,7 +69,7 @@ if __name__ == "__main__":
             # loss
             loss = criterion(outputs, labels)
             writer.add_scalars(
-                'Loss', {'train': loss.item()}, epoch * len(trainDataloader) + i)
+                'Loss', {'train': loss.item()}, epoch*len(trainDataloader)+i)
             # backward
             optimizer.zero_grad()
             loss.backward()
@@ -72,17 +78,19 @@ if __name__ == "__main__":
         # validation
         net.eval()
         valid_epoch_loss = []
-        for i, (frames, labels) in enumerate(valitDataloader):
-            # put frames and labels in GPU
-            frames = frames.to(torch.float32).to(device)
-            labels = labels.to(torch.float32).to(device)
-            # forward
-            outputs = net(frames)
-            # loss
-            loss = criterion(outputs, labels)
-            valid_epoch_loss.append(loss.item())
+        with torch.no_grad():
+            for i, (frames, labels) in enumerate(valitDataloader):
+                # put frames and labels in GPU
+                frames = frames.to(torch.float32).to(device)
+                labels = labels.to(torch.float32).to(device)
+                # forward
+                outputs = net(frames)
+                # loss
+                loss = criterion(outputs, labels)
+                valid_epoch_loss.append(loss.item())
         loss = torch.mean(torch.as_tensor(valid_epoch_loss))
-        writer.add_scalars('Loss', {'valid': loss}, len(trainDataloader))
+        writer.add_scalars(
+            'Loss', {'valid': loss}, (epoch+1)*len(trainDataloader))
 
         # early stopping
         stopper(loss)
@@ -93,8 +101,9 @@ if __name__ == "__main__":
 
         # save checkpoint
         torch.save({
-            'epoch':epoch,
-            'net':net.state_dict(),
-            'optimizer':optimizer.state_dict(),
-            'scheduler':scheduler.state_dict()
+            'config': config,
+            'epoch': epoch,
+            'net': net.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'scheduler': scheduler.state_dict()
             }, config.checkpoint_path)
