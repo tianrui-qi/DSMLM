@@ -2,7 +2,7 @@ class Config:
     def __init__(self):
         self.num_train  = 700
         self.num_valid  = 300
-        self.epoch      = 100
+        self.max_epoch  = 100
         self.batch_size = 2
         self.lr         = 0.0001  # initial lr
         self.gamma      = 0.95   # for exponential lr scheduler
