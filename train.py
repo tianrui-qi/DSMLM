@@ -4,6 +4,10 @@ from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from config import Config
+from dataset import SimDataset
+from model import UNet2D, DeepSTORMLoss
+
 
 class Train:
     def __init__(
@@ -22,7 +26,7 @@ class Train:
             'cuda' if torch.cuda.is_available() else 'cpu')
         
         # index
-        self.epoch      = 0
+        self.epoch      = 1  # epoch index start from 1
         self.counter    = 0                             # for early stopping
         self.valid_loss = torch.tensor(float("inf"))    # for early stopping
         self.best_loss  = torch.tensor(float("inf"))    # for early stopping
@@ -51,8 +55,9 @@ class Train:
             )
 
     def train(self, load=True):
+        # epoch index start from 1
         if load: self.load_checkpoint()
-        while self.stop is False and self.epoch < self.max_epoch:
+        while self.stop is False and self.epoch <= self.max_epoch:
             self.train_epoch()
             self.valid_epoch()
             self.early_stop()
@@ -76,7 +81,7 @@ class Train:
             # record
             self.writer.add_scalars(
                 'Loss', {'train': loss.item()}, 
-                self.epoch*len(self.trainloader)+i)
+                (self.epoch-1)*len(self.trainloader)+i)
         # update learning rate
         self.scheduler.step()  
     
@@ -97,7 +102,7 @@ class Train:
         self.valid_loss = torch.mean(torch.as_tensor(self.valid_loss))
         self.writer.add_scalars(
             'Loss', {'valid': self.valid_loss}, 
-            (self.epoch+1)*len(self.trainloader))
+            self.epoch*len(self.trainloader))
     
     @torch.no_grad()
     def early_stop(self):
@@ -112,7 +117,7 @@ class Train:
     @torch.no_grad()
     def save_checkpoint(self):
         torch.save({
-            'epoch': self.epoch,
+            'epoch': self.epoch,  # epoch index start from 1
             'net': self.net.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'scheduler': self.scheduler.state_dict()
@@ -121,7 +126,24 @@ class Train:
     @torch.no_grad()
     def load_checkpoint(self):
         checkpoint = torch.load(self.checkpoint_path)
-        self.epoch = checkpoint['epoch'] + 1
+        self.epoch = checkpoint['epoch']+1  # start train from next epoch index
         self.net.load_state_dict(checkpoint['net'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.scheduler.load_state_dict(checkpoint['scheduler'])
+
+
+if __name__ == "__main__":
+    # configurations
+    config = Config()
+    
+    # dataset
+    trainset = SimDataset(config, config.num_train)
+    validset = SimDataset(config, config.num_valid)
+    
+    # model and other helper for training
+    net       = UNet2D()
+    criterion = DeepSTORMLoss()
+    
+    # train
+    trainer = Train(config, net, criterion, trainset, validset)
+    trainer.train()
