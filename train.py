@@ -20,12 +20,13 @@ class Train:
         self.checkpoint_path = config.checkpoint_path
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
+        
         # index
         self.epoch      = 0
-        self.counter    = 0             # for early stopping
-        self.valid_loss = float("inf")  # for early stopping
-        self.best_loss  = float("inf")  # for early stopping
-        self.stop       = False         # for early stopping
+        self.counter    = 0                             # for early stopping
+        self.valid_loss = torch.tensor(float("inf"))    # for early stopping
+        self.best_loss  = torch.tensor(float("inf"))    # for early stopping
+        self.stop       = False                         # for early stopping
 
         # dataloader
         self.trainloader = self.dataloader(trainset)
@@ -50,11 +51,11 @@ class Train:
             )
 
     def train(self, load=True):
-        if load: self.load_checkpoint
-        while not self.stop and self.epoch < self.max_epoch:
-            self.train_epoch
-            self.valid_epoch
-            self.early_stop
+        if load: self.load_checkpoint()
+        while self.stop is False and self.epoch < self.max_epoch:
+            self.train_epoch()
+            self.valid_epoch()
+            self.early_stop()
             self.epoch+=1
 
     def train_epoch(self):
@@ -102,7 +103,6 @@ class Train:
     def early_stop(self):
         if self.valid_loss >= self.best_loss:
             self.counter += 1
-            print(f'EarlyStopping: counter {self.counter} / {self.patience}')
             if self.counter >= self.patience: self.stop = True
         else:
             self.best_loss = self.valid_loss
@@ -121,7 +121,7 @@ class Train:
     @torch.no_grad()
     def load_checkpoint(self):
         checkpoint = torch.load(self.checkpoint_path)
-        self.epoch = checkpoint['epoch']
+        self.epoch = checkpoint['epoch'] + 1
         self.net.load_state_dict(checkpoint['net'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.scheduler.load_state_dict(checkpoint['scheduler'])

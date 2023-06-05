@@ -11,10 +11,11 @@ if __name__ == "__main__":
     # dataset
     trainset = SimDataset(config, config.num_train)
     validset = SimDataset(config, config.num_valid)
-
+    
     # model and other helper for training
     net  = UNet2D()
     criterion = DeepSTORMLoss()
-
+    
+    # train
     trainer = Train(config, net, criterion, trainset, validset)
     trainer.train()

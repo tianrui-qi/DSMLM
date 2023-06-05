@@ -6,7 +6,7 @@ class Config:
         self.batch_size = 2
         self.lr         = 0.0001  # initial lr
         self.gamma      = 0.95   # for exponential lr scheduler
-        self.patience   = 5
+        self.patience   = 10
         self.checkpoint_path = "checkpoints.pt"
 
         # dimensional config that need to consider memory
