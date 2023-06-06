@@ -13,6 +13,7 @@ class Config:
         # ========================== config for model ==========================
 
         self.gauss = True  # convolved with Gaussian kernel or not in loss
+        self.l1    = False
 
         # ========================= config for dataset =========================
 

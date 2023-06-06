@@ -41,11 +41,18 @@ class DeepSTORMLoss(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.gauss = config.gauss
+        self.l1    = config.l1
 
         self.mse = nn.MSELoss()
         self.filter = torchvision.transforms.GaussianBlur(5, sigma=(2, 2))
         
     def forward(self, frame, label):
         if self.gauss:
-            return self.mse(self.filter(frame), self.filter(label)) + torch.norm(frame, p=1)
-        return self.mse(frame, label) + torch.norm(frame, p=1)
+            mse_loss = self.mse(self.filter(frame), self.filter(label))
+        else:
+            mse_loss = self.mse(frame, label)
+
+        if self.l1:
+            return mse_loss + torch.norm(frame, p=1)
+        else:
+            return mse_loss

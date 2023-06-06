@@ -9,17 +9,18 @@ from model import UNet2D
 
 # configuration
 config = Config()
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cpu')
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # load model
 net    = UNet2D().to(device)
-net.load_state_dict(torch.load(config.checkpoint_path)['net'])
+net.load_state_dict(torch.load(config.checkpoint_path, map_location=device)['net'])
 
 
 validloader = DataLoader(
             SimDataset(config, 2),
             batch_size=config.batch_size, 
-            num_workers=config.batch_size, 
-            pin_memory=True
+            #num_workers=config.batch_size, 
+            #pin_memory=True
             )
 
 net.eval()
