@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torchvision
 
 
 class UNet2D(nn.Module):
@@ -37,9 +38,14 @@ class UNet2D(nn.Module):
 
 
 class DeepSTORMLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
+        self.gauss = config.gauss
+
         self.mse = nn.MSELoss()
+        self.filter = torchvision.transforms.GaussianBlur(5, sigma=(2, 2))
         
     def forward(self, frame, label):
+        if self.gauss:
+            return self.mse(self.filter(frame), self.filter(label)) + torch.norm(frame, p=1)
         return self.mse(frame, label) + torch.norm(frame, p=1)

@@ -14,13 +14,12 @@ class Train:
             self, config, net, criterion, trainset, validset
             ) -> None:
         # configurations
-        self.num_train  = config.num_train
-        self.num_valid  = config.num_valid
         self.max_epoch  = config.max_epoch
         self.batch_size = config.batch_size
         self.lr         = config.lr
         self.gamma      = config.gamma
         self.patience   = config.patience
+        self.load       = config.load
         self.checkpoint_path = config.checkpoint_path
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
@@ -54,9 +53,9 @@ class Train:
             pin_memory=True
             )
 
-    def train(self, load=True):
+    def train(self):
         # epoch index start from 1
-        if load: self.load_checkpoint()
+        if self.load: self.load_checkpoint()
         while self.stop is False and self.epoch <= self.max_epoch:
             self.train_epoch()
             self.valid_epoch()
@@ -142,7 +141,7 @@ if __name__ == "__main__":
     
     # model and other helper for training
     net       = UNet2D()
-    criterion = DeepSTORMLoss()
+    criterion = DeepSTORMLoss(config)
     
     # train
     trainer = Train(config, net, criterion, trainset, validset)

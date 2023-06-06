@@ -3,7 +3,9 @@ from torch.utils.data import Dataset
 import numpy as np
 from scipy.ndimage import zoom
 from scipy.stats import multivariate_normal
-from typing import Tuple  # for type annotations only
+from typing import Tuple    # for type annotations only
+from torch import Tensor    # for type annotations only
+from numpy import ndarray   # for type annotations only
 
 
 class SimDataset(Dataset):
@@ -24,7 +26,7 @@ class SimDataset(Dataset):
         self.noise_mu   = config.noise_mu
         self.noise_var  = config.noise_var
 
-    def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, idx) -> Tuple[Tensor, Tensor]:
         mean_set, var_set, lum_set = self.generateParas()
         frame = self.generateFrame(mean_set, var_set, lum_set)  # [dim_frame]
         frame = self.generateNoise(frame)                       # [dim_frame]
@@ -36,9 +38,9 @@ class SimDataset(Dataset):
     def __len__(self) -> int:
         return self.num
     
-    # Help function for __getitem__
+    # ===================== help functions for __getitem__ =====================
 
-    def generateParas(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def generateParas(self) -> Tuple[ndarray, ndarray, ndarray]:
         D = len(self.dim_frame)  # number of dimension, i.e., 2D/3D frame
         N = np.random.randint(self.mol_range[0], self.mol_range[1] + 1)
 
@@ -55,7 +57,7 @@ class SimDataset(Dataset):
 
         return mean_set, var_set, lum_set
 
-    def generateFrame(self, mean_set, var_set, lum_set) -> np.ndarray:
+    def generateFrame(self, mean_set, var_set, lum_set) -> ndarray:
         D = len(self.dim_frame)  # number of dimension, i.e., 2D/3D frame
         N = len(lum_set)         # number of molecular in this frame
 
@@ -88,12 +90,12 @@ class SimDataset(Dataset):
 
         return np.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
     
-    def generateNoise(self, frame) -> np.ndarray:
+    def generateNoise(self, frame) -> ndarray:
         frame *= 2**self.bitdepth - 1  # clean    -> gray
         frame /= self.sen              # gray     -> electons
         frame /= self.qe               # electons -> photons
         # shot noise / poisson noise
-        frame = np.random.poisson(frame, size=frame.shape).astype(np.float64)
+        frame  = np.random.poisson(frame, size=frame.shape).astype(np.float64)
         frame *= self.qe               # photons  -> electons
         frame *= self.sen              # electons -> gray
         # dark noise / gaussian noise
@@ -106,12 +108,12 @@ class SimDataset(Dataset):
 
         return np.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
-    def generateSclup(self, frame) -> np.ndarray:
+    def generateSclup(self, frame) -> ndarray:
         frame = zoom(frame, self.up_sample, order=2)
 
         return np.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
-    def generateLabel(self, mean_set, lum_set) -> np.ndarray:
+    def generateLabel(self, mean_set, lum_set) -> ndarray:
         dim_frame_up = self.dim_frame * self.up_sample
         mean_set_up  = mean_set * self.up_sample.reshape(-1, 1)
         
@@ -119,3 +121,21 @@ class SimDataset(Dataset):
         label[tuple(np.round(mean_set_up).astype(int))] = lum_set
         
         return label
+
+
+if __name__ == "__main__":
+    from config import Config
+    from tifffile import imsave
+    import torchvision
+
+    config = Config()
+    dataset = SimDataset(config, 1)
+    frame, label = dataset[0]
+
+    imsave('frame.tif', np.array(frame*255, dtype=np.uint8))
+    imsave('label.tif', np.array(label*255, dtype=np.uint8))
+
+    filter = torchvision.transforms.GaussianBlur(5, sigma=(2, 2))
+    convolved = filter(label)
+    
+    imsave('filte.tif', np.array(convolved*511, dtype=np.uint8))
