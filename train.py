@@ -102,25 +102,26 @@ class Train:
         self.writer.add_scalars(
             'Loss', {'valid': self.valid_loss}, 
             self.epoch*len(self.trainloader))
-    
+
     @torch.no_grad()
     def early_stop(self):
+        self.save_checkpoint("{}-{}".format(self.checkpoint_path, self.epoch))
         if self.valid_loss >= self.best_loss:
             self.counter += 1
             if self.counter >= self.patience: self.stop = True
         else:
             self.best_loss = self.valid_loss
             self.counter = 0
-            self.save_checkpoint()
+            self.save_checkpoint(self.checkpoint_path)
 
     @torch.no_grad()
-    def save_checkpoint(self):
+    def save_checkpoint(self, path):
         torch.save({
             'epoch': self.epoch,  # epoch index start from 1
             'net': self.net.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'scheduler': self.scheduler.state_dict()
-            }, self.checkpoint_path)
+            }, path)
 
     @torch.no_grad()
     def load_checkpoint(self):
@@ -132,17 +133,20 @@ class Train:
 
 
 if __name__ == "__main__":
-    # configurations
-    config = Config()
-    
-    # dataset
-    trainset = SimDataset(config, config.num_train)
-    validset = SimDataset(config, config.num_valid)
-    
-    # model and other helper for training
-    net       = UNet2D(config)
-    criterion = DeepSTORMLoss(config)
-    
-    # train
-    trainer = Train(config, net, criterion, trainset, validset)
-    trainer.train()
+    for sigma in [1, 2, 3, 4, 5, 6]:
+        for size in [3, 5, 7, 9, 11]:
+            # configurations
+            config = Config()
+            config.filter_size  = size
+            config.filter_sigma = [sigma, sigma]
+            config.checkpoint_path = "checkpoints/{}-{}.pt".format(
+                config.filter_size, config.filter_sigma)
+            # dataset
+            trainset = SimDataset(config, config.num_train)
+            validset = SimDataset(config, config.num_valid)
+            # model and other helper for training
+            net       = UNet2D(config)
+            criterion = DeepSTORMLoss(config)
+            # train
+            trainer = Train(config, net, criterion, trainset, validset)
+            trainer.train()

@@ -13,7 +13,7 @@ device = torch.device('cpu')
 # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # load model
 net    = UNet2D(config).to(device)
-net.load_state_dict(torch.load(config.checkpoint_path, map_location=device)['net'])
+net.load_state_dict(torch.load("checkpoints/7-(5,5).pt", map_location=device)['net'])
 
 np.random.seed(0)
 validloader = DataLoader(
@@ -25,6 +25,9 @@ validloader = DataLoader(
 
 net.eval()
 for i, (frame, label) in enumerate(validloader):
+    import cv2
+    from tifffile import imsave
+
     # put frames and labels in GPU
     frame = frame.to(torch.float32).to(device)
     label = label.to(torch.float32).to(device)
@@ -35,26 +38,22 @@ for i, (frame, label) in enumerate(validloader):
     label = label.reshape(label.shape[1:])
     output = output.reshape(output.shape[1:])
 
-    import cv2
-    from tifffile import imsave
+    print(len(torch.nonzero(output)))
+    print(len(torch.nonzero(label)))
 
-    # change lum
-    frame = frame.numpy() * 255
-    label = label.numpy() * 255
-    output = output.detach().numpy()
-    # stack
-    frame = np.sum(frame, axis=0)
+    # stact, reszie
+    frame = np.sum(frame.numpy(), axis=0)
     frame = cv2.resize(frame, (256, 256), interpolation=cv2.INTER_NEAREST)
-    label = np.sum(label, axis=0)
-    output = np.sum(output, axis=0)
-    # normalize
-    frame *= 128 / np.amax(frame)
-    label *= 255 / np.amax(label)
-    output *= 255 / np.amax(output)
+    frame = frame * 255 / np.amax(frame)
+    label = np.sum(label.numpy(), axis=0)
+    label[label > 0] = 255
+    output = np.sum(output.detach().numpy(), axis=0)
+    output[output > 0] = 255
+    
     # save
-    imsave('frame.tif', frame.astype(np.uint8))
-    imsave('label.tif', label.astype(np.uint8))
-    imsave('output.tif', output.astype(np.uint8))
+    #imsave('frame.tif', frame.astype(np.uint8))
+    #imsave('label.tif', label.astype(np.uint8))
+    #imsave('output.tif', output.astype(np.uint8))
 
     # change color
     frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
@@ -67,6 +66,3 @@ for i, (frame, label) in enumerate(validloader):
     img_sum = np.clip(img_sum, 0, 255).astype(np.uint8)
     # save
     imsave('img_sum.tif', img_sum.astype(np.uint8))
-
-    print(len(np.nonzero(output)[0]))
-    print(len(np.nonzero(label)[0]))
