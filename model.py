@@ -51,14 +51,25 @@ class UNet2D(nn.Module):
 class DeepSTORMLoss(nn.Module):
     def __init__(self, config):
         super().__init__()
+
         # for MSE loss between prediction and label
         self.mse    = nn.MSELoss()
         self.filter = torchvision.transforms.GaussianBlur(
             config.filter_size, sigma=config.filter_sigma)
+        self.pad_size = (config.filter_size, config.filter_size, 
+                         config.filter_size, config.filter_size)
+        
         # for L1 norm of prediction
-        self.l1_coeff = config.self.l1_coeff
+        self.l1_coeff = config.l1_coeff
         
     def forward(self, frame, label):
-        mse_loss = self.mse(self.filter(frame), self.filter(label))
+        # MSE loss between prediction and label
+        mse_loss = self.mse(
+            self.filter(nn.functional.pad(frame, self.pad_size)), 
+            self.filter(nn.functional.pad(label, self.pad_size))
+            )
+        
+        # L1 norm of prediction
         l1_loss = self.l1_coeff * torch.norm(frame, p=1)
+        
         return mse_loss + l1_loss

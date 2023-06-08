@@ -6,7 +6,7 @@ class Config:
         self.batch_size = 10        # for dataloader
         self.lr         = 0.001     # initial learning rate (lr)
         self.gamma      = 0.95      # for exponential lr scheduler
-        self.patience   = 5         # for early stopping
+        self.patience   = 10        # for early stopping
         self.load       = False     # for load checkpoint or not
         self.checkpoint_path = "checkpoints"
         self.log_dir    = None
@@ -15,7 +15,7 @@ class Config:
 
         # for MSE loss between prediction and label
         self.filter_size  = 7       # kernel size of GaussianBlur
-        self.filter_sigma = [2, 2]  # sigma of kernel
+        self.filter_sigma = [1, 1]  # sigma of kernel
         # for L1 norm of prediction
         self.l1_coeff = 0
 
