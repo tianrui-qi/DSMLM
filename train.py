@@ -140,7 +140,7 @@ if __name__ == "__main__":
     validset = SimDataset(config, config.num_valid)
     
     # model and other helper for training
-    net       = UNet2D()
+    net       = UNet2D(config)
     criterion = DeepSTORMLoss(config)
     
     # train
