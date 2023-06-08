@@ -17,15 +17,23 @@ class UNet2D(nn.Module):
                 nn.ReLU()
             )
         
-        in_feature    = config.dim_frame[0]
-        self.input    = nn.ConvTranspose2d(in_feature, 4*in_feature, 8, stride=8)
-        self.encoder1 = conv_block(4*in_feature, 8*in_feature)
+        in_feature  = config.dim_frame[0]  # input feature/channel/depth num
+        up_c        = config.up_sample[0]  # upsampling scale, channel/depth
+        up_hw       = config.up_sample[1]  # upsampling scale, high and wide
+
+        self.input    = nn.ConvTranspose2d(
+            in_feature       , up_c*in_feature  , up_hw, stride=up_hw)
+        self.encoder1 = conv_block(
+            in_feature*up_c*1, in_feature*up_c*2)
         self.pool     = nn.MaxPool2d(2)
-        self.encoder2 = conv_block(8*in_feature, 16*in_feature)
-        self.upconv   = nn.ConvTranspose2d(16*in_feature, 8*in_feature, 2, stride=2)
-        self.decoder1 = conv_block(16*in_feature, 8*in_feature)
+        self.encoder2 = conv_block(
+            in_feature*up_c*2, in_feature*up_c*4)
+        self.upconv   = nn.ConvTranspose2d(
+            in_feature*up_c*4, in_feature*up_c*2, 2, stride=2)
+        self.decoder1 = conv_block(
+            in_feature*up_c*4, in_feature*up_c*2)
         self.output   = nn.Sequential(
-            nn.Conv2d(8*in_feature, 4*in_feature, 1),
+            nn.Conv2d(in_feature*up_c*2, in_feature*up_c, 1),
             nn.ReLU()
         )
         
@@ -41,27 +49,16 @@ class UNet2D(nn.Module):
 
 
 class DeepSTORMLoss(nn.Module):
-    """
-    v1: mse(output, label) + l1 norm
-    v2: mse(output * G, label * G) + l1 norm
-    v3: mse(output * G, label * G)
-    """
     def __init__(self, config):
         super().__init__()
-        self.gauss = config.gauss
-        self.l1    = config.l1
-
-        self.mse = nn.MSELoss()
+        # for MSE loss between prediction and label
+        self.mse    = nn.MSELoss()
         self.filter = torchvision.transforms.GaussianBlur(
             config.filter_size, sigma=config.filter_sigma)
+        # for L1 norm of prediction
+        self.l1_coeff = config.self.l1_coeff
         
     def forward(self, frame, label):
-        if self.gauss:
-            mse_loss = self.mse(self.filter(frame), self.filter(label))
-        else:
-            mse_loss = self.mse(frame, label)
-
-        if self.l1:
-            return mse_loss + 0.01 * torch.norm(frame, p=1)
-        else:
-            return mse_loss
+        mse_loss = self.mse(self.filter(frame), self.filter(label))
+        l1_loss = self.l1_coeff * torch.norm(frame, p=1)
+        return mse_loss + l1_loss

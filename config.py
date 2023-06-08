@@ -3,25 +3,27 @@ class Config:
         # ========================== config for train ==========================
 
         self.max_epoch  = 50
-        self.batch_size = 8         # for dataloader
-        self.lr         = 0.001    # initial learning rate (lr)
+        self.batch_size = 10        # for dataloader
+        self.lr         = 0.001     # initial learning rate (lr)
         self.gamma      = 0.95      # for exponential lr scheduler
-        self.patience   = 10        # for early stopping
-        self.load       = False      # for load checkpoint or not
-        self.checkpoint_path = "checkpoint.pt"
+        self.patience   = 5         # for early stopping
+        self.load       = False     # for load checkpoint or not
+        self.checkpoint_path = "checkpoints"
+        self.log_dir    = None
 
         # ========================== config for model ==========================
 
-        self.gauss = True  # convolved with Gaussian kernel or not in loss
-        self.l1    = False
-        self.filter_size  = 7
-        self.filter_sigma = [2, 2]
+        # for MSE loss between prediction and label
+        self.filter_size  = 7       # kernel size of GaussianBlur
+        self.filter_sigma = [2, 2]  # sigma of kernel
+        # for L1 norm of prediction
+        self.l1_coeff = 0
 
         # ========================= config for dataset =========================
 
         # number of data
-        self.num_train  = 2800          # number of training data
-        self.num_valid  = 1200           # number of validation data
+        self.num_train  = 5000          # number of training data
+        self.num_valid  = 1250           # number of validation data
         # dimensional config that need to consider memory
         self.dim_frame  = [32, 32, 32]  # [C, H, W], by pixel
         self.up_sample  = [4, 8, 8]     # [C, H, W], by scale
