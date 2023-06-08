@@ -5,7 +5,7 @@ This branch has been achieved and is no longer updated; we implemented the data 
 The problem we are facing with this MATLAB pipeline:
 
 - In [cnn.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/cnn.m) and [unet.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/unet.m), gaussian fitting problem is treated as regression problem where they use [MSE](https://en.wikipedia.org/wiki/Mean_squared_error) as loss function. Both network converge at `loss = 0.7` and predict too many pixel compare to label, i.e., 600 instead of 8.
-- In [cnnFocal](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/cnnFocal.m), gaussian fitting problem is treated as binary classification problem where it use [Focal Loss]([https://en.wikipedia.org/wiki/Mean_squared_error](https://arxiv.org/abs/1708.02002)) as loss function. Trained network alwayes predict the last pixel of frame as `1`.
+- In [cnnFocal](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/cnnFocal.m), gaussian fitting problem is treated as binary classification problem where it use [Focal Loss]([https://en.wikipedia.org/wiki/Mean_squared_error](https://arxiv.org/abs/1708.02002)) as loss function. Trained network alwayes output a frame that only the last pixel is lighted up.
 
 We give brief documentation for each file to introduce their function, dependent, and other information that may have to know.
 
