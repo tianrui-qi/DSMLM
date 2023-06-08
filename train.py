@@ -10,9 +10,7 @@ from model import UNet2D, DeepSTORMLoss
 
 
 class Train:
-    def __init__(
-            self, config, net, criterion, trainset, validset
-            ) -> None:
+    def __init__(self, config, net, criterion, trainset, validset):
         # configurations
         self.max_epoch  = config.max_epoch
         self.batch_size = config.batch_size
@@ -21,7 +19,6 @@ class Train:
         self.patience   = config.patience
         self.load       = config.load
         self.checkpoint_path = config.checkpoint_path
-        self.loh_dir = config.log_dir
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
         
@@ -44,7 +41,7 @@ class Train:
         self.scheduler  = lr_scheduler.ExponentialLR(
             self.optimizer, gamma=config.gamma)
         # record training
-        self.writer     = SummaryWriter(log_dir = self.loh_dir)        
+        self.writer     = SummaryWriter()        
 
     def dataloader(self, dataset):
         return DataLoader(
@@ -136,11 +133,7 @@ class Train:
 if __name__ == "__main__":
     # configurations
     config = Config()
-    config.filter_size  = 3
-    config.filter_sigma = [1, 1]
     config.checkpoint_path = "checkpoints/{}-{}".format(
-        config.filter_size, config.filter_sigma)
-    config.log_dir = "runs/{}-{}".format(
         config.filter_size, config.filter_sigma)
     # dataset
     trainset = SimDataset(config, config.num_train)
@@ -152,17 +145,14 @@ if __name__ == "__main__":
     trainer = Train(config, net, criterion, trainset, validset)
     trainer.train()
 
-
     """
     for size in [3, 5, 7, 9, 11]:
         for sigma in [1, 2, 3, 4, 5, 6]:
             # configurations
             config = Config()
             config.filter_size  = size
-            config.filter_sigma = [sigma, sigma]
+            config.filter_sigma = sigma
             config.checkpoint_path = "checkpoints/{}-{}".format(
-                config.filter_size, config.filter_sigma)
-            config.log_dir = "runs/{}-{}".format(
                 config.filter_size, config.filter_sigma)
             # dataset
             trainset = SimDataset(config, config.num_train)

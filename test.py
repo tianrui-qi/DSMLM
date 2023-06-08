@@ -75,11 +75,11 @@ def test_epoch(frame, label, idx, kernel_size, sigma, total_epoch):
                 np.array(img).astype(np.uint8))
         
 if __name__ == "__main__":
-    kernel_size = 3
-    sigma = [1, 1]
-    total_epoch = 13
+    kernel_size = 9
+    sigma = 2
+    total_epoch = 1
 
-    for seed in range(10):  # sample index
+    for seed in range(5):  # sample index
         np.random.seed(seed)
         validloader = DataLoader(SimDataset(Config(), 1),)
         for i, (frame, label) in enumerate(validloader): 

@@ -56,20 +56,21 @@ class DeepSTORMLoss(nn.Module):
         self.mse    = nn.MSELoss()
         self.filter = torchvision.transforms.GaussianBlur(
             config.filter_size, sigma=config.filter_sigma)
-        self.pad_size = (config.filter_size, config.filter_size, 
+        self.pad_size = (config.filter_size, config.filter_size,
                          config.filter_size, config.filter_size)
         
         # for L1 norm of prediction
         self.l1_coeff = config.l1_coeff
         
-    def forward(self, frame, label):
+    def forward(self, predi, label):
         # MSE loss between prediction and label
         mse_loss = self.mse(
-            self.filter(nn.functional.pad(frame, self.pad_size)), 
-            self.filter(nn.functional.pad(label, self.pad_size))
+            self.filter(nn.functional.pad(label, self.pad_size)), 
+            nn.functional.pad(predi, self.pad_size)
+            #self.filter(nn.functional.pad(predi, self.pad_size))
             )
         
         # L1 norm of prediction
-        l1_loss = self.l1_coeff * torch.norm(frame, p=1)
+        l1_loss = self.l1_coeff * torch.norm(predi, p=1)
         
         return mse_loss + l1_loss
