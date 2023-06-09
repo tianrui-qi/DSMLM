@@ -120,9 +120,10 @@ class SimDataset(Dataset):
 # test code using default config
 
 if __name__ == "__main__":
-    from config import Config
+    import os
     from tifffile import imsave
-
+    from config import Config
+    
     config = Config()
     dataset = SimDataset(config, 1)
 
@@ -134,6 +135,8 @@ if __name__ == "__main__":
             m, mean_set[:, m], var_set[:, m], lum_set[m]))
     np.set_printoptions()
     
+    if not os.path.exists("tests"):os.makedirs("tests")
+
     frame = dataset.generateFrame(mean_set, var_set, lum_set)  # [dim_label]
     imsave('tests/dataset-frame.tif', np.array(frame*255, dtype=np.uint8))
 
