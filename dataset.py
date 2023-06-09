@@ -35,7 +35,7 @@ class SimDataset(Dataset):
     def __len__(self):
         return self.num
     
-    # ===================== help functions for __getitem__ =====================
+    # help functions for __getitem__
 
     def generateParas(self):
         D = len(self.dim_label)  # number of dimension, i.e., 2D/3D frame
@@ -117,6 +117,8 @@ class SimDataset(Dataset):
         return label
 
 
+# test code using default config
+
 if __name__ == "__main__":
     from config import Config
     from tifffile import imsave
@@ -124,14 +126,19 @@ if __name__ == "__main__":
     config = Config()
     dataset = SimDataset(config, 1)
 
+    # print parameters of each molecular
     mean_set, var_set, lum_set = dataset.generateParas()
-    print(mean_set.T)
-
+    np.set_printoptions(precision=2)
+    for m in range(len(mean_set.T)):
+        print("mol {}\tmean: {}\tvar: {}\tlum: {}".format(
+            m, mean_set[:, m], var_set[:, m], lum_set[m]))
+    np.set_printoptions()
+    
     frame = dataset.generateFrame(mean_set, var_set, lum_set)  # [dim_label]
-    imsave('frame.tif', np.array(frame*255, dtype=np.uint8))
+    imsave('tests/dataset-frame.tif', np.array(frame*255, dtype=np.uint8))
 
     noise = dataset.generateNoise(frame)                       # [dim_frame]
-    imsave('noise.tif', np.array(noise*255, dtype=np.uint8))
+    imsave('tests/dataset-noise.tif', np.array(noise*255, dtype=np.uint8))
 
     label = dataset.generateLabel(mean_set, lum_set)           # [dim_label]
-    imsave('label.tif', np.array(label*255, dtype=np.uint8))
+    imsave('tests/dataset-label.tif', np.array(label*255, dtype=np.uint8))

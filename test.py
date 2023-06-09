@@ -71,7 +71,7 @@ def test_epoch(frame, label, idx, kernel_size, sigma, total_epoch):
             output.reshape(output.shape[1:])    # C * H * W
             )
         img.append(img_sum)
-    imsave('results/{}-{}-{}.tif'.format(idx, kernel_size, sigma), 
+    imsave('tests/{}-{}-{}.tif'.format(idx, kernel_size, sigma), 
                 np.array(img).astype(np.uint8))
         
 if __name__ == "__main__":
