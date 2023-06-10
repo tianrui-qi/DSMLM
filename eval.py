@@ -75,8 +75,8 @@ def test_epoch(frame, label, idx, kernel_size, sigma, total_epoch):
                 np.array(img).astype(np.uint8))
         
 if __name__ == "__main__":
-    kernel_size = 9
-    sigma = 2
+    kernel_size = 7
+    sigma = 1
     total_epoch = 1
 
     for seed in range(5):  # sample index
