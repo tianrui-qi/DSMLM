@@ -13,7 +13,7 @@ def frame_sum(frame, label, output):
     # input is C * H * W frame, label, output
     # stact, reszie
     frame = np.sum(frame.numpy(), axis=0)
-    frame = cv2.resize(frame, (256, 256), interpolation=cv2.INTER_NEAREST)
+    frame = cv2.resize(frame, (64, 64), interpolation=cv2.INTER_NEAREST)
     frame = frame * 255 / np.amax(frame)
     label = np.sum(label.numpy(), axis=0)
     label[label > 0] = 255
@@ -77,9 +77,9 @@ def test_epoch(frame, label, idx, kernel_size, sigma, total_epoch):
 if __name__ == "__main__":
     kernel_size = 7
     sigma = 1
-    total_epoch = 2
+    total_epoch = 131
 
-    for seed in range(5):  # sample index
+    for seed in range(3):  # sample index
         np.random.seed(seed)
         validloader = DataLoader(SimDataset(Config(), 1),)
         for i, (frame, label) in enumerate(validloader): 
