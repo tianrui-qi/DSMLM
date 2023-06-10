@@ -12,17 +12,14 @@ class Config:
 
         # ========================== config for model ==========================
 
-        # for MSE loss between prediction and label
-        self.filter_size  = 7   # kernel size of GaussianBlur
-        self.filter_sigma = 1   # sigma of kernel
-        # for L1 norm of prediction
-        self.l1_coeff     = 0
+        self.kernel_size  = 7   # kernel size of GaussianBlur
+        self.kernel_sigma = 1   # sigma of kernel
 
         # ========================= config for dataset =========================
 
         # number of data
-        self.num_train  = 4000          # number of training data
-        self.num_valid  = 1000          # number of validation data
+        self.num_train  = 2000          # number of training data
+        self.num_valid  = 500          # number of validation data
         # dimensional config that need to consider memory
         self.dim_frame  = [32, 32, 32]  # [C, H, W], by pixel
         self.up_sample  = [4, 8, 8]     # [C, H, W], by scale

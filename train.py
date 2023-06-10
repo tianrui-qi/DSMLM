@@ -134,7 +134,7 @@ if __name__ == "__main__":
     # configurations
     config = Config()
     config.checkpoint_path = "checkpoints/{}-{}".format(
-        config.filter_size, config.filter_sigma)
+        config.kernel_size, config.kernel_sigma)
     # dataset
     trainset = SimDataset(config, config.num_train)
     validset = SimDataset(config, config.num_valid)
@@ -144,23 +144,3 @@ if __name__ == "__main__":
     # train
     trainer = Train(config, net, criterion, trainset, validset)
     trainer.train()
-
-    """
-    for size in [3, 5, 7, 9, 11]:
-        for sigma in [1, 2, 3, 4, 5, 6]:
-            # configurations
-            config = Config()
-            config.filter_size  = size
-            config.filter_sigma = sigma
-            config.checkpoint_path = "checkpoints/{}-{}".format(
-                config.filter_size, config.filter_sigma)
-            # dataset
-            trainset = SimDataset(config, config.num_train)
-            validset = SimDataset(config, config.num_valid)
-            # model and other helper for training
-            net       = UNet2D(config)
-            criterion = DeepSTORMLoss(config)
-            # train
-            trainer = Train(config, net, criterion, trainset, validset)
-            trainer.train()
-    """

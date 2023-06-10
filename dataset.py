@@ -117,13 +117,12 @@ class SimDataset(Dataset):
         return label
 
 
-# test code using default config
-
 if __name__ == "__main__":
     import os
     from tifffile import imsave
     from config import Config
-    
+
+    # test SimDataset using default config
     config = Config()
     dataset = SimDataset(config, 1)
 
@@ -135,6 +134,7 @@ if __name__ == "__main__":
             m, mean_set[:, m], var_set[:, m], lum_set[m]))
     np.set_printoptions()
     
+    # prepare for storing frames as tif
     if not os.path.exists("tests"):os.makedirs("tests")
 
     frame = dataset.generateFrame(mean_set, var_set, lum_set)  # [dim_label]
