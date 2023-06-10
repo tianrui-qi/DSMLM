@@ -10,7 +10,7 @@ class Config:
         self.load       = False     # for load checkpoint or not
         self.checkpoint_path = "checkpoints"
 
-        # ========================== config for model ==========================
+        # ======================== config for criterion ========================
 
         self.kernel_size  = 7   # kernel size of GaussianBlur
         self.kernel_sigma = 1   # sigma of kernel
