@@ -71,13 +71,13 @@ def test_epoch(frame, label, idx, kernel_size, sigma, total_epoch):
             output.reshape(output.shape[1:])    # C * H * W
             )
         img.append(img_sum)
-    imsave('tests/{}-{}-{}.tif'.format(idx, kernel_size, sigma), 
+    imsave('assets/eval_{}-{}-{}.tif'.format(idx, kernel_size, sigma), 
                 np.array(img).astype(np.uint8))
         
 if __name__ == "__main__":
     kernel_size = 7
     sigma = 1
-    total_epoch = 1
+    total_epoch = 2
 
     for seed in range(5):  # sample index
         np.random.seed(seed)
