@@ -134,6 +134,7 @@ class Train:
 if __name__ == "__main__":
     # configurations
     config = Config()
+    config.load = True
     config.checkpoint_path = "checkpoints/{}-{}".format(
         config.kernel_size, config.kernel_sigma)
     # dataset
