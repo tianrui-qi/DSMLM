@@ -22,6 +22,12 @@ class Criterion(nn.Module):
             self.gaussian_blur_3d(F.pad(label, self.pad)), 
             reduction='none').sum()
 
+    def to(self, device):
+        # Call the original 'to' method to move parameters and buffers
+        super(Criterion, self).to(device)
+        self.kernel = self.kernel.to(device)
+        return self
+
     # help function for convolve a frame with a Gaussian
 
     def gaussian_kernel(self, dim, kernel_size, kernel_sigma):
