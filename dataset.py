@@ -115,33 +115,3 @@ class SimDataset(Dataset):
         label[tuple(np.round(mean_set).astype(int))] = lum_set
         
         return label
-
-
-if __name__ == "__main__":
-    import os
-    from tifffile import imsave
-    from config import Config
-
-    # test SimDataset using default config
-    config = Config()
-    dataset = SimDataset(config, 1)
-
-    # print parameters of each molecular
-    mean_set, var_set, lum_set = dataset.generateParas()
-    np.set_printoptions(precision=2)
-    for m in range(len(mean_set.T)):
-        print("mol {}\tmean: {}\tvar: {}\tlum: {}".format(
-            m, mean_set[:, m], var_set[:, m], lum_set[m]))
-    np.set_printoptions()
-    
-    # prepare for storing frames as tif
-    if not os.path.exists("tests"):os.makedirs("tests")
-
-    frame = dataset.generateFrame(mean_set, var_set, lum_set)  # [dim_label]
-    imsave('tests/dataset-frame.tif', np.array(frame*255, dtype=np.uint8))
-
-    noise = dataset.generateNoise(frame)                       # [dim_frame]
-    imsave('tests/dataset-noise.tif', np.array(noise*255, dtype=np.uint8))
-
-    label = dataset.generateLabel(mean_set, lum_set)           # [dim_label]
-    imsave('tests/dataset-label.tif', np.array(label*255, dtype=np.uint8))
