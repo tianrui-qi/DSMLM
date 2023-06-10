@@ -6,7 +6,8 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from config import Config
 from dataset import SimDataset
-from model import UNet2D, DeepSTORMLoss
+from model import UNet2D
+from criterion import Criterion
 
 
 class Train:
@@ -140,7 +141,7 @@ if __name__ == "__main__":
     validset = SimDataset(config, config.num_valid)
     # model and other helper for training
     net       = UNet2D(config)
-    criterion = DeepSTORMLoss(config)
+    criterion = Criterion(config)
     # train
     trainer = Train(config, net, criterion, trainset, validset)
     trainer.train()
