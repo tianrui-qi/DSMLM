@@ -2,12 +2,13 @@ class Config:
     def __init__(self):
         # ========================== config for train ==========================
 
-        self.max_epoch  = 500
-        self.batch_size = 4         # for dataloader
-        self.lr         = 0.0001     # initial learning rate (lr)
-        self.gamma      = 0.8      # for exponential lr scheduler
+        self.max_epoch  = 400
+        self.batch_size = 1         # for dataloader
+        self.lr         = 0.0001    # initial learning rate (lr)
+        self.gamma      = 0.8       # for exponential lr scheduler
         self.patience   = 40        # for early stopping
-        self.load       = True     # for load checkpoint or not
+        self.load       = False     # for load checkpoint or not
+        self.logdir     = None
         self.checkpoint_path = "checkpoints"
 
         # ======================== config for criterion ========================
@@ -21,8 +22,8 @@ class Config:
         self.num_train  = 2000          # number of training data
         self.num_valid  = 500          # number of validation data
         # dimensional config that need to consider memory
-        self.dim_frame  = [32, 32, 32]  # [C, H, W], by pixel
-        self.up_sample  = [2, 2, 2]     # [C, H, W], by scale
+        self.dim_frame  = [64, 64, 64]  # [C, H, W], by pixel
+        self.up_sample  = [4, 8, 8]     # [C, H, W], by scale
         # config for adjust distribution of molecular
         self.mol_range  = [0, 12]       # min, max number of molecular per frame
         self.std_range  = [0.5, 3]      # adjust variance of molecular, by pixel

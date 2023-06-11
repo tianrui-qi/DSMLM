@@ -6,6 +6,10 @@ raw/
 generated/
 dataGeneratorHelper/
 
+# checkpoints
+# in branch main
+checkpoints/
+
 # compile file
 **.asv
 **__pycache__/

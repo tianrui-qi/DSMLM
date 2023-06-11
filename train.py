@@ -19,6 +19,7 @@ class Train:
         self.gamma      = config.gamma
         self.patience   = config.patience
         self.load       = config.load
+        self.logdir     = config.logdir
         self.checkpoint_path = config.checkpoint_path
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
@@ -42,7 +43,7 @@ class Train:
         self.scheduler  = lr_scheduler.ExponentialLR(
             self.optimizer, gamma=config.gamma)
         # record training
-        self.writer     = SummaryWriter()        
+        self.writer     = SummaryWriter(log_dir=self.logdir)        
 
     def dataloader(self, dataset):
         return DataLoader(
