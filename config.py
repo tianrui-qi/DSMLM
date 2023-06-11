@@ -7,9 +7,12 @@ class Config:
         self.lr         = 0.0001    # initial learning rate (lr)
         self.gamma      = 0.8       # for exponential lr scheduler
         self.patience   = 40        # for early stopping
-        self.load       = False     # for load checkpoint or not
+        # running log
         self.logdir     = None
-        self.checkpoint_path = "checkpoints"
+        # checkpoint
+        self.load       = False     # for load checkpoint or not
+        self.checkpoint_path = "checkpoints"  # checkpoints path without .pt
+        self.save_pt_epoch = False  # save pt every epoch with epoch idx
 
         # ======================== config for criterion ========================
 

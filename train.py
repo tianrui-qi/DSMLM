@@ -1,3 +1,4 @@
+import os  # for file checking
 import torch
 import torch.optim as optim
 from torch.optim import lr_scheduler
@@ -18,9 +19,10 @@ class Train:
         self.lr         = config.lr
         self.gamma      = config.gamma
         self.patience   = config.patience
-        self.load       = config.load
         self.logdir     = config.logdir
+        self.load       = config.load
         self.checkpoint_path = config.checkpoint_path
+        self.save_pt_epoch   = config.save_pt_epoch
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
         
@@ -105,7 +107,10 @@ class Train:
 
     @torch.no_grad()
     def early_stop(self):
-        self.save_checkpoint("{}-{}".format(self.checkpoint_path, self.epoch))
+        if self.save_pt_epoch:
+            self.save_checkpoint("{}/{}".format(
+                self.checkpoint_path, self.epoch))
+        
         if self.valid_loss >= self.best_loss:
             self.counter += 1
             if self.counter >= self.patience: self.stop = True
@@ -116,6 +121,12 @@ class Train:
 
     @torch.no_grad()
     def save_checkpoint(self, path):
+        # file path checking
+        if not os.path.exists(os.path.dirname(self.checkpoint_path)):
+            os.makedirs(os.path.dirname(self.checkpoint_path))
+        if not os.path.exists(self.checkpoint_path + "/"): 
+            if self.save_pt_epoch: os.makedirs(self.checkpoint_path)
+
         torch.save({
             'epoch': self.epoch,  # epoch index start from 1
             'net': self.net.state_dict(),
@@ -135,8 +146,8 @@ class Train:
 if __name__ == "__main__":
     # configurations
     config = Config()
-    config.checkpoint_path = "checkpoints/{}-{}".format(
-        config.kernel_size, config.kernel_sigma)
+    config.logdir = "runs/train"  # type: ignore
+    config.checkpoint_path = "checkpoints/train"
     # dataset
     trainset = SimDataset(config, config.num_train)
     validset = SimDataset(config, config.num_valid)
