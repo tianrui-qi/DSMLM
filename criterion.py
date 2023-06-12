@@ -6,21 +6,27 @@ import torch.nn.functional as F
 class Criterion(nn.Module):
     def __init__(self, config):
         super().__init__()
-
+        # configuration
         self.kernel_size  = config.kernel_size
         self.kernel_sigma = config.kernel_sigma
+        self.l1_coeff     = config.l1_coeff
 
+        # Gaussian kernel using help function gaussian_kernel
         self.kernel = self.gaussian_kernel(
             3, self.kernel_size, self.kernel_sigma)
         self.kernel = self.kernel.reshape(
             1, 1, *self.kernel.shape)  # [D H W] to  [C_out C_in D H W]
+        
+        # pad size, pad before convolve Gaussian kernel
         self.pad = [self.kernel_size for _ in range(6)]  # [C H W]
 
     def forward(self, predi, label):
-        return F.mse_loss(
+        mse_loss = F.mse_loss(
             self.gaussian_blur_3d(F.pad(predi, self.pad)), 
             self.gaussian_blur_3d(F.pad(label, self.pad)), 
-            reduction='none').sum()
+            reduction="sum") 
+        l1_loss = F.l1_loss(predi, torch.zeros_like(predi), reduction="sum")
+        return (mse_loss + self.l1_coeff * l1_loss) / len(predi)
 
     def to(self, device):
         # Call the original 'to' method to move parameters and buffers
