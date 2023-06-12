@@ -28,7 +28,7 @@ class SimDataset(Dataset):
         mean_set, var_set, lum_set = self.generateParas()
         frame = self.generateFrame(mean_set, var_set, lum_set)  # [dim_label]
         frame = self.generateNoise(frame)                       # [dim_frame]
-        label = self.generateLabel(mean_set, lum_set)           # [dim_label]
+        label = self.generateLabel(mean_set)                    # [dim_label]
 
         return torch.from_numpy(frame), torch.from_numpy(label)
 
@@ -110,8 +110,38 @@ class SimDataset(Dataset):
 
         return np.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
-    def generateLabel(self, mean_set, lum_set):
+    def generateLabel(self, mean_set):
         label = np.zeros(self.dim_label)
         label[tuple(np.round(mean_set).astype(int))] = 1
         
         return label
+
+
+if __name__ == "__main__":
+    import os
+    from config import Config
+    from tifffile import imsave
+
+    # test SimDataset using default config
+    config  = Config()
+    dataset = SimDataset(config, 1)
+
+    # print parameters of each molecular
+    mean_set, var_set, lum_set = dataset.generateParas()
+    np.set_printoptions(precision=2)
+    for m in range(len(mean_set.T)):
+        print("mol {}\tmean: {}\tvar: {}\tlum: {}".format(
+            m, mean_set[:, m], var_set[:, m], lum_set[m]))
+    np.set_printoptions()
+
+    # create dir to store test file
+    if not os.path.exists("assets/dataset"): os.makedirs("assets/dataset")
+
+    frame = dataset.generateFrame(mean_set, var_set, lum_set)   # [dim_label]
+    imsave('assets/dataset/frame.tif', np.array(frame*255, dtype=np.uint8))
+
+    noise = dataset.generateNoise(frame)                        # [dim_frame]
+    imsave('assets/dataset/noise.tif', np.array(noise*255, dtype=np.uint8))
+
+    label = dataset.generateLabel(mean_set)                     # [dim_label]
+    imsave('assets/dataset/label.tif', np.array(label*255, dtype=np.uint8))
