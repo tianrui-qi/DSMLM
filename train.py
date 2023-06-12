@@ -16,9 +16,6 @@ class Train:
         # configurations
         self.max_epoch  = config.max_epoch
         self.batch_size = config.batch_size
-        self.lr         = config.lr
-        self.gamma      = config.gamma
-        self.patience   = config.patience
         self.logdir     = config.logdir
         self.load       = config.load
         self.checkpoint_path = config.checkpoint_path
@@ -28,10 +25,8 @@ class Train:
         
         # index
         self.epoch      = 1  # epoch index start from 1
-        self.counter    = 0                             # for early stopping
-        self.valid_loss = torch.tensor(float("inf"))    # for early stopping
-        self.best_loss  = torch.tensor(float("inf"))    # for early stopping
-        self.stop       = False                         # for early stopping
+        self.valid_loss = torch.tensor(float("inf"))    # for save_checkpoint
+        self.best_loss  = torch.tensor(float("inf"))    # for save_checkpoint
 
         # dataloader
         self.trainloader = self.dataloader(trainset)
@@ -42,8 +37,8 @@ class Train:
         
         # optimizer
         self.optimizer  = optim.Adam(self.net.parameters(), lr=config.lr)
-        self.scheduler  = lr_scheduler.ExponentialLR(
-            self.optimizer, gamma=config.gamma)
+        self.scheduler  = lr_scheduler.ReduceLROnPlateau(
+            self.optimizer, factor=0.5, patience=5)
         # record training
         self.writer     = SummaryWriter(log_dir=self.logdir)        
 
@@ -58,10 +53,17 @@ class Train:
     def train(self):
         # epoch index start from 1
         if self.load: self.load_checkpoint()
-        while self.stop is False and self.epoch <= self.max_epoch:
+        while self.epoch <= self.max_epoch:
             self.train_epoch()
             self.valid_epoch()
-            self.early_stop()
+            
+            if self.save_pt_epoch:
+                self.save_checkpoint("{}/{}".format(
+                    self.checkpoint_path, self.epoch))
+            if self.valid_loss < self.best_loss:
+                self.best_loss = self.valid_loss
+                self.save_checkpoint(self.checkpoint_path)
+
             self.epoch+=1
 
     def train_epoch(self):
@@ -83,8 +85,6 @@ class Train:
             self.writer.add_scalars(
                 'Loss', {'train': loss.item()}, 
                 (self.epoch-1)*len(self.trainloader)+i)
-        # update learning rate
-        self.scheduler.step()  
     
     @torch.no_grad()
     def valid_epoch(self):
@@ -100,24 +100,14 @@ class Train:
             # loss
             loss = self.criterion(outputs, labels)
             self.valid_loss.append(loss.item())
+        # validation loss
         self.valid_loss = torch.mean(torch.as_tensor(self.valid_loss))
+        # update learning rate
+        self.scheduler.step(self.valid_loss)  
+        # record
         self.writer.add_scalars(
             'Loss', {'valid': self.valid_loss}, 
             self.epoch*len(self.trainloader))
-
-    @torch.no_grad()
-    def early_stop(self):
-        if self.save_pt_epoch:
-            self.save_checkpoint("{}/{}".format(
-                self.checkpoint_path, self.epoch))
-        
-        if self.valid_loss >= self.best_loss:
-            self.counter += 1
-            if self.counter >= self.patience: self.stop = True
-        else:
-            self.best_loss = self.valid_loss
-            self.counter = 0
-            self.save_checkpoint(self.checkpoint_path)
 
     @torch.no_grad()
     def save_checkpoint(self, path):
@@ -148,6 +138,7 @@ if __name__ == "__main__":
     config = Config()
     config.logdir = "runs/train"  # type: ignore
     config.checkpoint_path = "checkpoints/train"
+    config.save_pt_epoch = True
     # dataset
     trainset = SimDataset(config, config.num_train)
     validset = SimDataset(config, config.num_valid)

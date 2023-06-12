@@ -28,14 +28,14 @@ class UNet2D(nn.Module):
         self.encoder2 = conv_block(
             in_feature*up_c*2, in_feature*up_c*4)
         self.upconv   = nn.ConvTranspose2d(
-            in_feature*up_c*4, in_feature*up_c*2, 2, stride=2)
+            in_feature*up_c*4, in_feature*up_c*2, 4, stride=2, padding=1)
         self.decoder1 = conv_block(
             in_feature*up_c*4, in_feature*up_c*2)
         self.output   = nn.Sequential(
             nn.Conv2d(in_feature*up_c*2, in_feature*up_c, 1),
             nn.ReLU()
         )
-        
+
     def forward(self, x):
         up   = self.input(x)
         enc1 = self.encoder1(up)
