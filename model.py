@@ -19,7 +19,8 @@ class UNet2D(nn.Module):
         in_feature  = config.dim_frame[0]  # input feature/channel/depth num
         up_c        = config.up_sample[0]  # upsampling scale, channel/depth
         up_hw       = config.up_sample[1]  # upsampling scale, high and wide
-
+        
+        # TODO： How to upsample the sample? One or multi steps or interplation
         self.input    = nn.ConvTranspose2d(
             in_feature       , up_c*in_feature  , up_hw, stride=up_hw)
         self.encoder1 = conv_block(

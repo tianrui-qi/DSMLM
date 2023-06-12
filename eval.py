@@ -75,38 +75,19 @@ def test_epochs(frame, label, config, device, load_dir, save_dir):
 
         
 if __name__ == "__main__":
-    for kernel_sigma in [1]:
-        config = Config()
-        config.dim_frame = [32, 32, 32]
-        config.up_sample = [2, 2, 2]
+    config = Config()
+    config.dim_frame = [32, 32, 32]
+    config.up_sample = [2, 2, 2]
 
-        for seed in range(3):  # sample index
-            np.random.seed(seed)
-            validloader = DataLoader(SimDataset(config, 1),)
-            for i, (frame, label) in enumerate(validloader): 
-                device = torch.device('cpu')
+    for seed in range(3):  # sample index
+        np.random.seed(seed)
+        validloader = DataLoader(SimDataset(config, 1),)
+        for i, (frame, label) in enumerate(validloader): 
+            device = torch.device('cpu')
 
-                load_dir = "checkpoints/exp2"
-                save_dir = "assets/exp2/{}-7-{}.tif".format(seed, kernel_sigma)
-                if not os.path.exists(os.path.dirname(save_dir)):
-                    os.makedirs(os.path.dirname(save_dir))
+            load_dir = "checkpoints/exp2"
+            save_dir = "assets/exp2/{}-7-{}.tif".format(seed, 1)
+            if not os.path.exists(os.path.dirname(save_dir)):
+                os.makedirs(os.path.dirname(save_dir))
 
-                test_epochs(frame, label, config, device, load_dir, save_dir)
-    exit()
-    for kernel_size in [3, 5, 7, 9, 11]:
-        config = Config()
-        config.dim_frame = [32, 32, 32]
-        config.up_sample = [2, 2, 2]
-
-        for seed in range(3):  # sample index
-            np.random.seed(seed)
-            validloader = DataLoader(SimDataset(config, 1),)
-            for i, (frame, label) in enumerate(validloader): 
-                device = torch.device('cpu')
-
-                load_dir = "checkpoints/test_criterion_kernel_size/{}-1".format(kernel_size)
-                save_dir = "assets/test_criterion_kernel_size/{}-{}-1.tif".format(seed, kernel_size)
-                if not os.path.exists(os.path.dirname(save_dir)):
-                    os.makedirs(os.path.dirname(save_dir))
-
-                test_epochs(frame, label, config, device, load_dir, save_dir)
+            test_epochs(frame, label, config, device, load_dir, save_dir)
