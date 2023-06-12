@@ -112,6 +112,6 @@ class SimDataset(Dataset):
 
     def generateLabel(self, mean_set, lum_set):
         label = np.zeros(self.dim_label)
-        label[tuple(np.round(mean_set).astype(int))] = lum_set
+        label[tuple(np.round(mean_set).astype(int))] = 1
         
         return label
