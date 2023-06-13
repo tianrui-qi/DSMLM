@@ -2,7 +2,7 @@ class Config:
     def __init__(self):
         # ========================== config for train ==========================
 
-        self.max_epoch  = 200
+        self.max_epoch  = 400
         self.batch_size = 1        # for dataloader
         self.lr         = 0.001    # initial learning rate (lr)
         # running log

@@ -13,15 +13,14 @@ from model import UNet2D
 def frame_sum(frame, label, output):
     # input is C * H * W frame, label, output
     # stact, reszie
-    frame = np.sum(frame.numpy(), axis=0)
-    frame = cv2.resize(frame, (128, 128), interpolation=cv2.INTER_NEAREST)
-    frame = frame * 128 / np.amax(frame)
     label = np.sum(label.numpy(), axis=0)
     if np.amax(label) != 0: label = label * 255 / np.amax(label)
-    #label[label > 0] = 255
     output = np.sum(output.detach().numpy(), axis=0)
     if np.amax(output) != 0: output = output * 255 / np.amax(output)
     output[output > 0] = 255
+    frame = np.sum(frame.numpy(), axis=0)
+    frame = cv2.resize(frame, label.shape, interpolation=cv2.INTER_NEAREST)
+    frame = frame * 128 / np.amax(frame)
 
     # change color
     frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
