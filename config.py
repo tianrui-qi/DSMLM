@@ -2,7 +2,7 @@ class Config:
     def __init__(self):
         # ========================== config for train ==========================
 
-        self.max_epoch  = 100
+        self.max_epoch  = 200
         self.batch_size = 1        # for dataloader
         self.lr         = 0.001    # initial learning rate (lr)
         # running log
@@ -16,7 +16,7 @@ class Config:
 
         self.kernel_size  = 7     # kernel size of GaussianBlur
         self.kernel_sigma = 1.0   # sigma of kernel
-        self.l1_coeff     = 0     # to repeat deep storm loss function, set 1
+        self.l1_coeff     = 0.0   # to repeat deep storm loss function, set 1
 
         # ========================= config for dataset =========================
 

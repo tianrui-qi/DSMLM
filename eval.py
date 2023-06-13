@@ -14,7 +14,7 @@ def frame_sum(frame, label, output):
     # input is C * H * W frame, label, output
     # stact, reszie
     frame = np.sum(frame.numpy(), axis=0)
-    frame = cv2.resize(frame, (64, 64), interpolation=cv2.INTER_NEAREST)
+    frame = cv2.resize(frame, (128, 128), interpolation=cv2.INTER_NEAREST)
     frame = frame * 128 / np.amax(frame)
     label = np.sum(label.numpy(), axis=0)
     if np.amax(label) != 0: label = label * 255 / np.amax(label)
@@ -77,16 +77,16 @@ def test_epochs(frame, label, config, device, load_dir, save_dir):
 if __name__ == "__main__":
     config = Config()
     config.dim_frame = [32, 32, 32]
-    config.up_sample = [2, 2, 2]
+    config.up_sample = [4, 4, 4]
 
-    for seed in range(3):  # sample index
+    for seed in range(20):  # sample index
         np.random.seed(seed)
         validloader = DataLoader(SimDataset(config, 1),)
         for i, (frame, label) in enumerate(validloader): 
             device = torch.device('cpu')
 
-            load_dir = "checkpoints/exp2"
-            save_dir = "assets/exp2/{}-7-{}.tif".format(seed, 1)
+            load_dir = "checkpoints/test_4"
+            save_dir = "assets/test_4/{}-7-{}.tif".format(seed, 1)
             if not os.path.exists(os.path.dirname(save_dir)):
                 os.makedirs(os.path.dirname(save_dir))
 
