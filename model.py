@@ -1,10 +1,9 @@
 import torch
 from torch import nn
-import torchvision
 
 
 class UNet2D(nn.Module):
-    def __init__(self):
+    def __init__(self, config):
         super(UNet2D, self).__init__()
 
         def conv_block(in_channels, out_channels):
@@ -17,35 +16,33 @@ class UNet2D(nn.Module):
                 nn.ReLU()
             )
         
-        self.encoder1 = conv_block(256, 512)
+        in_feature  = config.dim_frame[0]  # input feature/channel/depth num
+        up_c        = config.up_sample[0]  # upsampling scale, channel/depth
+        up_hw       = config.up_sample[1]  # upsampling scale, high and wide
+        
+        # TODO： How to upsample the sample? One or multi steps or interplation
+        self.input    = nn.ConvTranspose2d(
+            in_feature       , up_c*in_feature  , up_hw, stride=up_hw)
+        self.encoder1 = conv_block(
+            in_feature*up_c*1, in_feature*up_c*2)
         self.pool     = nn.MaxPool2d(2)
-        self.encoder2 = conv_block(512, 1024)
-        self.upconv   = nn.ConvTranspose2d(1024, 512, 2, stride=2)
-        self.decoder1 = conv_block(1024, 512)
+        self.encoder2 = conv_block(
+            in_feature*up_c*2, in_feature*up_c*4)
+        self.upconv   = nn.ConvTranspose2d(
+            in_feature*up_c*4, in_feature*up_c*2, 4, stride=2, padding=1)
+        self.decoder1 = conv_block(
+            in_feature*up_c*4, in_feature*up_c*2)
         self.output   = nn.Sequential(
-            nn.Conv2d(512, 256, 1),
+            nn.Conv2d(in_feature*up_c*2, in_feature*up_c, 1),
             nn.ReLU()
         )
-        
+
     def forward(self, x):
-        enc1 = self.encoder1(x)
+        up   = self.input(x)
+        enc1 = self.encoder1(up)
         enc2 = self.pool(enc1)
         enc2 = self.encoder2(enc2)
         enc2 = self.upconv(enc2)
         dec2 = torch.cat((enc1, enc2), dim=1)
         dec2 = self.decoder1(dec2)
         return self.output(dec2)
-
-
-class DeepSTORMLoss(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.gauss = config.gauss
-
-        self.mse = nn.MSELoss()
-        self.filter = torchvision.transforms.GaussianBlur(5, sigma=(2, 2))
-        
-    def forward(self, frame, label):
-        if self.gauss:
-            return self.mse(self.filter(frame), self.filter(label)) + torch.norm(frame, p=1)
-        return self.mse(frame, label) + torch.norm(frame, p=1)

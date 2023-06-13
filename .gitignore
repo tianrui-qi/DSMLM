@@ -1,13 +1,19 @@
 # raw data we want to predict
 raw/
 
-# generated data by dataGenerator.m and dataGeneratorHelper.m
-# in branch matlab-achieve
+# (main) checkpoints
+checkpoints/
+
+# (main) dataset.py testing file
+assets/dataset/
+
+# (matlab-achieve) generated data by dataGenerator.m and dataGeneratorHelper.m
 generated/
 dataGeneratorHelper/
 
 # compile file
-*.asv
-__pycache__/
-.idea/
-.vscode/
+**.asv
+**__pycache__/
+**.idea/
+**.vscode/
+**.DS_Store

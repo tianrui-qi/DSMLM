@@ -1,3 +1,4 @@
+import os  # for file checking
 import torch
 import torch.optim as optim
 from torch.optim import lr_scheduler
@@ -6,30 +7,26 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from config import Config
 from dataset import SimDataset
-from model import UNet2D, DeepSTORMLoss
+from model import UNet2D
+from criterion import Criterion
 
 
 class Train:
-    def __init__(
-            self, config, net, criterion, trainset, validset
-            ) -> None:
+    def __init__(self, config, net, criterion, trainset, validset):
         # configurations
         self.max_epoch  = config.max_epoch
         self.batch_size = config.batch_size
-        self.lr         = config.lr
-        self.gamma      = config.gamma
-        self.patience   = config.patience
+        self.logdir     = config.logdir
         self.load       = config.load
         self.checkpoint_path = config.checkpoint_path
+        self.save_pt_epoch   = config.save_pt_epoch
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
         
         # index
         self.epoch      = 1  # epoch index start from 1
-        self.counter    = 0                             # for early stopping
-        self.valid_loss = torch.tensor(float("inf"))    # for early stopping
-        self.best_loss  = torch.tensor(float("inf"))    # for early stopping
-        self.stop       = False                         # for early stopping
+        self.valid_loss = torch.tensor(float("inf"))    # for save_checkpoint
+        self.best_loss  = torch.tensor(float("inf"))    # for save_checkpoint
 
         # dataloader
         self.trainloader = self.dataloader(trainset)
@@ -40,10 +37,10 @@ class Train:
         
         # optimizer
         self.optimizer  = optim.Adam(self.net.parameters(), lr=config.lr)
-        self.scheduler  = lr_scheduler.ExponentialLR(
-            self.optimizer, gamma=config.gamma)
+        self.scheduler  = lr_scheduler.ReduceLROnPlateau(
+            self.optimizer, factor=0.5, patience=5)
         # record training
-        self.writer     = SummaryWriter()        
+        self.writer     = SummaryWriter(log_dir=self.logdir)        
 
     def dataloader(self, dataset):
         return DataLoader(
@@ -56,10 +53,17 @@ class Train:
     def train(self):
         # epoch index start from 1
         if self.load: self.load_checkpoint()
-        while self.stop is False and self.epoch <= self.max_epoch:
+        while self.epoch <= self.max_epoch:
             self.train_epoch()
             self.valid_epoch()
-            self.early_stop()
+            
+            if self.save_pt_epoch:
+                self.save_checkpoint("{}/{}".format(
+                    self.checkpoint_path, self.epoch))
+            if self.valid_loss < self.best_loss:
+                self.best_loss = self.valid_loss
+                self.save_checkpoint(self.checkpoint_path)
+
             self.epoch+=1
 
     def train_epoch(self):
@@ -81,8 +85,6 @@ class Train:
             self.writer.add_scalars(
                 'Loss', {'train': loss.item()}, 
                 (self.epoch-1)*len(self.trainloader)+i)
-        # update learning rate
-        self.scheduler.step()  
     
     @torch.no_grad()
     def valid_epoch(self):
@@ -98,33 +100,33 @@ class Train:
             # loss
             loss = self.criterion(outputs, labels)
             self.valid_loss.append(loss.item())
+        # validation loss
         self.valid_loss = torch.mean(torch.as_tensor(self.valid_loss))
+        # update learning rate
+        self.scheduler.step(self.valid_loss)  
+        # record
         self.writer.add_scalars(
             'Loss', {'valid': self.valid_loss}, 
             self.epoch*len(self.trainloader))
-    
-    @torch.no_grad()
-    def early_stop(self):
-        if self.valid_loss >= self.best_loss:
-            self.counter += 1
-            if self.counter >= self.patience: self.stop = True
-        else:
-            self.best_loss = self.valid_loss
-            self.counter = 0
-            self.save_checkpoint()
 
     @torch.no_grad()
-    def save_checkpoint(self):
+    def save_checkpoint(self, path):
+        # file path checking
+        if not os.path.exists(os.path.dirname(self.checkpoint_path)):
+            os.makedirs(os.path.dirname(self.checkpoint_path))
+        if not os.path.exists(self.checkpoint_path + "/"): 
+            if self.save_pt_epoch: os.makedirs(self.checkpoint_path)
+
         torch.save({
             'epoch': self.epoch,  # epoch index start from 1
             'net': self.net.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'scheduler': self.scheduler.state_dict()
-            }, self.checkpoint_path)
+            }, "{}.pt".format(path))
 
     @torch.no_grad()
     def load_checkpoint(self):
-        checkpoint = torch.load(self.checkpoint_path)
+        checkpoint = torch.load("{}.pt".format(self.checkpoint_path))
         self.epoch = checkpoint['epoch']+1  # start train from next epoch index
         self.net.load_state_dict(checkpoint['net'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
@@ -134,15 +136,15 @@ class Train:
 if __name__ == "__main__":
     # configurations
     config = Config()
-    
+    config.logdir = "runs/train"  # type: ignore
+    config.checkpoint_path = "checkpoints/train"
+    config.save_pt_epoch = True
     # dataset
     trainset = SimDataset(config, config.num_train)
     validset = SimDataset(config, config.num_valid)
-    
     # model and other helper for training
-    net       = UNet2D()
-    criterion = DeepSTORMLoss(config)
-    
+    net       = UNet2D(config)
+    criterion = Criterion(config)
     # train
     trainer = Train(config, net, criterion, trainset, validset)
     trainer.train()
