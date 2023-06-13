@@ -1,5 +1,13 @@
 # DL-SMLFM
+
 This branch has been achieved and is no longer updated; we implemented the data generation and networks by MATLAB in this branch and have switched all the code to Python. Note that this documentation is only for this achieved MATLAB code. We may change the logic of data generation, file saving, and architecture of networks in main or other branches. 
+
+The problem we are facing with this MATLAB pipeline:
+
+- In [cnn.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/cnn.m) and [unet.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/unet.m), gaussian fitting problem is treated as regression problem where they use [MSE](https://en.wikipedia.org/wiki/Mean_squared_error) as loss function. Both network converge at `loss = 0.7` and predict too many pixel compare to label, i.e., 600 instead of 8.
+- In [cnnFocal](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/cnnFocal.m), gaussian fitting problem is treated as binary classification problem where it use [Focal Loss]([https://en.wikipedia.org/wiki/Mean_squared_error](https://arxiv.org/abs/1708.02002)) as loss function. Trained network alwayes output a frame that only the last pixel is lighted up.
+
+We give brief documentation for each file to introduce their function, dependent, and other information that may have to know.
 
 ## [setParas.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/setParas.m) 
 
@@ -54,3 +62,7 @@ These two files are not well defined, i.e., they are still temp scripts and have
 - [inferencer.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/inferencer.m) will cut a `512 512 64` raw sample into 121 number of `64 64 64` samples and predict each of them by network store in the checkpoint. 
 
 - [gmmFit.m](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/gmmFit.m) implements a traditional method for Gaussian fitting where we transfer the pixel map to point cloud space first and then fit the mu and covariance of each Gaussian by Gaussian Mixture Model (GMM). This method is not functioning correctly and still has a large error due to the transferring error from pixel map to point cloud space. 
+
+## [checkpoints/](https://github.com/tianrui-qi/DL-SMLFM/tree/matlab-achieve/checkpoints)
+
+We used this MATLAB code run four experiment, and we store their checkpoints as `checkpoint_{paras.WhichNet}_{paras.Noised}_{iteration}.mat`. For example, for [checkpoint_unet_clean_20300.mat](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/checkpoints/checkpoint_unet_clean_20300.mat), we train by [UNet](https://github.com/tianrui-qi/DL-SMLFM/blob/matlab-achieve/unet.m) (`paras.WhichNet = 'unet'`, ` paras.Binary = false`) with clean dataset (`paras.Noised = false`) where the training stop at iteration 20300.
