@@ -2,7 +2,7 @@
 raw/
 
 # (main) checkpoints
-checkpoints/
+checkpoints/test*
 
 # (main) dataset.py testing file
 assets/dataset/
