@@ -75,8 +75,8 @@ def test_epochs(frame, label, config, device, load_dir, save_dir):
         
 if __name__ == "__main__":
     config = Config()
-    config.dim_frame = [32, 32, 32]
-    config.up_sample = [4, 4, 4]
+    config.dim_frame = [16, 16, 16]
+    config.up_sample = [4, 8, 8]
 
     for seed in range(20):  # sample index
         np.random.seed(seed)
@@ -84,8 +84,8 @@ if __name__ == "__main__":
         for i, (frame, label) in enumerate(validloader): 
             device = torch.device('cpu')
 
-            load_dir = "checkpoints/test_4"
-            save_dir = "assets/test_4/{}-7-{}.tif".format(seed, 1)
+            load_dir = "checkpoints/test_5"
+            save_dir = "assets/test_5/{}-7-1.tif".format(seed)
             if not os.path.exists(os.path.dirname(save_dir)):
                 os.makedirs(os.path.dirname(save_dir))
 
