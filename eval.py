@@ -84,8 +84,8 @@ if __name__ == "__main__":
         for i, (frame, label) in enumerate(validloader): 
             device = torch.device('cpu')
 
-            load_dir = "checkpoints/test_5"
-            save_dir = "assets/test_5/{}-7-1.tif".format(seed)
+            load_dir = "checkpoints/test_6"
+            save_dir = "assets/test_6/{}-7-1.tif".format(seed)
             if not os.path.exists(os.path.dirname(save_dir)):
                 os.makedirs(os.path.dirname(save_dir))
 
