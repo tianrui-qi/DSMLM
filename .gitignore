@@ -1,14 +1,19 @@
-# raw data we want to predict
-raw/
+# (main)
+/ckpt/
+/data/
+/runs/
 
-# generated data by dataGenerator.m and dataGeneratorHelper.m
-# in branch matlab-achieve
+# (matlab-achieve) generated data by dataGenerator.m and dataGeneratorHelper.m
 generated/
 dataGeneratorHelper/
 
+# temp folder and files
+**/temp/
+**/temp.*
+
 # compile file
-**.asv
-**__pycache__/
-**.idea/
-**.vscode/
-**.DS_Store
+**/.asv
+**/__pycache__/
+**/.idea/
+**/.vscode/
+**/.DS_Store
