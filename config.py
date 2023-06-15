@@ -2,10 +2,13 @@ class Config:
     def __init__(self):
         # ========================== config for train ==========================
 
+        # train
         self.max_epoch  = 400
         self.batch_size = 1        # for dataloader
+        # learning rate
         self.lr         = 0.001    # initial learning rate (lr)
-        self.patience   = 5
+        self.factor     = 0.5      # for scheduler
+        self.patience   = 5        # for scheduler
         # running log
         self.logdir     = None
         # checkpoint

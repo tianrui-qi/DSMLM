@@ -14,19 +14,25 @@ from criterion import Criterion
 class Train:
     def __init__(self, config, net, criterion, trainset, validset):
         # configurations
+        # for train
         self.max_epoch  = config.max_epoch
         self.batch_size = config.batch_size
+        self.device = torch.device(
+            'cuda' if torch.cuda.is_available() else 'cpu')
+        # for runnning log
         self.logdir     = config.logdir
+        # for checkpoint
         self.load       = config.load
         self.checkpoint_path = config.checkpoint_path
         self.save_pt_epoch   = config.save_pt_epoch
-        self.device = torch.device(
-            'cuda' if torch.cuda.is_available() else 'cpu')
         
         # index
-        self.epoch      = 1  # epoch index start from 1
-        self.valid_loss = torch.tensor(float("inf"))    # for save_checkpoint
-        self.best_loss  = torch.tensor(float("inf"))    # for save_checkpoint
+        self.epoch      = 1    # epoch index start from 1
+        self.stage      = "1"  # idx for stage, 1, 12, or 2
+        self.stage_idx  = 0    # idx for number of epoch in stage 12
+        self.valid_loss = torch.tensor(float("inf"))
+        self.best_loss  = torch.tensor(float("inf"))
+        self.valid_num  = 0
 
         # dataloader
         self.trainloader = self.dataloader(trainset)
@@ -56,7 +62,8 @@ class Train:
         while self.epoch <= self.max_epoch:
             self.train_epoch()
             self.valid_epoch()
-            
+            self.update_lr()
+
             if self.save_pt_epoch:
                 self.save_checkpoint("{}/{}".format(
                     self.checkpoint_path, self.epoch))
@@ -85,12 +92,16 @@ class Train:
             self.writer.add_scalars(
                 'Loss', {'train': loss.item()}, 
                 (self.epoch-1)*len(self.trainloader)+i)
+            self.writer.add_scalars(
+                'Num', {'train': len(torch.nonzero(outputs))}, 
+                (self.epoch-1)*len(self.trainloader)+i)
     
     @torch.no_grad()
     def valid_epoch(self):
         # validation
         self.net.eval()
         self.valid_loss = []
+        self.valid_num = []
         for i, (frames, labels) in enumerate(self.validloader):
             # put frames and labels in GPU
             frames = frames.to(torch.float32).to(self.device)
@@ -99,14 +110,39 @@ class Train:
             outputs = self.net(frames)
             # loss
             loss = self.criterion(outputs, labels)
+            # record
             self.valid_loss.append(loss.item())
+            self.valid_num.append(float(len(torch.nonzero(outputs))))
+        
         # validation loss
         self.valid_loss = torch.mean(torch.as_tensor(self.valid_loss))
-        # update learning rate
-        self.scheduler.step(self.valid_loss)  
+        self.valid_num = torch.mean(torch.as_tensor(self.valid_num))
+        
         # record
         self.writer.add_scalars(
             'Loss', {'valid': self.valid_loss}, 
+            self.epoch*len(self.trainloader))
+        self.writer.add_scalars(
+            'Num', {'valid': self.valid_num}, 
+            self.epoch*len(self.trainloader))
+
+    @torch.no_grad()
+    def update_lr(self):
+        # decide the stage and learning rate
+        if self.stage == "1" and self.valid_num < 1000:
+            self.stage = "12"
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = 0.00001
+        if self.stage == "12": self.stage_idx += 1
+        if self.stage == "12" and self.stage_idx > 5: 
+            self.stage = "2"
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = 0.0001
+        if self.stage == "2": self.scheduler.step(self.valid_loss)
+
+        # record
+        self.writer.add_scalars(
+            'LR', self.optimizer.param_groups[0]['lr'], 
             self.epoch*len(self.trainloader))
 
     @torch.no_grad()

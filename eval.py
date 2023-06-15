@@ -17,7 +17,7 @@ def frame_sum(frame, label, output):
     if np.amax(label) != 0: label = label * 255 / np.amax(label)
     output = np.sum(output.detach().numpy(), axis=0)
     if np.amax(output) != 0: output = output * 255 / np.amax(output)
-    #output[output > 0] = 255
+    output[output > 0] = 255
     frame = np.sum(frame.numpy(), axis=0)
     frame = cv2.resize(frame, label.shape, interpolation=cv2.INTER_NEAREST)
     frame = frame * 128 / np.amax(frame)
@@ -84,8 +84,8 @@ if __name__ == "__main__":
         for i, (frame, label) in enumerate(validloader): 
             device = torch.device('cpu')
 
-            load_dir = "checkpoints/test_7"
-            save_dir = "assets/test_7/{}-7-1.tif".format(seed)
+            load_dir = "checkpoints/test_8"
+            save_dir = "assets/test_8/{}-7-1.tif".format(seed)
             if not os.path.exists(os.path.dirname(save_dir)):
                 os.makedirs(os.path.dirname(save_dir))
 
