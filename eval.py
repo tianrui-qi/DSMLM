@@ -72,7 +72,7 @@ def test_epochs(frame, label, config, device, load_dir, save_dir):
 
     imsave(save_dir, np.array(img).astype(np.uint8))
 
-        
+
 if __name__ == "__main__":
     config = Config()
     config.dim_frame = [16, 16, 16]
@@ -84,8 +84,8 @@ if __name__ == "__main__":
         for i, (frame, label) in enumerate(validloader): 
             device = torch.device('cpu')
 
-            load_dir = "checkpoints/test_8"
-            save_dir = "assets/test_8/{}-7-1.tif".format(seed)
+            load_dir = "checkpoints/test_7"
+            save_dir = "assets/test_7/{}-7-1.tif".format(seed)
             if not os.path.exists(os.path.dirname(save_dir)):
                 os.makedirs(os.path.dirname(save_dir))
 

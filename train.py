@@ -19,6 +19,11 @@ class Train:
         self.batch_size = config.batch_size
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
+        # for learning rate
+        self.stage      = config.stage
+        self.lr_stage12 = config.lr_stage12
+        self.lr_stage2  = config.lr_stage2
+        self.stage1_end = config.stage1_end
         # for runnning log
         self.logdir     = config.logdir
         # for checkpoint
@@ -28,7 +33,6 @@ class Train:
         
         # index
         self.epoch      = 1    # epoch index start from 1
-        self.stage      = "1"  # idx for stage, 1, 12, or 2
         self.stage_idx  = 0    # idx for number of epoch in stage 12
         self.valid_loss = torch.tensor(float("inf"))
         self.best_loss  = torch.tensor(float("inf"))
@@ -129,19 +133,19 @@ class Train:
     @torch.no_grad()
     def update_lr(self):
         # decide the stage and learning rate
-        if self.stage == "1" and self.valid_num < 1000:
+        if self.stage == "1" and self.valid_num < self.stage1_end:
             self.stage = "12"
             for param_group in self.optimizer.param_groups:
-                param_group['lr'] = 0.00001
+                param_group['lr'] = self.lr_stage12
         if self.stage == "12": self.stage_idx += 1
         if self.stage == "12" and self.stage_idx > 5: 
             self.stage = "2"
             for param_group in self.optimizer.param_groups:
-                param_group['lr'] = 0.0001
+                param_group['lr'] = self.lr_stage2
         if self.stage == "2": self.scheduler.step(self.valid_loss)
 
         # record
-        self.writer.add_scalars(
+        self.writer.add_scalar(
             'LR', self.optimizer.param_groups[0]['lr'], 
             self.epoch*len(self.trainloader))
 

@@ -6,7 +6,11 @@ class Config:
         self.max_epoch  = 400
         self.batch_size = 1        # for dataloader
         # learning rate
+        self.stage      = "2"      # "1" or "2"
         self.lr         = 0.001    # initial learning rate (lr)
+        self.stage1_end = 1000     # end of stage 1 if nonzero below this value
+        self.lr_stage12 = 0.00001  # only used if self.stage is 1
+        self.lr_stage2  = 0.0001   # only used if self.stage is 1
         self.factor     = 0.5      # for scheduler
         self.patience   = 5        # for scheduler
         # running log
