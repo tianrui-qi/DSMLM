@@ -1,14 +1,8 @@
 import os  # for file checking
 import torch
 import torch.optim as optim
-from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard.writer import SummaryWriter
-
-from config import Config
-from dataset import SimDataset
-from model import UNet2D
-from criterion import Criterion
 
 
 class Train:
@@ -19,13 +13,6 @@ class Train:
         self.batch_size = config.batch_size
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
-        # for learning rate
-        self.stage      = config.stage
-        self.lr_stage12 = config.lr_stage12
-        self.lr_stage2  = config.lr_stage2
-        self.stage1_end = config.stage1_end
-        # for runnning log
-        self.logdir     = config.logdir
         # for checkpoint
         self.load       = config.load
         self.checkpoint_path = config.checkpoint_path
@@ -33,7 +20,6 @@ class Train:
         
         # index
         self.epoch      = 1    # epoch index start from 1
-        self.stage_idx  = 0    # idx for number of epoch in stage 12
         self.valid_loss = torch.tensor(float("inf"))
         self.best_loss  = torch.tensor(float("inf"))
         self.valid_num  = 0
@@ -47,10 +33,10 @@ class Train:
         
         # optimizer
         self.optimizer  = optim.Adam(self.net.parameters(), lr=config.lr)
-        self.scheduler  = lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, factor=0.5, patience=config.patience)
+        self.scheduler  = optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer, factor=config.factor, patience=config.patience)
         # record training
-        self.writer     = SummaryWriter(log_dir=self.logdir)        
+        self.writer     = SummaryWriter(log_dir=config.logdir)        
 
     def dataloader(self, dataset):
         return DataLoader(
@@ -132,17 +118,7 @@ class Train:
 
     @torch.no_grad()
     def update_lr(self):
-        # decide the stage and learning rate
-        if self.stage == "1" and self.valid_num < self.stage1_end:
-            self.stage = "12"
-            for param_group in self.optimizer.param_groups:
-                param_group['lr'] = self.lr_stage12
-        if self.stage == "12": self.stage_idx += 1
-        if self.stage == "12" and self.stage_idx > 5: 
-            self.stage = "2"
-            for param_group in self.optimizer.param_groups:
-                param_group['lr'] = self.lr_stage2
-        if self.stage == "2": self.scheduler.step(self.valid_loss)
+        self.scheduler.step(self.valid_loss)
 
         # record
         self.writer.add_scalar(
@@ -171,20 +147,3 @@ class Train:
         self.net.load_state_dict(checkpoint['net'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.scheduler.load_state_dict(checkpoint['scheduler'])
-
-
-if __name__ == "__main__":
-    # configurations
-    config = Config()
-    config.logdir = "runs/train"  # type: ignore
-    config.checkpoint_path = "checkpoints/train"
-    config.save_pt_epoch = True
-    # dataset
-    trainset = SimDataset(config, config.num_train)
-    validset = SimDataset(config, config.num_valid)
-    # model and other helper for training
-    net       = UNet2D(config)
-    criterion = Criterion(config)
-    # train
-    trainer = Train(config, net, criterion, trainset, validset)
-    trainer.train()
