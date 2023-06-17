@@ -33,8 +33,8 @@ class Train:
         
         # optimizer
         self.optimizer  = optim.Adam(self.net.parameters(), lr=config.lr)
-        self.scheduler  = optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, factor=config.factor, patience=config.patience)
+        self.scheduler  = optim.lr_scheduler.ExponentialLR(
+            self.optimizer, gamma=0.95)
         # record training
         self.writer     = SummaryWriter(log_dir=config.logdir)        
 
