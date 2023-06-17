@@ -13,12 +13,12 @@ from model import UNet2D
 def frame_sum(frame, label, output):
     # input is C * H * W frame, label, output
     # stact, reszie
-    label = np.sum(label.numpy(), axis=0)
+    label = np.sum(label.cpu().numpy(), axis=0)
     if np.amax(label) != 0: label = label * 255 / np.amax(label)
-    output = np.sum(output.detach().numpy(), axis=0)
+    output = np.sum(output.detach().cpu().numpy(), axis=0)
     if np.amax(output) != 0: output = output * 255 / np.amax(output)
-    output[output > 0] = 255
-    frame = np.sum(frame.numpy(), axis=0)
+    #output[output > 0] = 255
+    frame = np.sum(frame.cpu().numpy(), axis=0)
     frame = cv2.resize(frame, label.shape, interpolation=cv2.INTER_NEAREST)
     frame = frame * 128 / np.amax(frame)
 
@@ -75,8 +75,8 @@ def test_epochs(frame, label, config, device, load_dir, save_dir):
 
 if __name__ == "__main__":
     config = Config()
-    config.dim_frame = [16, 16, 16]
-    config.up_sample = [4, 8, 8]
+    config.dim_frame = [64, 64, 64]
+    config.up_sample = [2, 4, 4]
 
     for seed in range(20):  # sample index
         np.random.seed(seed)
@@ -84,8 +84,8 @@ if __name__ == "__main__":
         for i, (frame, label) in enumerate(validloader): 
             device = torch.device('cpu')
 
-            load_dir = "checkpoints/test_7"
-            save_dir = "assets/test_7/{}-7-1.tif".format(seed)
+            load_dir = "checkpoints/test_5"
+            save_dir = "assets/test_5/{}-7-1.tif".format(seed)
             if not os.path.exists(os.path.dirname(save_dir)):
                 os.makedirs(os.path.dirname(save_dir))
 
