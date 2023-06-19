@@ -1,12 +1,14 @@
 import os  # for file checking
 import torch
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from torch.optim import lr_scheduler
 from torch.utils.tensorboard.writer import SummaryWriter
+
+from dataset import SimDataLoader
 
 
 class Train:
-    def __init__(self, config, net, criterion, trainset, validset):
+    def __init__(self, config, net, criterion):
         # configurations
         # for train
         self.max_epoch  = config.max_epoch
@@ -25,26 +27,18 @@ class Train:
         self.valid_num  = 0
 
         # dataloader
-        self.trainloader = self.dataloader(trainset)
-        self.validloader = self.dataloader(validset)
+        self.trainloader = SimDataLoader(config, config.num_train)
+        self.validloader = SimDataLoader(config, config.num_valid)
         # model
         self.net        = net.to(self.device)
         self.criterion  = criterion.to(self.device)
         
         # optimizer
         self.optimizer  = optim.Adam(self.net.parameters(), lr=config.lr)
-        self.scheduler  = optim.lr_scheduler.ExponentialLR(
-            self.optimizer, gamma=0.95)
+        self.scheduler  = lr_scheduler.ExponentialLR(
+            self.optimizer, gamma=config.gamma)
         # record training
-        self.writer     = SummaryWriter(log_dir=config.logdir)        
-
-    def dataloader(self, dataset):
-        return DataLoader(
-            dataset, 
-            batch_size=self.batch_size, 
-            num_workers=self.batch_size, 
-            pin_memory=True
-            )
+        self.writer     = SummaryWriter()        
 
     def train(self):
         # epoch index start from 1
@@ -118,7 +112,8 @@ class Train:
 
     @torch.no_grad()
     def update_lr(self):
-        self.scheduler.step(self.valid_loss)
+        self.scheduler.step()
+        #self.scheduler.step(self.valid_loss)
 
         # record
         self.writer.add_scalar(

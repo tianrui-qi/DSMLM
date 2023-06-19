@@ -4,13 +4,9 @@ class Config:
 
         # train
         self.max_epoch  = 400
-        self.batch_size = 1        # for dataloader
         # learning rate
         self.lr         = 0.001    # initial learning rate (lr)
-        self.factor     = 0.5      # for scheduler
-        self.patience   = 5        # for scheduler
-        # running log
-        self.logdir     = None
+        self.gamma      = 0.95
         # checkpoint
         self.load       = False     # for load checkpoint or not
         self.checkpoint_path = "checkpoints"  # checkpoints path without .pt
@@ -22,14 +18,16 @@ class Config:
         self.kernel_sigma = 1.0   # sigma of kernel
         self.l1_coeff     = 0.0   # to repeat deep storm loss function, set 1
 
-        # ========================= config for dataset =========================
+        # ========================== config for data ===========================
 
         # number of data
-        self.num_train  = 7000          # number of training data
-        self.num_valid  = 3000          # number of validation data
+        self.batch_size = 1             # for dataloader
+        self.num_train  = 8000          # number of training data
+        self.num_valid  = 2000          # number of validation data
         # dimensional config that need to consider memory
         self.dim_frame  = [64, 64, 64]  # [C, H, W], by pixel
         self.up_sample  = [4, 8, 8]     # [C, H, W], by scale
+        self.mol_epoch  = 128           # num of molecular simulated per epoch
         # config for adjust distribution of molecular
         self.mol_range  = [0, 12]       # min, max number of molecular per frame
         self.std_range  = [0.5, 3.0]    # adjust variance of molecular, by pixel
@@ -38,5 +36,5 @@ class Config:
         self.bitdepth   = 12
         self.qe         = 0.82
         self.sen        = 5.88
-        self.noise_mu   = 0    # mu of gaussian noise, by 2^bitdepth
-        self.noise_var  = 0    # variance of gaussian noise, by 2^bitdepth
+        self.noise_mu   = 0.0   # mu of gaussian noise, by 2^bitdepth
+        self.noise_var  = 0.0   # variance of gaussian noise, by 2^bitdepth
