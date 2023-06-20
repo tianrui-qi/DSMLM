@@ -11,7 +11,7 @@ class SimDataLoader(DataLoader):
         super().__init__(
             SimDataset(config, num), 
             batch_size=config.batch_size, 
-            num_workers=config.batch_size, 
+            num_workers=config.num_workers, 
             pin_memory=True)
 
     def __iter__(self):
@@ -162,3 +162,14 @@ if __name__ == "__main__":
     # test function generateNoise
     noise = dataset.generateNoise(frame)
     imsave('assets/dataset/noise.tif', (noise * 255).to(torch.uint8).numpy())
+
+    # test the dataloader output
+    frame, label = dataset[0]
+    imsave('assets/dataset/frame0.tif', (frame * 255).to(torch.uint8).numpy())
+    imsave('assets/dataset/label0.tif', (label * 255).to(torch.uint8).numpy())
+    
+    # test the input of network
+    from torch import nn
+    upsample = nn.Upsample(scale_factor=tuple(config.up_sample), mode='nearest')
+    intput = upsample(frame.unsqueeze(0).unsqueeze(0)).squeeze(0).squeeze(0)
+    imsave('assets/dataset/intput.tif', (intput * 255).to(torch.uint8).numpy())
