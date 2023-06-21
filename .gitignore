@@ -4,8 +4,9 @@ raw/
 # checkpoints
 checkpoints/
 
-# (main) dataset.py testing file
-assets/dataset/
+# (main) testing file
+assets/
+tests/
 
 # (matlab-achieve) generated data by dataGenerator.m and dataGeneratorHelper.m
 generated/
