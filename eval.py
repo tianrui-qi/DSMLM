@@ -1,12 +1,11 @@
 import os
 import torch
-from torch.utils.data import DataLoader
 import numpy as np
 import cv2
 from tifffile import imsave
 
 from config import Config
-from dataset import SimDataset
+from data import SimDataLoader
 from model import UNet2D
 
 
@@ -17,11 +16,11 @@ def frame_sum(frame, label, output):
     if np.amax(label) != 0: label = label * 255 / np.amax(label)
     output = np.sum(output.detach().cpu().numpy(), axis=0)
     if np.amax(output) != 0: output = output * 255 / np.amax(output)
-    #output[output > 0] = 255
+    output[output > 0] = 255
     frame = np.sum(frame.cpu().numpy(), axis=0)
     frame = cv2.resize(frame, label.shape, interpolation=cv2.INTER_NEAREST)
-    frame = frame * 128 / np.amax(frame)
-
+    if np.amax(frame) != 0: frame = frame * 128 / np.amax(frame) # type: ignore
+    
     # change color
     frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
     label = cv2.cvtColor(label, cv2.COLOR_GRAY2BGR)
@@ -75,18 +74,17 @@ def test_epochs(frame, label, config, device, load_dir, save_dir):
 
 if __name__ == "__main__":
     config = Config()
-    config.dim_frame = [64, 64, 64]
-    config.up_sample = [2, 4, 4]
+    config.dim_frame = [32, 32, 32]
+    config.up_sample = [4, 4, 4]
 
-    for seed in range(20):  # sample index
-        np.random.seed(seed)
-        validloader = DataLoader(SimDataset(config, 1),)
-        for i, (frame, label) in enumerate(validloader): 
-            device = torch.device('cpu')
+    torch.manual_seed(1)
+    validloader = SimDataLoader(config, 20)
+    for i, (frame, label) in enumerate(validloader): 
+        device = torch.device('cpu')
 
-            load_dir = "checkpoints/test_5"
-            save_dir = "assets/test_5/{}-7-1.tif".format(seed)
-            if not os.path.exists(os.path.dirname(save_dir)):
-                os.makedirs(os.path.dirname(save_dir))
+        load_dir = "checkpoints/test_6"
+        save_dir = "assets/test_6/{}.tif".format(i)
+        if not os.path.exists(os.path.dirname(save_dir)):
+            os.makedirs(os.path.dirname(save_dir))
 
-            test_epochs(frame, label, config, device, load_dir, save_dir)
+        test_epochs(frame, label, config, device, load_dir, save_dir)

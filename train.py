@@ -4,11 +4,12 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from dataset import SimDataLoader
+from data import SimDataLoader
+from model import UNet2D, Criterion
 
 
 class Train:
-    def __init__(self, config, net, criterion):
+    def __init__(self, config):
         # configurations
         # for train
         self.max_epoch  = config.max_epoch
@@ -25,13 +26,15 @@ class Train:
         self.valid_loss = torch.tensor(float("inf"))
         self.best_loss  = torch.tensor(float("inf"))
         self.valid_num  = 0
+        # averge molecular number per frames, for calculate loss
+        self.mol_average = (config.mol_range[1] - config.mol_range[0]) / 2.0
 
         # dataloader
         self.trainloader = SimDataLoader(config, config.num_train)
         self.validloader = SimDataLoader(config, config.num_valid)
         # model
-        self.net        = net.to(self.device)
-        self.criterion  = criterion.to(self.device)
+        self.net        = UNet2D(config).to(self.device)
+        self.criterion  = Criterion(config).to(self.device)
         
         # optimizer
         self.optimizer  = optim.Adam(self.net.parameters(), lr=config.lr)
@@ -73,11 +76,12 @@ class Train:
             self.optimizer.step()
 
             # record
+            total_mol = self.mol_average * self.batch_size
             self.writer.add_scalars(
-                'Loss', {'train': loss.item()}, 
+                'Loss', {'train': loss.item() / total_mol}, 
                 (self.epoch-1)*len(self.trainloader)+i)
             self.writer.add_scalars(
-                'Num', {'train': len(torch.nonzero(outputs))}, 
+                'Num', {'train': len(torch.nonzero(outputs)) / total_mol}, 
                 (self.epoch-1)*len(self.trainloader)+i)
     
     @torch.no_grad()
@@ -95,8 +99,9 @@ class Train:
             # loss
             loss = self.criterion(outputs, labels)
             # record
-            self.valid_loss.append(loss.item())
-            self.valid_num.append(float(len(torch.nonzero(outputs))))
+            total_mol = self.mol_average * self.batch_size
+            self.valid_loss.append(loss.item() / total_mol)
+            self.valid_num.append(len(torch.nonzero(outputs)) / total_mol)
         
         # validation loss
         self.valid_loss = torch.mean(torch.as_tensor(self.valid_loss))
@@ -142,3 +147,24 @@ class Train:
         self.net.load_state_dict(checkpoint['net'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.scheduler.load_state_dict(checkpoint['scheduler'])
+
+
+if __name__ == "__main__":
+    from config import Config
+    # configurations
+    config = Config()
+    config.batch_size  = 16
+    config.num_workers = 8
+    # learning rate
+    config.lr = 0.001
+    config.kernel_sigma = 0.5
+    # checkpoint
+    config.checkpoint_path = "checkpoints/test_6"
+    config.save_pt_epoch = True
+    # dataset
+    config.dim_frame = [32, 32, 32]
+    config.up_sample = [2, 2, 2]
+    config.mol_range = [0, 32]
+    # train
+    trainer = Train(config)
+    trainer.train()
