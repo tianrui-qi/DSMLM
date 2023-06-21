@@ -5,7 +5,7 @@ from torch import Tensor
 
 
 class UNetBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels) -> None:
         super(UNetBlock, self).__init__()
 
         self.block = nn.Sequential(
@@ -17,22 +17,19 @@ class UNetBlock(nn.Module):
             nn.ReLU()
         )
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         return self.block(x)
 
 
 class UNet2D(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config) -> None:
         super(UNet2D, self).__init__()
 
         in_feature = config.dim_frame[0]  # input feature/channel/depth num
         up_c = config.up_sample[0]  # upsampling scale, channel/depth
-        up_hw = config.up_sample[1]  # upsampling scale, high and wide
 
         self.input = nn.Upsample(
             scale_factor=tuple(config.up_sample), mode='nearest')
-        # self.input    = nn.ConvTranspose2d(
-        #    in_feature, up_c*in_feature, up_hw, stride=up_hw)
 
         self.encoder1 = UNetBlock(in_feature * up_c * 1, in_feature * up_c * 2)
         self.pool = nn.MaxPool2d(2)
@@ -45,7 +42,7 @@ class UNet2D(nn.Module):
             nn.Conv2d(in_feature * up_c * 2, in_feature * up_c, 1),
             nn.ReLU())
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         up = self.input(x.unsqueeze(1)).squeeze(1)
         # up   = self.input(x)
         enc1 = self.encoder1(up)
@@ -82,7 +79,7 @@ class Criterion(nn.Module):
         )
         l1_loss = F.l1_loss(predi, torch.zeros_like(predi), reduction="sum")
         
-        return (mse_loss + self.l1_coeff * l1_loss) / len(predi)
+        return mse_loss + self.l1_coeff * l1_loss
 
     def to(self, device):
         # Call the original 'to' method to move parameters and buffers

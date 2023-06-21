@@ -1,9 +1,9 @@
-from typing import Tuple
 import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 from torch.distributions.multivariate_normal import MultivariateNormal
 from skimage.transform import resize
+from typing import Tuple
 
 
 class SimDataLoader(DataLoader):
