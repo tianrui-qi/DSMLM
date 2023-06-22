@@ -1,9 +1,19 @@
 import torch
 from torch import Tensor
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, Sampler
 from torch.distributions.multivariate_normal import MultivariateNormal
 from skimage.transform import resize
 from typing import Tuple
+
+
+class RawLoader(DataLoader):
+    # TODO: implement dataloader for real data
+    pass
+
+
+class RawDataset(Dataset):
+    # TODO: implement dataset for real data
+    pass
 
 
 class SimDataLoader(DataLoader):
@@ -59,6 +69,7 @@ class SimDataset(Dataset):
     
     # help functions for generate molecular list before epoch start
 
+    # TODO: adjust distribution of molecular: smaller x and y's std variance
     def generateMlist(self) -> Tensor:
         for m in range(self.mol_epoch):
             # generate variance for this molecular
