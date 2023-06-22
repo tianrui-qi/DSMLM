@@ -17,7 +17,6 @@ class Train:
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
         # for checkpoint
-        self.load       = config.load
         self.checkpoint_path = config.checkpoint_path
         self.save_pt_epoch   = config.save_pt_epoch
         
@@ -44,8 +43,6 @@ class Train:
         self.writer     = SummaryWriter()        
 
     def train(self):
-        # epoch index start from 1
-        if self.load: self.load_checkpoint()
         while self.epoch <= self.max_epoch:
             self.train_epoch()
             self.valid_epoch()
@@ -117,8 +114,10 @@ class Train:
 
     @torch.no_grad()
     def update_lr(self):
-        self.scheduler.step()
-        #self.scheduler.step(self.valid_loss)
+        # update learning rate
+        if self.scheduler.get_last_lr()[0] > 1e-7:
+            self.scheduler.step()
+            #self.scheduler.step(self.valid_loss)
 
         # record
         self.writer.add_scalar(
@@ -141,12 +140,13 @@ class Train:
             }, "{}.pt".format(path))
 
     @torch.no_grad()
-    def load_checkpoint(self):
+    def load_checkpoint(self, load_lr = True):
         checkpoint = torch.load("{}.pt".format(self.checkpoint_path))
         self.epoch = checkpoint['epoch']+1  # start train from next epoch index
         self.net.load_state_dict(checkpoint['net'])
-        self.optimizer.load_state_dict(checkpoint['optimizer'])
-        self.scheduler.load_state_dict(checkpoint['scheduler'])
+        if load_lr:
+            self.optimizer.load_state_dict(checkpoint['optimizer'])
+            self.scheduler.load_state_dict(checkpoint['scheduler'])
 
 
 if __name__ == "__main__":
@@ -156,15 +156,15 @@ if __name__ == "__main__":
     config.batch_size  = 16
     config.num_workers = 8
     # learning rate
-    config.lr = 0.001
-    config.kernel_sigma = 0.5
+    config.lr = 0.0001
     # checkpoint
     config.checkpoint_path = "checkpoints/test_6"
     config.save_pt_epoch = True
     # dataset
     config.dim_frame = [32, 32, 32]
-    config.up_sample = [2, 2, 2]
-    config.mol_range = [0, 32]
+    config.up_sample = [4, 4, 4]
+    config.mol_range = [0, 64]
     # train
     trainer = Train(config)
+    trainer.load_checkpoint(False)
     trainer.train()

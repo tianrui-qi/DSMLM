@@ -8,7 +8,6 @@ class Config:
         self.lr    = 0.0001     # initial learning rate (lr)
         self.gamma = 0.95
         # checkpoint
-        self.load  = False      # for load checkpoint or not
         self.checkpoint_path = "checkpoints"  # checkpoints path without .pt
         self.save_pt_epoch = False  # save pt every epoch with epoch idx
 
@@ -26,11 +25,11 @@ class Config:
         self.num_train = 8000   # number of training data
         self.num_valid = 2000   # number of validation data
         # dimensional config that need to consider memory
-        self.dim_frame = [64, 64, 64]   # [C, H, W], by pixel
-        self.up_sample = [4, 8, 8]      # [C, H, W], by scale
+        self.dim_frame = [32, 32, 32]   # [C, H, W], by pixel
+        self.up_sample = [4, 4, 4]      # [C, H, W], by scale
         self.mol_epoch = 128            # num of molecular simulated per epoch
         # config for adjust distribution of molecular
-        self.mol_range = [0, 12]        # min, max number of molecular per frame
+        self.mol_range = [0, 64]        # min, max number of molecular per frame
         self.std_range = [0.5, 3.0]     # adjust variance of molecular, by pixel
         self.lum_range = [1/32, 1.0]    # since input of net is normalized
         # config for reducing resolution and adding noise
