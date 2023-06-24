@@ -1,5 +1,5 @@
-# raw data we want to predict
-raw/
+# data for training
+data/
 
 # checkpoints
 checkpoints/
