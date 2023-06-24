@@ -159,14 +159,14 @@ if __name__ == "__main__":
     config.batch_size  = 2
     config.num_workers = 2
     # learning rate
-    config.lr = 0.00005
+    config.lr = 0.00001
     # checkpoint
     config.checkpoint_path = "checkpoints/test_8"
     config.save_pt_epoch = True
     # dataset
     config.dim_frame = [64, 64, 64]
     config.up_sample = [4, 4, 4]
-    config.mol_range = [0, 256]
+    config.mol_range = [0, 128]
     # train
     trainer = Train(config)
     trainer.train()

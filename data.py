@@ -1,9 +1,8 @@
 import os
 import scipy.io as sio
-from tifffile import imsave, imread
+from tifffile import imread, imsave 
 from typing import Tuple, Union
 
-import numpy as np
 import torch
 from torch import Tensor
 from torch.nn import functional as F
@@ -53,21 +52,26 @@ class SimuDataset(Dataset):
         ## Variable (dynamic)
         self.mol_list = torch.empty(self.mol_epoch, *self.dai.tolist())
 
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor]:
+    def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
         """
         We first use the help function to generate a frame and label that super
-        resoluted. Then, we reduce the resolution and add noise to the frame
-        using help function `generateNoise`. Note that before calling this
-        function, we have to call `generateMlist` to generate molecular list 
-        first.
+        resoluted, i.e., small pixel size. Then, we reduce the resolution, i.e.,
+        increase the pixel size by downsampling, and add noise to the frame
+        using help function `generateNoise`. Both frame and label are normalized
+        to [0, 1] where the label is in fact binary, i.e., 1 stands for mean
+        pixel of molecular and 0 stands for background.
+        
+        Note that before get any data, we have to call `generateMlist` to 
+        generate molecular list first, which we will call it in __iter__ in
+        DataLoader before each epoch start.
 
         Args:
-            idx (int): Index of the data. Since we random generate data, this
+            index (int): Index of the data. Since we random generate data, this
                 index is not used.
         
         Return:
-            frame (Tensor): [*self.dim_frame], low resolution
-            label (Tensor): [*self.dim_label], super resolution
+            frame (Tensor): [*self.dim_frame], normalized, low resolution
+            label (Tensor): [*self.dim_label], normalized, super resolution
         """
         frame, label = self.generateData()
         frame = self.generateNoise(frame)
@@ -94,16 +98,18 @@ class SimuDataset(Dataset):
         each frame. To save computational time, we do not want to generate 
         molecular for each single frame. Instead, we generate `self.mol_epoch` 
         number of molecular before epoch begin where they have random standard
-        deviation in each dimension, and when generate frame, we randomly choose
+        deviation in each dimension. When generate frame, we randomly choose
         a number of molecular from this list and put them in the frame with 
         random mean and luminance. Then, we have a simulated dataset that random
         enough for training where it's super fast to generate each frame.
 
-        The molecular generated are super-resoluted. We store each molecular in
-        a [*self.dai] tensor where `self.dai` is the length (diameter) of the 
-        matrix in each dimension. The center of the molecular is at the center
-        of the matrix, and we compute the probability density for each 
-        molecular around the center with a radius of `self.rad`.
+        The molecular generated are super-resoluted, i.e., with small pixel
+        size. We will reduce the resolution, i.e., increase the pixel size
+        after we generate the frame to prevent information loss. We store each 
+        molecular in a [*self.dai] tensor where `self.dai` is the length 
+        (diameter) of the matrix in each dimension. The center of the molecular
+        is at the center of the matrix, and we compute the probability density 
+        for each molecular around the center with a radius of `self.rad`.
 
         Return:
             self.mol_list (Tensor): molecular list with shape
@@ -167,8 +173,8 @@ class SimuDataset(Dataset):
 
     def generateNoise(self, frame: Tensor) -> Tensor:
         """
-        This function will downsample and add camer noise to the input clean and
-        super-resoluted frame. 
+        This function will downsample, i.e., increase pixel size, and add camer
+        noise to the input clean, super-resoluted frame. 
         
         Since we use torch.nn.functional.interpolate to downsampling the frame,
         the input frame should be 1D to 3D tensor. 
@@ -264,20 +270,87 @@ class CropDataset(Dataset):
         # folder for raw data
         self.raw_folder = config.raw_folder
         self.raw_frames_folder = os.path.join(self.raw_folder, "frames")
-        self.raw_labels_folder = os.path.join(self.raw_folder, "labels")
+        self.raw_mlists_folder = os.path.join(self.raw_folder, "mlists")
         # folder for crop data
         self.crop_folder = os.path.join(
-            os.path.dirname(config.raw_folder), 
-            "{}-{}".format(config.dim_frame, config.up_sample)
+            os.path.dirname(config.raw_folder), "{}".format(config.dim_frame)
         )
         self.crop_frames_folder = os.path.join(self.crop_folder, "frames")
-        self.crop_labels_folder = os.path.join(self.crop_folder, "labels")
+        self.crop_mlists_folder = os.path.join(self.crop_folder, "mlists")
         
         self.file_check()
 
-    # TODO: implement __getitem__
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
-        pass
+        """
+        This function will return the index-th frame and label by loading the
+        frame and molecular list from the disk. We assume the data store in
+        `self.crop_folder` where frame and molecular list are stored in sub-
+        folder `frames` and `mlists` respectively. The file name of frame and
+        molecular list should be `index.tif` and `index.mat` respectively. Also,
+        since we load .mat file as dictionary, we assume the molecular list is
+        stored in the key `mlist` of the dictionary.
+
+        {crop_folder}
+        ├── frames
+        │   ├── 0.tif
+        │   ├── 1.tif
+        │   ├── ...
+        │   └── {sum(self.num) - 1}.tif
+        └── mlists
+            ├── 0.mat
+            ├── 1.mat
+            ├── ...
+            └── {sum(self.num) - 1}.mat
+
+        For the frame store in `self.crop_frames_folder`, we assume they are low
+        resolution, i.e., large pixel size, with shape [*self.dim_frame] and 
+        pixel value is non-normalized. The data type can be any uint type; we
+        will convert the frame to float type and normalize the frame to range
+        [0, 1] before output.
+
+        For the molecular list store in `self.crop_mlists_folder`, we assume 
+        they are low resolution, i.e., large pixel size, with a shape of [N, D]
+        where N is the number of molecules and D is number of dimension. The 
+        data store in it represent the coordinate of center of each molecule. 
+        The data type can be any float type; we will convert the molecular list 
+        to high resolution, i.e, small pixel size, and then round to int. Then, 
+        for each location in this high resolution molecular list, we will set 
+        corresponding pixel in high resolution label frame to 1 where the label
+        is a tensor with shape [*self.dim_label].
+
+        Args:
+            index (int): Index of the data. 
+        
+        Return:
+            frame (Tensor): [*self.dim_frame], normalized, low resolution
+            label (Tensor): [*self.dim_label], normalized, super resolution
+        """
+        
+        ## frame
+        # ndarray, any uint, low resolution, non-normalized
+        frame = imread(
+            os.path.join(self.crop_frames_folder, "{}.tif".format(index))
+        )
+        # tensor, float, low resolution, normalized
+        frame = torch.from_numpy(frame)
+        frame = frame.float() / torch.iinfo(frame.dtype).max
+
+        ## molecular list
+        # ndarray, any float, low resolution
+        mlist = sio.loadmat( # type: ignore
+            os.path.join(self.crop_mlists_folder, "{}.mat".format(index))
+        )["mlist"]
+        # tensor, float, high resolution
+        mlist = Tensor(torch.from_numpy(mlist)).float()  # to tensor
+        mlist = (mlist + 0.5) * self.up_sample - 0.5
+        mlist = torch.round(mlist).int()
+
+        ## label
+        # tensor, float, high resolution, normalized
+        label = torch.zeros(*self.dim_label.tolist())
+        label[tuple(mlist.t())] = 1
+
+        return frame, label
 
     def __len__(self) -> int:
         """
@@ -289,19 +362,46 @@ class CropDataset(Dataset):
     # help function for __init__
 
     def file_check(self) -> None:
-        # check raw data
+        """
+        WARNING: Do not reply on this function to check the validity of the raw 
+        data. Please check all implementation and documentation of this class to
+        see each function's pre-condition.
+
+        This help function will check if the raw data folder and crop data 
+        folder exist. If the raw data does not exist, it will raise 
+        FileNotFoundError. If the crop data does not exist, it will create the 
+        crop data by calling `prepareCropData` function.
+        """
+
+        # check if raw data exist
         if not os.path.exists(self.raw_folder):
-            raise FileNotFoundError("raw_folder does not exist.")
+            raise FileNotFoundError("Raw data not exist.")
+        elif not os.path.exists(self.raw_frames_folder):
+            raise FileNotFoundError("Raw data frames not exist.")
+        elif not os.path.exists(self.raw_mlists_folder):
+            raise FileNotFoundError("Raw data mlists not exist.")
         
-        # check crop data
-        # if data fold does not exist, mean the data has not been cropped
+        # check if crop data exit
+        # data fold not existing means the raw data has not been cropped
         if not os.path.exists(self.crop_folder): 
             os.makedirs(self.crop_frames_folder)
-            os.makedirs(self.crop_labels_folder)
+            os.makedirs(self.crop_mlists_folder)
             self.prepareCropData()
+        if len(os.listdir(self.crop_frames_folder)) != sum(self.num):
+            raise FileNotFoundError("Number of crop frames not correct.")
+        if len(os.listdir(self.crop_mlists_folder)) != sum(self.num):
+            raise FileNotFoundError("Number of crop mlists not correct.")
 
-    # TODO: change prepareCropData to universal function
     def prepareCropData(self) -> None:
+        """
+        WARNING: This function is not a universal function. It is designed for
+        specific raw data. Please check all implementation and documentation of
+        this class to see each function's pre-condition.
+
+        The help function to crop the raw data will following the pre-condition
+        of __getitem__ function.
+        """
+
         # def the function for reading files in a directory
         def get_files_in_dir(directory: str):
             with os.scandir(directory) as entries:
@@ -310,52 +410,72 @@ class CropDataset(Dataset):
                         yield entry.name
         
         # read each frame in the raw data folder
+        num_sub = 0
         for file_name in get_files_in_dir(self.raw_frames_folder):
             name = os.path.splitext(file_name)[0]
             
-            # frame (numpy, uint8, low resolution) [D H W]
-            frame = imread(os.path.join(self.raw_frames_folder, name+".tif"))
-            # corresponding molecular list (numpy, float64, low resolution)
-            # [H, W, D], [1, 512]
-            mlist = sio.loadmat( # type: ignore
-                os.path.join(self.raw_labels_folder, name+".mat")
-            )["storm_coords"]
-            # [1, 512] -> [0, 511]
-            mlist = mlist - 1 
-            # [H, W, D] -> [D, H, W]
-            h, w, d = mlist[:, 0].copy(), mlist[:, 1].copy(), mlist[:, 2].copy()
-            mlist[:, 0], mlist[:, 1], mlist[:, 2] = d, h, w
+            # frame
+            # ndarray, uint8, low resolution, [D H W], [0, 255]
+            frame = imread(
+                os.path.join(self.raw_frames_folder, name+".tif")
+            )
             
-            # crop the frame to (64 64 64) with step size 24
+            # molecular list
+            # ndarray, double, low resolution, (H, W, D), [1, 512]
+            mlist = sio.loadmat( # type: ignore
+                os.path.join(self.raw_mlists_folder, name+".mat")
+            )["storm_coords"]
+            # ndarray, double, lwo resolution, (D, H, W), [0, 511]
+            mlist = mlist[:, [2, 0, 1]] - 1 
+            
+            # crop the frame to 10 number of dim_frame frame with step size 24
             for sub in range(100):
+                if num_sub == sum(self.num): return 
+
                 h = sub // 10  # index for height
                 w = sub %  10  # index for width
 
-                # store the cropped subframe
-                subframe = frame[:, 232+h*24 : 232+h*24+64, w*24 : w*24+64]
-                imsave(os.path.join(
-                    self.crop_frames_folder, name+"-{}-{}.tif".format(h, w)
-                ), subframe)
-
-                # get the corresponding molecular list
+                # the cropped subframe
+                subframe = frame[
+                    0            : self.dim_frame[0], 
+                    h * 24 + 232 : self.dim_frame[1] + h * 24 + 232, 
+                    w * 24       : self.dim_frame[2] + w * 24
+                ]
+                
+                # the corresponding sub molecular list
                 submlist = mlist.copy()
-                submlist = submlist[submlist[:, 1] >= 232+h*24]
-                submlist = submlist[submlist[:, 1] <  232+h*24+64]
-                submlist = submlist[submlist[:, 2] >= w*24]
-                submlist = submlist[submlist[:, 2] <  w*24+64]
-                submlist = submlist - [0, 232+h*24, w*24]  # minus start point
-                # low resolution -> high resolution, float -> int
-                submlist /= np.array(frame.shape) - 1
-                submlist *= np.array(frame.shape) * self.up_sample - 1
-                submlist  = np.round(submlist).astype(int)
-                # store the cropped submlist
+                submlist = submlist[submlist[:, 0] <= int(self.dim_frame[0])-1]
+                submlist = submlist[submlist[:, 1] >= h * 24 + 232]
+                submlist = submlist[
+                    submlist[:, 1] <= (int(self.dim_frame[1])-1) + h * 24 + 232]
+                submlist = submlist[submlist[:, 2] >= w * 24]
+                submlist = submlist[
+                    submlist[:, 2] <= (int(self.dim_frame[2])-1) + w * 24]
+                submlist = submlist - [0, 232+h*24, w*24]  # [0 63]
+
+                # save the frame and mlist
+                imsave(os.path.join(
+                    self.crop_frames_folder, "{}.tif".format(num_sub)
+                ), subframe)
                 sio.savemat(os.path.join(  # type: ignore
-                    self.crop_labels_folder, name+"-{}-{}.mat".format(h, w)
-                ), {"storm_coords": submlist})
+                    self.crop_mlists_folder, "{}.mat".format(num_sub)
+                ), {"mlist": submlist})
+
+                num_sub+=1
+
+        # check if the crop data is enough
+        if num_sub < sum(self.num):
+            raise RuntimeError("The Crop data is not enough.")
+
 
 class CropDataLoader(DataLoader):
-    # TODO: implement dataloader for real data
-    pass
+    def __init__(self, config, dataset: Union[CropDataset, Subset]) -> None:
+        super().__init__(
+            dataset,
+            batch_size=config.batch_size, 
+            num_workers=config.num_workers, 
+            pin_memory=True
+        )
 
 
 # ============================================================================ #
@@ -370,35 +490,34 @@ if __name__ == "__main__":
     # create dir to store test file
     if not os.path.exists("assets/dataset"): os.makedirs("assets/dataset")
 
-    # test SimuDataset using default config
+    # test using default config
     config  = Config()
+
+    # test the CropDataset
+    dataset = CropDataset(config)
+    frame, label = dataset[7]
+    imsave('assets/dataset/cframe.tif', (frame * 255).to(torch.uint8).numpy())
+    imsave('assets/dataset/clabel.tif', (label * 255).to(torch.uint8).numpy())
+
+    # test the SimuDataset
     dataset = SimuDataset(config)
-
-    prepareCropData(config)
-
-    #"""
     # test function generateMlist
     mol_list = dataset.generateMlist()
     imsave('assets/dataset/mol.tif', 
            (mol_list[0] * 255).to(torch.uint8).numpy())
-    
     # test function generateData
     frame, label = dataset.generateData()
     imsave('assets/dataset/frame.tif', (frame * 255).to(torch.uint8).numpy())
     imsave('assets/dataset/label.tif', (label * 255).to(torch.uint8).numpy())
-    
     # test function generateNoise
     noise = dataset.generateNoise(frame)
     imsave('assets/dataset/noise.tif', (noise * 255).to(torch.uint8).numpy())
-
     # test the dataloader output
     frame, label = dataset[0]
     imsave('assets/dataset/frame0.tif', (frame * 255).to(torch.uint8).numpy())
     imsave('assets/dataset/label0.tif', (label * 255).to(torch.uint8).numpy())
-    
     # test the input of network
     from torch import nn
     upsample = nn.Upsample(scale_factor=tuple(config.up_sample), mode='nearest')
     intput = upsample(frame.unsqueeze(0).unsqueeze(0)).squeeze(0).squeeze(0)
     imsave('assets/dataset/intput.tif', (intput * 255).to(torch.uint8).numpy())
-    #"""

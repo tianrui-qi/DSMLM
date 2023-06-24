@@ -39,11 +39,11 @@ class Config:
         self.std_range: List[float] = [0.5, 3.0]    # by pixel in low resolution
         self.lum_range: List[float] = [1/32, 1.0]
         # config for reducing resolution and adding noise
-        self.bitdepth : int   = 12
+        self.bitdepth : int   = 8
         self.qe       : float = 0.82
         self.sen      : float = 5.88
-        self.noise_mu : float = 16.0    # mu of gaussian noise, by 2^bitdepth
-        self.noise_var: float = 16.0    # variance of dark noise, by 2^bitdepth
+        self.noise_mu : float = 0.0    # mu of gaussian noise, by 2^bitdepth
+        self.noise_var: float = 0.0    # variance of dark noise, by 2^bitdepth
 
         ## For RawDataset
-        self.raw_folder = "data/raw"
+        self.raw_folder  = "data/raw"
