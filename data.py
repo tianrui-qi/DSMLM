@@ -53,7 +53,7 @@ class SimuDataset(Dataset):
         ## Variable (dynamic)
         self.mol_list = torch.empty(self.mol_epoch, *self.dai.tolist())
 
-    def __getitem__(self, idx) -> Tuple[Tensor, Tensor]:
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor]:
         """
         We first use the help function to generate a frame and label that super
         resoluted. Then, we reduce the resolution and add noise to the frame
@@ -250,41 +250,108 @@ class SimuDataLoader(DataLoader):
 # ============================================================================ #
 
 
-def prepareCropData(config) -> None:
-    # path for raw data
-    raw_folder = config.raw_folder
-    raw_frames_folder = os.path.join(raw_folder, "frames")
-    raw_labels_folder = os.path.join(raw_folder, "labels")
-    # path for data after cropping
-    crop_folder = os.path.join(
-        os.path.dirname(config.raw_folder), 
-        "{}-{}".format(config.dim_frame, config.up_sample)
-    )
-    crop_frames_folder = os.path.join(crop_folder, "frames")
-    crop_labels_folder = os.path.join(crop_folder, "labels")
-
-    # def the function for reading files in a directory
-    def get_files_in_dir(directory: str):
-        with os.scandir(directory) as entries:
-            for entry in entries:
-                if entry.is_file():
-                    yield entry.name
-    
-    # read each frame in the raw data folder
-    for file_name in get_files_in_dir(raw_frames_folder):
-        name = os.path.splitext(file_name)[0]
-        
-        # frame (numpy, uint8, low resolution)
-        frame = imread(os.path.join(raw_frames_folder, name+".tif"))
-        # corresponding molecular list (numpy, float64, low resolution)
-        mol_list = sio.loadmat(
-            os.path.join(raw_labels_folder, name+".mat"))["storm_coords"]
-
-
 class CropDataset(Dataset):
-    # TODO: implement dataset for real data
-    pass
+    def __init__(self, config) -> None:
+        super(CropDataset, self).__init__()
 
+        ## Configuration (final)
+        # dimensional config
+        self.dim_frame = Tensor(config.dim_frame).int()     # [D]
+        self.up_sample = Tensor(config.up_sample).int()     # [D]
+        self.dim_label = self.dim_frame * self.up_sample    # [D]
+        # number of data
+        self.num       = config.num
+        # folder for raw data
+        self.raw_folder = config.raw_folder
+        self.raw_frames_folder = os.path.join(self.raw_folder, "frames")
+        self.raw_labels_folder = os.path.join(self.raw_folder, "labels")
+        # folder for crop data
+        self.crop_folder = os.path.join(
+            os.path.dirname(config.raw_folder), 
+            "{}-{}".format(config.dim_frame, config.up_sample)
+        )
+        self.crop_frames_folder = os.path.join(self.crop_folder, "frames")
+        self.crop_labels_folder = os.path.join(self.crop_folder, "labels")
+        
+        self.file_check()
+
+    # TODO: implement __getitem__
+    def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
+        pass
+
+    def __len__(self) -> int:
+        """
+        Return: 
+            self.num (int): Total number of data, including train and valid.
+        """
+        return sum(self.num)
+
+    # help function for __init__
+
+    def file_check(self) -> None:
+        # check raw data
+        if not os.path.exists(self.raw_folder):
+            raise FileNotFoundError("raw_folder does not exist.")
+        
+        # check crop data
+        # if data fold does not exist, mean the data has not been cropped
+        if not os.path.exists(self.crop_folder): 
+            os.makedirs(self.crop_frames_folder)
+            os.makedirs(self.crop_labels_folder)
+            self.prepareCropData()
+
+    # TODO: change prepareCropData to universal function
+    def prepareCropData(self) -> None:
+        # def the function for reading files in a directory
+        def get_files_in_dir(directory: str):
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    if entry.is_file():
+                        yield entry.name
+        
+        # read each frame in the raw data folder
+        for file_name in get_files_in_dir(self.raw_frames_folder):
+            name = os.path.splitext(file_name)[0]
+            
+            # frame (numpy, uint8, low resolution) [D H W]
+            frame = imread(os.path.join(self.raw_frames_folder, name+".tif"))
+            # corresponding molecular list (numpy, float64, low resolution)
+            # [H, W, D], [1, 512]
+            mlist = sio.loadmat( # type: ignore
+                os.path.join(self.raw_labels_folder, name+".mat")
+            )["storm_coords"]
+            # [1, 512] -> [0, 511]
+            mlist = mlist - 1 
+            # [H, W, D] -> [D, H, W]
+            h, w, d = mlist[:, 0].copy(), mlist[:, 1].copy(), mlist[:, 2].copy()
+            mlist[:, 0], mlist[:, 1], mlist[:, 2] = d, h, w
+            
+            # crop the frame to (64 64 64) with step size 24
+            for sub in range(100):
+                h = sub // 10  # index for height
+                w = sub %  10  # index for width
+
+                # store the cropped subframe
+                subframe = frame[:, 232+h*24 : 232+h*24+64, w*24 : w*24+64]
+                imsave(os.path.join(
+                    self.crop_frames_folder, name+"-{}-{}.tif".format(h, w)
+                ), subframe)
+
+                # get the corresponding molecular list
+                submlist = mlist.copy()
+                submlist = submlist[submlist[:, 1] >= 232+h*24]
+                submlist = submlist[submlist[:, 1] <  232+h*24+64]
+                submlist = submlist[submlist[:, 2] >= w*24]
+                submlist = submlist[submlist[:, 2] <  w*24+64]
+                submlist = submlist - [0, 232+h*24, w*24]  # minus start point
+                # low resolution -> high resolution, float -> int
+                submlist /= np.array(frame.shape) - 1
+                submlist *= np.array(frame.shape) * self.up_sample - 1
+                submlist  = np.round(submlist).astype(int)
+                # store the cropped submlist
+                sio.savemat(os.path.join(  # type: ignore
+                    self.crop_labels_folder, name+"-{}-{}.mat".format(h, w)
+                ), {"storm_coords": submlist})
 
 class CropDataLoader(DataLoader):
     # TODO: implement dataloader for real data

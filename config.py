@@ -32,7 +32,7 @@ class Config:
         self.batch_size : int = 1        # for dataloader
         self.num_workers: int = 1        # for dataloader
         
-        ## For Simulated Data (SimDataset)
+        ## For SimDataset
         # config for adjust distribution of molecular
         self.mol_epoch: int = 128   # num of molecular simulated per epoch
         self.mol_range: List[int]   = [0, 64]       # min, max num of mol/frame
@@ -45,5 +45,5 @@ class Config:
         self.noise_mu : float = 16.0    # mu of gaussian noise, by 2^bitdepth
         self.noise_var: float = 16.0    # variance of dark noise, by 2^bitdepth
 
-        ## For Raw Data (prepareRawData, RawDataset)
+        ## For RawDataset
         self.raw_folder = "data/raw"
