@@ -166,7 +166,7 @@ if __name__ == "__main__":
     # dataset
     config.dim_frame = [64, 64, 64]
     config.up_sample = [4, 4, 4]
-    config.mol_range = [0, 128]
+    config.mol_range = [0, 256]
     # train
     trainer = Train(config)
     trainer.train()
