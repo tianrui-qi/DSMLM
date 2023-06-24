@@ -166,7 +166,7 @@ class SimuDataset(Dataset):
             frame[index_frame] += mol[index_mol]
 
             # put the mean of molecular in label
-            label[*mean] += 1
+            label[*mean] = 1
 
         # prevent lum exceeding 1 or below 0
         return torch.clip(frame, 0, 1), torch.clip(label, 0, 1)
@@ -350,7 +350,7 @@ class CropDataset(Dataset):
         label = torch.zeros(*self.dim_label.tolist())
         label[tuple(mlist.t())] = 1
 
-        return frame, label
+        return torch.clip(frame, 0, 1), torch.clip(label, 0, 1)
 
     def __len__(self) -> int:
         """

@@ -5,8 +5,8 @@ class Config:
     def __init__(self):
         # dimensional config
         # MUST be same accross simulated data, raw data, and model
-        self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
-        self.up_sample: List[int] = [ 4,  8,  8]    # [C, H, W], by scale
+        self.dim_frame: List[int] = [32, 32, 32]    # [C, H, W], by pixel
+        self.up_sample: List[int] = [ 4,  4,  4]    # [C, H, W], by scale
 
         # ========================= config for train ========================= #
 
