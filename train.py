@@ -2,9 +2,10 @@ import os  # for file checking
 import torch
 import torch.optim as optim
 from torch.optim import lr_scheduler
+from torch.utils.data import random_split
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from data import SimDataLoader
+from data import SimuDataset, SimuDataLoader
 from model import UNet2D, Criterion
 
 
@@ -29,8 +30,10 @@ class Train:
         self.mol_average = (config.mol_range[1] - config.mol_range[0]) / 2.0
 
         # dataloader
-        self.trainloader = SimDataLoader(config, config.num_train)
-        self.validloader = SimDataLoader(config, config.num_valid)
+        dataset = SimuDataset(config)
+        train_dataset, valid_dataset = random_split(dataset, dataset.num)
+        self.trainloader = SimuDataLoader(config, train_dataset)
+        self.validloader = SimuDataLoader(config, valid_dataset)
         # model
         self.net        = UNet2D(config).to(self.device)
         self.criterion  = Criterion(config).to(self.device)
@@ -153,18 +156,17 @@ if __name__ == "__main__":
     from config import Config
     # configurations
     config = Config()
-    config.batch_size  = 16
-    config.num_workers = 8
+    config.batch_size  = 2
+    config.num_workers = 2
     # learning rate
-    config.lr = 0.0001
+    config.lr = 0.00005
     # checkpoint
-    config.checkpoint_path = "checkpoints/test_6"
+    config.checkpoint_path = "checkpoints/test_8"
     config.save_pt_epoch = True
     # dataset
-    config.dim_frame = [32, 32, 32]
+    config.dim_frame = [64, 64, 64]
     config.up_sample = [4, 4, 4]
-    config.mol_range = [0, 64]
+    config.mol_range = [0, 128]
     # train
     trainer = Train(config)
-    trainer.load_checkpoint(False)
     trainer.train()
