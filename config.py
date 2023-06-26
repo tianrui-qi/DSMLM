@@ -4,8 +4,8 @@ from typing import List
 class Config:
     def __init__(self):
         # dimensional config
-        # MUST be same accross simulated data, raw data, and model
-        self.dim_frame: List[int] = [32, 32, 32]    # [C, H, W], by pixel
+        # MUST be same accross whole pipline
+        self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
         self.up_sample: List[int] = [ 4,  4,  4]    # [C, H, W], by scale
 
         # ========================= config for train ========================= #
@@ -28,21 +28,21 @@ class Config:
         # ========================= config for data ========================== #
 
         # number of data
-        self.num: List[int] = [8000, 2000]  # number of train, valid data
-        self.batch_size : int = 1        # for dataloader
-        self.num_workers: int = 1        # for dataloader
-        
+        self.num        : List[int] = [8000, 2000]  # num of train, valid data
+        self.batch_size : int       = 1             # for dataloader
+        self.num_workers: int       = 1             # for dataloader
+
         ## For SimDataset
         # config for adjust distribution of molecular
-        self.mol_epoch: int = 128   # num of molecular simulated per epoch
-        self.mol_range: List[int]   = [0, 64]       # min, max num of mol/frame
+        self.mol_epoch: int         = 128   # num molecular simulated per epoch
+        self.mol_range: List[int]   = [0, 16]       # min, max num of mol/frame
         self.std_range: List[float] = [0.5, 3.0]    # by pixel in low resolution
         self.lum_range: List[float] = [1/32, 1.0]
         # config for reducing resolution and adding noise
         self.bitdepth : int   = 8
         self.qe       : float = 0.82
         self.sen      : float = 5.88
-        self.noise_mu : float = 0.0    # mu of gaussian noise, by 2^bitdepth
+        self.noise_mu : float = 0.0    # mu of Gaussian noise, by 2^bitdepth
         self.noise_var: float = 0.0    # variance of dark noise, by 2^bitdepth
 
         ## For RawDataset
