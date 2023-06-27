@@ -4,20 +4,20 @@ from torch import optim
 from torch.optim import lr_scheduler
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from model import UNet2D, Criterion
 from data import getData
-from model import *
 
 
 class Train:
-    def __init__(self, config, dataloader):
-        # configurations
+    def __init__(self, config):
+        # Configurations
         # for train
         self.max_epoch  = config.max_epoch
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
         # for checkpoint
-        self.checkpoint_path = config.checkpoint_path
-        self.save_pt_epoch   = config.save_pt_epoch
+        self.cpt_save_path  = config.cpt_save_path
+        self.cpt_save_epoch = config.cpt_save_epoch
         
         # index
         self.epoch      = 1    # epoch index start from 1
@@ -26,8 +26,7 @@ class Train:
         self.valid_num  = 0
 
         # data
-        self.trainloader = dataloader["train"]
-        self.validloader = dataloader["valid"]
+        self.trainloader, self.validloader = getData(config)
         # model
         self.net        = UNet2D(config).to(self.device)
         self.criterion  = Criterion(config).to(self.device)
@@ -45,12 +44,12 @@ class Train:
             self.valid_epoch()
             self.update_lr()
 
-            if self.save_pt_epoch:
+            if self.cpt_save_epoch:
                 self.save_checkpoint("{}/{}".format(
-                    self.checkpoint_path, self.epoch))
+                    self.cpt_save_path, self.epoch))
             if self.valid_loss < self.best_loss:
                 self.best_loss = self.valid_loss
-                self.save_checkpoint(self.checkpoint_path)
+                self.save_checkpoint(self.cpt_save_path)
 
             self.epoch+=1
 
@@ -122,10 +121,10 @@ class Train:
     @torch.no_grad()
     def save_checkpoint(self, path):
         # file path checking
-        if not os.path.exists(os.path.dirname(self.checkpoint_path)):
-            os.makedirs(os.path.dirname(self.checkpoint_path))
-        if not os.path.exists(self.checkpoint_path + "/"): 
-            if self.save_pt_epoch: os.makedirs(self.checkpoint_path)
+        if not os.path.exists(os.path.dirname(self.cpt_save_path)):
+            os.makedirs(os.path.dirname(self.cpt_save_path))
+        if not os.path.exists(self.cpt_save_path + "/"): 
+            if self.cpt_save_epoch: os.makedirs(self.cpt_save_path)
 
         torch.save({
             'epoch': self.epoch,  # epoch index start from 1
@@ -145,19 +144,8 @@ class Train:
 
 
 if __name__ == "__main__":
-    from config import Config
-    config = Config()
-    # learning rate
-    config.lr = 0.00001
-    # checkpoint
-    config.checkpoint_path = "checkpoints/test_8"
-    config.save_pt_epoch = True
-    # data
-    config.num = [3000, 900]
-    config.batch_size  = 3
-    config.num_workers = 3
-    dataloader = getData(config, "simu", True)
-    # train
-    trainer = Train(config, dataloader)
-    #trainer.load_checkpoint("checkpoints/test_9", load_lr=False)
+    from config import Test_9 as Config
+    trainer = Train(Config)
+    trainer.load_checkpoint("checkpoints/test_8", load_lr=False)
     trainer.train()
+ 

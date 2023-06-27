@@ -1,15 +1,15 @@
 import os
+from tifffile import imread, imsave
 from scipy.io import loadmat, savemat  # type: ignore
-from tifffile import imread, imsave 
 
 import numpy as np
 import torch
 from torch import Tensor
 from torch.nn import functional as F
-from torch.utils.data import Dataset, Subset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader
 from torch.distributions.multivariate_normal import MultivariateNormal
 
-from typing import Tuple, Union
+from typing import Tuple
 
 
 __all__ = [
@@ -20,7 +20,7 @@ __all__ = [
 
 
 class SimuDataset(Dataset):
-    def __init__(self, config) -> None:
+    def __init__(self, config, num: int) -> None:
         super(SimuDataset, self).__init__()
 
         ## Configuration (final)
@@ -28,8 +28,8 @@ class SimuDataset(Dataset):
         self.dim_frame = Tensor(config.dim_frame).int()     # [D]
         self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
-        # number of data
-        self.num       = config.num
+        # data num and type
+        self.num       = num
         # config for adjust distribution of molecular
         self.mol_epoch = config.mol_epoch
         self.mol_range = config.mol_range   # [2]
@@ -40,7 +40,7 @@ class SimuDataset(Dataset):
         self.qe        = config.qe
         self.sen       = config.sen
         self.noise_mu  = config.noise_mu
-        self.noise_var = config.noise_var
+        self.noise_std = config.noise_std
 
         ## Index (final)
         self.D   = len(self.dim_frame)  # number of dimension
@@ -78,9 +78,9 @@ class SimuDataset(Dataset):
     def __len__(self) -> int:
         """
         Return: 
-            self.num (int): Total number of data, including train and valid.
+            self.num (int): Total number of data.
         """
-        return sum(self.num)
+        return self.num
 
     # help functions for generate molecular list before epoch start
 
@@ -216,7 +216,7 @@ class SimuDataset(Dataset):
         # dark noise / gaussian noise
         frame += torch.normal(
             self.noise_mu  * torch.rand(frame.shape),
-            self.noise_var * torch.rand(frame.shape))
+            self.noise_std * torch.rand(frame.shape))
         # reducing resolution casue by limit bitdepth when store data
         frame  = torch.round(frame)
         frame /= 2**self.bitdepth - 1  # gray     -> noised
@@ -225,9 +225,9 @@ class SimuDataset(Dataset):
 
 
 class SimuDataLoader(DataLoader):
-    def __init__(self, config, dataset: Union[SimuDataset, Subset]) -> None:
+    def __init__(self, config, num: int) -> None:
         super().__init__(
-            dataset,
+            SimuDataset(config, num),
             batch_size=config.batch_size, 
             num_workers=config.num_workers, 
             pin_memory=True
@@ -236,24 +236,17 @@ class SimuDataLoader(DataLoader):
     def __iter__(self):
         """
         Before each epoch, we generate a new molecular list using the help
-        function `generateMlist` in SimuDataset. Note that we have to check if
-        the dataset is SimuDataset or Subset of SimuDataset since we may use
-        random split to split the dataset into train and validation set.
+        function `generateMlist` in SimuDataset.
 
         Return:
             Please check the document of DataLoader of PyTorch.
         """
-        if isinstance(self.dataset, SimuDataset):
-            self.dataset.generateMlist()
-        elif not isinstance(self.dataset.dataset, SimuDataset):  # type: ignore
-            raise TypeError("dataset should be SimuDataset.")
-        else:
-            self.dataset.dataset.generateMlist()  # type: ignore
+        self.dataset.generateMlist()  # type: ignore
         return super().__iter__()
 
 
 class CropDataset(Dataset):
-    def __init__(self, config) -> None:
+    def __init__(self, config, num: int) -> None:
         super(CropDataset, self).__init__()
 
         ## Configuration (final)
@@ -262,7 +255,7 @@ class CropDataset(Dataset):
         self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
         # number of data
-        self.num       = config.num
+        self.num       = num
         # folder for raw data
         self.raw_folder = config.raw_folder
         self.raw_frames_folder = os.path.join(self.raw_folder, "frames")
@@ -351,9 +344,9 @@ class CropDataset(Dataset):
     def __len__(self) -> int:
         """
         Return: 
-            self.num (int): Total number of data, including train and valid.
+            self.num (int): Total number of data.
         """
-        return sum(self.num)
+        return self.num
 
     # help function for __init__
 
@@ -383,6 +376,10 @@ class CropDataset(Dataset):
             os.makedirs(self.crop_frames_folder)
             os.makedirs(self.crop_mlists_folder)
             self.prepareCropData()
+        if len(os.listdir(self.crop_frames_folder)) < self.num:
+            raise FileNotFoundError("Number of crop frames not enough.")
+        if len(os.listdir(self.crop_mlists_folder)) < self.num:
+            raise FileNotFoundError("Number of crop mlists not enough.")
 
     def prepareCropData(self) -> None:
         """
@@ -424,7 +421,7 @@ class CropDataset(Dataset):
             
             # crop the frame to 10 number of dim_frame frame with step size 24
             for sub in range(100):
-                if num_sub == sum(self.num): return 
+                if num_sub == self.num: return 
 
                 h = sub // 10  # index for height
                 w = sub %  10  # index for width
@@ -458,48 +455,35 @@ class CropDataset(Dataset):
                 num_sub+=1
 
         # check if the crop data is enough
-        if num_sub < sum(self.num):
+        if num_sub < self.num:
             raise RuntimeError("The Crop data is not enough.")
 
 
 class CropDataLoader(DataLoader):
-    def __init__(self, config, dataset: Union[CropDataset, Subset]) -> None:
+    def __init__(self, config, num: int) -> None:
         super().__init__(
-            dataset,
+            CropDataset(config, num),
             batch_size=config.batch_size, 
             num_workers=config.num_workers, 
             pin_memory=True
         )
 
 
-def getData(config, type: str, split: bool):
-    if type != "simu" and type != "crop":
-        raise ValueError("type must be simu or crop.")
-    elif type == "simu":
-        dataset = SimuDataset(config)
-        if split:
-            train_dataset, valid_dataset = random_split(dataset, dataset.num)
-            dataloader = {
-                "train": SimuDataLoader(config, train_dataset),
-                "valid": SimuDataLoader(config, valid_dataset)
-            }
-        else:
-            dataloader = SimuDataLoader(config, dataset)
-    elif type == "crop":
-        dataset = CropDataset(config)
-        if split:
-            train_dataset, valid_dataset = random_split(dataset, dataset.num)
-            dataloader = {
-                "train": CropDataLoader(config, train_dataset),
-                "valid": CropDataLoader(config, valid_dataset)
-            }
-        else:
-            dataloader = CropDataLoader(config, dataset)
+def getData(config):
+    dataloader = []
+    for d in range(len(config.num)):
+        num  = config.num[d]
+        type = config.type[d]
+        if type != "Crop" and num != "Simu":
+            raise ValueError("Only Crop and Simu data is supported.")
+        elif type == "Simu":
+            dataloader.append(SimuDataLoader(config, num))
+        elif type == "Crop":
+            dataloader.append(CropDataLoader(config, num))
     return dataloader
 
 
 if __name__ == "__main__":
-    from tifffile import imsave
     from config import Config
 
     # create dir to store test file
@@ -509,7 +493,7 @@ if __name__ == "__main__":
     config  = Config()
 
     # test the CropDataset
-    dataset = CropDataset(config)
+    dataset = CropDataset(config, 10)
     frame, label = dataset[7]
     imsave('assets/dataset/cframe.tif', (frame * 255).to(torch.uint8).numpy())
     imsave('assets/dataset/clabel.tif', (label * 255).to(torch.uint8).numpy())
@@ -524,7 +508,7 @@ if __name__ == "__main__":
     """
 
     # test the SimuDataset
-    dataset = SimuDataset(config)
+    dataset = SimuDataset(config, 10)
     # test function generateMlist
     mol_list = dataset.generateMlist()
     imsave('assets/dataset/mol.tif', 
