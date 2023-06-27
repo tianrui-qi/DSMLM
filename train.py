@@ -18,6 +18,8 @@ class Train:
         # for checkpoint
         self.cpt_save_path  = config.cpt_save_path
         self.cpt_save_epoch = config.cpt_save_epoch
+        self.cpt_load_path  = config.cpt_load_path
+        self.cpt_load_lr    = config.cpt_load_lr
         
         # index
         self.epoch      = 1    # epoch index start from 1
@@ -36,7 +38,7 @@ class Train:
         self.scheduler  = lr_scheduler.ExponentialLR(
             self.optimizer, gamma=config.gamma)
         # record training
-        self.writer     = SummaryWriter()        
+        self.writer     = SummaryWriter()
 
     def train(self):
         while self.epoch <= self.max_epoch:
@@ -134,11 +136,12 @@ class Train:
             }, "{}.pt".format(path))
 
     @torch.no_grad()
-    def load_checkpoint(self, path, load_lr = True):
-        checkpoint = torch.load("{}.pt".format(path))
+    def load_checkpoint(self):
+        if self.cpt_load_path == "": return
+        checkpoint = torch.load("{}.pt".format(self.cpt_load_path))
         self.epoch = checkpoint['epoch']+1  # start train from next epoch index
         self.net.load_state_dict(checkpoint['net'])
-        if load_lr:
+        if self.cpt_load_lr:
             self.optimizer.load_state_dict(checkpoint['optimizer'])
             self.scheduler.load_state_dict(checkpoint['scheduler'])
 
@@ -146,6 +149,5 @@ class Train:
 if __name__ == "__main__":
     from config import Test_9 as Config
     trainer = Train(Config)
-    trainer.load_checkpoint("checkpoints/test_8", load_lr=False)
     trainer.train()
  

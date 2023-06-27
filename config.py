@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 
 class Config:
@@ -8,35 +8,38 @@ class Config:
         self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
         self.up_sample: List[int] = [ 4,  4,  4]    # [C, H, W], by scale
 
-        # =============================== train ============================== #
+        # ============================= train.py ============================= #
 
+        ## (class) Train
         # train
         self.max_epoch: int = 400
         # learning rate
         self.lr   : float = 0.00001     # initial learning rate (lr)
         self.gamma: float = 0.95
         # checkpoint
-        self.cpt_save_path : str  = "checkpoints"  # path without .pt
-        self.cpt_save_epoch: bool = False          # save pt every epoch
+        self.cpt_save_path : str  = "checkpoints"   # path without .pt
+        self.cpt_save_epoch: bool = False           # save pt every epoch
+        self.cpt_load_path : str  = ""              # path without .pt
+        self.cpt_load_lr   : bool = False           # load lr from cpt
 
-        # =============================== model ============================== #
+        # ============================= model.py ============================= #
 
-        ## Criterion
+        ## (class) Criterion
         self.kernel_size : int   = 7    # kernel size of GaussianBlur
         self.kernel_sigma: float = 1.0  # sigma of kernel
         self.l1_coeff    : float = 0.0  # set 1 to repeat deep storm
 
-        # =============================== data =============================== #
+        # ============================= data.py ============================== #
 
-        ## getData
+        ## (def) getData
         self.num : List[int] = [3000  , 900   ]     # num of train, valid data
         self.type: List[str] = ["Simu", "Simu"]     # type of train, valid data
 
-        ## SimDataLoader, CropDataLoader
+        ## (class) SimDataLoader, CropDataLoader
         self.batch_size : int = 3
         self.num_workers: int = 3
 
-        ## SimDataset
+        ## (class) SimDataset
         # config for adjust distribution of molecular
         self.mol_epoch: int         = 128           # num mol simulated / epoch
         self.mol_range: List[int]   = [0, 64]       # min, max num of mol/frame
@@ -49,7 +52,7 @@ class Config:
         self.noise_mu : float = 0.0    # mu of Gaussian noise, by 2^bitdepth
         self.noise_std: float = 0.0    # variance of dark noise, by 2^bitdepth
 
-        ## RawDataset
+        ## (class) RawDataset
         self.raw_folder  = "data/raw"
 
 
@@ -68,6 +71,7 @@ class Test_9(Config):
         self.lr = 0.0001
         self.cpt_save_path  = "checkpoints/test_9"
         self.cpt_save_epoch = True
+        self.cpt_load_path  = "checkpoints/test_8"
         # data
         self.type = ["Simu", "Crop"]
         self.noise_mu  = 8.0
