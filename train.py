@@ -10,7 +10,7 @@ from data import getData
 
 
 class Train:
-    def __init__(self, config):
+    def __init__(self, config) -> None:
         # Configurations
         # for train
         self.max_epoch  = config.max_epoch
@@ -41,9 +41,7 @@ class Train:
         # record training
         self.writer     = SummaryWriter()
 
-        return None
-
-    def train(self):
+    def train(self) -> None:
         while self.epoch <= self.max_epoch:
             self.train_epoch()
             self.valid_epoch()
@@ -58,7 +56,7 @@ class Train:
 
             self.epoch+=1
 
-    def train_epoch(self):
+    def train_epoch(self) -> None:
         self.net.train()
         for i, (frames, labels) in enumerate(self.trainloader):
             # put frames and labels in GPU
@@ -82,7 +80,7 @@ class Train:
                 (self.epoch-1)*len(self.trainloader)+i)
     
     @torch.no_grad()
-    def valid_epoch(self):
+    def valid_epoch(self) -> None:
         # validation
         self.net.eval()
         self.valid_loss = []
@@ -112,7 +110,7 @@ class Train:
             self.epoch*len(self.trainloader))
 
     @torch.no_grad()
-    def update_lr(self):
+    def update_lr(self) -> None:
         # update learning rate
         if self.scheduler.get_last_lr()[0] > 1e-7:
             self.scheduler.step()
@@ -124,7 +122,7 @@ class Train:
             self.epoch*len(self.trainloader))
 
     @torch.no_grad()
-    def save_checkpoint(self, path):
+    def save_checkpoint(self, path) -> None:
         # file path checking
         if not os.path.exists(os.path.dirname(self.cpt_save_path)):
             os.makedirs(os.path.dirname(self.cpt_save_path))
@@ -139,7 +137,7 @@ class Train:
             }, "{}.pt".format(path))
 
     @torch.no_grad()
-    def load_checkpoint(self):
+    def load_checkpoint(self) -> None:
         if self.cpt_load_path == "": return
         checkpoint = torch.load("{}.pt".format(self.cpt_load_path))
         self.epoch = checkpoint['epoch']+1  # start train from next epoch index

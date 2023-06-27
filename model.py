@@ -21,7 +21,6 @@ class UNetBlock(nn.Module):
             nn.BatchNorm2d(out_channels),
             nn.ReLU()
         )
-        return None
 
     def forward(self, x: Tensor) -> Tensor:
         return self.block(x)
@@ -47,8 +46,6 @@ class UNet2D(nn.Module):
         self.output = nn.Sequential(
             nn.Conv2d(in_feature * up_c * 2, in_feature * up_c, 1),
             nn.ReLU())
-        
-        return None
 
     def forward(self, x: Tensor) -> Tensor:
         up = self.input(x.unsqueeze(1)).squeeze(1)
@@ -76,8 +73,6 @@ class Criterion(nn.Module):
 
         # pad size, pad before convolve Gaussian kernel
         self.pad = [self.kernel_size for _ in range(6)]  # [C H W]
-        
-        return None
 
     def forward(self, predi: Tensor, label: Tensor) -> float:
         mse_loss = F.mse_loss(
