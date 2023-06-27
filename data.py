@@ -9,7 +9,7 @@ from tifffile import imread, imsave
 from scipy.io import loadmat, savemat  # type: ignore
 import numpy as np
 
-from typing import Tuple
+from typing import Tuple, List, Union
 
 
 __all__ = [
@@ -49,6 +49,8 @@ class SimuDataset(Dataset):
 
         ## Variable (dynamic)
         self.mol_list = torch.empty(self.mol_epoch, *self.dai.tolist())
+
+        return None
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
         """
@@ -232,6 +234,7 @@ class SimuDataLoader(DataLoader):
             num_workers=config.num_workers, 
             pin_memory=True
         )
+        return None
 
     def __iter__(self):
         """
@@ -268,6 +271,8 @@ class CropDataset(Dataset):
         self.crop_mlists_folder = os.path.join(self.crop_folder, "mlists")
         
         self.file_check()
+
+        return None
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
         """
@@ -381,6 +386,8 @@ class CropDataset(Dataset):
         if len(os.listdir(self.crop_mlists_folder)) < self.num:
             raise FileNotFoundError("Number of crop mlists not enough.")
 
+        return None
+
     def prepareCropData(self) -> None:
         """
         WARNING: This function is not a universal function. It is designed for
@@ -457,6 +464,8 @@ class CropDataset(Dataset):
         # check if the crop data is enough
         if num_sub < self.num:
             raise RuntimeError("The Crop data is not enough.")
+        
+        return None
 
 
 class CropDataLoader(DataLoader):
@@ -467,9 +476,10 @@ class CropDataLoader(DataLoader):
             num_workers=config.num_workers, 
             pin_memory=True
         )
+        return None
 
 
-def getData(config):
+def getData(config) -> List[Union[SimuDataLoader, CropDataLoader]]:
     dataloader = []
     for d in range(len(config.num)):
         num  = config.num[d]

@@ -33,13 +33,15 @@ class Train:
         # model
         self.net        = UNet2D(config).to(self.device)
         self.criterion  = Criterion(config).to(self.device)
-        
+
         # optimizer
         self.optimizer  = optim.Adam(self.net.parameters(), lr=config.lr)
         self.scheduler  = lr_scheduler.ExponentialLR(
             self.optimizer, gamma=config.gamma)
         # record training
         self.writer     = SummaryWriter()
+
+        return None
 
     def train(self):
         while self.epoch <= self.max_epoch:
