@@ -35,8 +35,8 @@ class Config:
         ## For SimDataset
         # config for adjust distribution of molecular
         self.mol_epoch: int         = 128   # num molecular simulated per epoch
-        self.mol_range: List[int]   = [0, 16]       # min, max num of mol/frame
-        self.std_range: List[float] = [0.5, 3.0]    # by pixel in low resolution
+        self.mol_range: List[int]   = [0, 64]       # min, max num of mol/frame
+        self.std_range: List[float] = [0.5, 2.5]    # by pixel in low resolution
         self.lum_range: List[float] = [1/32, 1.0]
         # config for reducing resolution and adding noise
         self.bitdepth : int   = 8
