@@ -1,20 +1,18 @@
 import os  # for file checking
 import torch
-import torch.optim as optim
+from torch import optim
 from torch.optim import lr_scheduler
-from torch.utils.data import random_split
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from data import SimuDataset, SimuDataLoader
-from model import UNet2D, Criterion
+from data import getData
+from model import *
 
 
 class Train:
-    def __init__(self, config):
+    def __init__(self, config, dataloader):
         # configurations
         # for train
         self.max_epoch  = config.max_epoch
-        self.batch_size = config.batch_size
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
         # for checkpoint
@@ -26,14 +24,10 @@ class Train:
         self.valid_loss = torch.tensor(float("inf"))
         self.best_loss  = torch.tensor(float("inf"))
         self.valid_num  = 0
-        # averge molecular number per frames, for calculate loss
-        self.mol_average = (config.mol_range[1] - config.mol_range[0]) / 2.0
 
-        # dataloader
-        dataset = SimuDataset(config)
-        train_dataset, valid_dataset = random_split(dataset, dataset.num)
-        self.trainloader = SimuDataLoader(config, train_dataset)
-        self.validloader = SimuDataLoader(config, valid_dataset)
+        # data
+        self.trainloader = dataloader["train"]
+        self.validloader = dataloader["valid"]
         # model
         self.net        = UNet2D(config).to(self.device)
         self.criterion  = Criterion(config).to(self.device)
@@ -76,12 +70,11 @@ class Train:
             self.optimizer.step()
 
             # record
-            total_mol = self.mol_average * self.batch_size
             self.writer.add_scalars(
-                'Loss', {'train': loss.item() / total_mol}, 
+                'Loss', {'train': loss.item() / len(outputs)}, 
                 (self.epoch-1)*len(self.trainloader)+i)
             self.writer.add_scalars(
-                'Num', {'train': len(torch.nonzero(outputs)) / total_mol}, 
+                'Num', {'train': len(torch.nonzero(outputs)) / len(outputs)}, 
                 (self.epoch-1)*len(self.trainloader)+i)
     
     @torch.no_grad()
@@ -99,9 +92,8 @@ class Train:
             # loss
             loss = self.criterion(outputs, labels)
             # record
-            total_mol = self.mol_average * self.batch_size
-            self.valid_loss.append(loss.item() / total_mol)
-            self.valid_num.append(len(torch.nonzero(outputs)) / total_mol)
+            self.valid_loss.append(loss.item() / len(outputs))
+            self.valid_num.append(len(torch.nonzero(outputs)) / len(outputs))
         
         # validation loss
         self.valid_loss = torch.mean(torch.as_tensor(self.valid_loss))
@@ -143,8 +135,8 @@ class Train:
             }, "{}.pt".format(path))
 
     @torch.no_grad()
-    def load_checkpoint(self, load_lr = True):
-        checkpoint = torch.load("{}.pt".format(self.checkpoint_path))
+    def load_checkpoint(self, path, load_lr = True):
+        checkpoint = torch.load("{}.pt".format(path))
         self.epoch = checkpoint['epoch']+1  # start train from next epoch index
         self.net.load_state_dict(checkpoint['net'])
         if load_lr:
@@ -154,19 +146,18 @@ class Train:
 
 if __name__ == "__main__":
     from config import Config
-    # configurations
     config = Config()
-    config.batch_size  = 2
-    config.num_workers = 2
     # learning rate
     config.lr = 0.00001
     # checkpoint
     config.checkpoint_path = "checkpoints/test_8"
     config.save_pt_epoch = True
-    # dataset
-    config.dim_frame = [64, 64, 64]
-    config.up_sample = [4, 4, 4]
-    config.mol_range = [0, 128]
+    # data
+    config.num = [3000, 900]
+    config.batch_size  = 3
+    config.num_workers = 3
+    dataloader = getData(config, "simu", True)
     # train
-    trainer = Train(config)
+    trainer = Train(config, dataloader)
+    #trainer.load_checkpoint("checkpoints/test_9", load_lr=False)
     trainer.train()
