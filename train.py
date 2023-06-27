@@ -1,8 +1,9 @@
-import os  # for file checking
 import torch
 from torch import optim
 from torch.optim import lr_scheduler
 from torch.utils.tensorboard.writer import SummaryWriter
+
+import os  # for file checking
 
 from model import UNet2D, Criterion
 from data import getData
@@ -150,4 +151,3 @@ if __name__ == "__main__":
     from config import Test_9 as Config
     trainer = Train(Config)
     trainer.train()
- 

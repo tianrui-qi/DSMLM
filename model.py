@@ -163,3 +163,7 @@ class Criterion(nn.Module):
             return F.conv3d(frame, kernel, padding="same")
         else:
             raise ValueError("frame.dim() must be 4 or 5")
+
+
+if __name__ == "__main__":
+    pass
