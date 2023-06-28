@@ -1,6 +1,5 @@
 import torch
-from torch import Tensor
-from torch.nn import functional as F
+from torch import Tensor, IntTensor, FloatTensor
 from torch.utils.data import Dataset, DataLoader
 from torch.distributions.multivariate_normal import MultivariateNormal
 
@@ -9,14 +8,7 @@ from tifffile import imread, imsave
 from scipy.io import loadmat, savemat  # type: ignore
 import numpy as np
 
-from typing import Tuple, List, Union
-
-
-__all__ = [
-    "SimuDataset", "SimuDataLoader",  # Simulated data
-    "CropDataset", "CropDataLoader",  # Crop data from raw data
-    "getData"
-]
+from typing import Tuple, List
 
 
 class SimuDataset(Dataset):
@@ -25,54 +17,26 @@ class SimuDataset(Dataset):
 
         ## Configuration (final)
         # dimensional config
-        self.dim_frame = Tensor(config.dim_frame).int()     # [D]
-        self.up_sample = Tensor(config.up_sample).int()     # [D]
+        self.dim_frame = IntTensor(config.dim_frame)        # [D]
+        self.up_sample = IntTensor(config.up_sample)        # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
         # data num and type
         self.num       = num
         # config for adjust distribution of molecular
-        self.mol_epoch = config.mol_epoch
-        self.mol_range = config.mol_range   # [2]
-        self.std_range = config.std_range   # [2]
-        self.lum_range = config.lum_range   # [2]
+        self.mol_range = IntTensor(config.mol_range)    # [2]
+        self.std_range = FloatTensor(config.std_range)  # [2, D]
+        self.lum_range = FloatTensor(config.lum_range)  # [2]
         # config for reducing resolution and adding noise
-        self.bitdepth  = config.bitdepth
-        self.qe        = config.qe
-        self.sen       = config.sen
-        self.noise_mu  = config.noise_mu
-        self.noise_std = config.noise_std
-
-        ## Index (final)
-        self.D   = len(self.dim_frame)  # number of dimension
-        self.rad = torch.ceil(3 * self.std_range[1] * self.up_sample).int()    
-        self.dai = 2 * self.rad + 1     # [D], diameter
-
-        ## Variable (dynamic)
-        self.mol_list = torch.empty(self.mol_epoch, *self.dai.tolist())
+        self.bitdepth    = config.bitdepth
+        self.qe          = config.qe
+        self.sensitivity = config.sensitivity
+        self.dark_noise  = config.dark_noise
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
-        """
-        We first use the help function to generate a frame and label that super
-        resoluted, i.e., small pixel size. Then, we reduce the resolution, i.e.,
-        increase the pixel size by downsampling, and add noise to the frame
-        using help function `generateNoise`. Both frame and label are normalized
-        to [0, 1] where the label is in fact binary, i.e., 1 stands for mean
-        pixel of molecular and 0 stands for background.
-        
-        Note that before get any data, we have to call `generateMlist` to 
-        generate molecular list first, which we will call it in __iter__ in
-        DataLoader before each epoch start.
-
-        Args:
-            index (int): Index of the data. Since we random generate data, this
-                index is not used.
-        
-        Return:
-            frame (Tensor): [*self.dim_frame], normalized, low resolution
-            label (Tensor): [*self.dim_label], normalized, super resolution
-        """
-        frame, label = self.generateData()
+        mean_set, var_set, lum_set = self.generateParas()
+        frame = self.generateFrame(mean_set, var_set, lum_set)
         frame = self.generateNoise(frame)
+        label = self.generateLabel(mean_set)
         return frame, label
 
     def __len__(self) -> int:
@@ -82,167 +46,101 @@ class SimuDataset(Dataset):
         """
         return self.num
 
-    # help functions for generate molecular list before epoch start
+    # help functions for __getitem__
 
-    def generateMlist(self) -> Tensor:
-        """
-        This is a help function for generat molecular list before epoch start.
-        We will call this function before each epoch start in __iter__ in
-        DataLoader.
+    def generateParas(self) -> Tuple[Tensor, Tensor, Tensor]:
+        D = len(self.dim_frame)
+        N = torch.randint(
+            self.mol_range[0], self.mol_range[1] + 1, (1,))  # type: ignore
 
-        As the `self.mol_range` increase, i.e., the min and max number of
-        molecular in each frame, the computational time increase dramatically
-        since we have to compute the probability density for each molecular in
-        each frame. To save computational time, we do not want to generate 
-        molecular for each single frame. Instead, we generate `self.mol_epoch` 
-        number of molecular before epoch begin where they have random standard
-        deviation in each dimension. When generate frame, we randomly choose
-        a number of molecular from this list and put them in the frame with 
-        random mean and luminance. Then, we have a simulated dataset that random
-        enough for training where it's super fast to generate each frame.
+        # mean set, [N, D]
+        mean_set = torch.rand(N, D) * (self.dim_frame - 1)
+        # variance set, [N, D]
+        var_set  = torch.rand(N, D)
+        var_set *= self.std_range[1] - self.std_range[0]
+        var_set += self.std_range[0]
+        var_set  = var_set ** 2
+        # luminance set, [N]
+        lum_set  = torch.rand(N) * (self.lum_range[1] - self.lum_range[0])
+        lum_set += self.lum_range[0]
 
-        The molecular generated are super-resoluted, i.e., with small pixel
-        size. We will reduce the resolution, i.e., increase the pixel size
-        after we generate the frame to prevent information loss. We store each 
-        molecular in a [*self.dai] tensor where `self.dai` is the length 
-        (diameter) of the matrix in each dimension. The center of the molecular
-        is at the center of the matrix, and we compute the probability density 
-        for each molecular around the center with a radius of `self.rad`. We
-        assume the molecular only have std in each dimension, i.e., no
-        correlation between dimensions, where the std is randomly generated
-        from `self.std_range` that is the min and max std in each dimension.
+        return mean_set, var_set, lum_set
 
-        Return:
-            self.mol_list (Tensor): molecular list with shape
-                [self.mol_epoch, *self.dai]
-        """
+    def generateFrame(self, mean_set, var_set, lum_set) -> Tensor:
+        D = len(self.dim_frame)  # number of dimension, i.e., 2D/3D frame
+        N = len(mean_set)        # number of molecular in this frame
 
-        for m in range(self.mol_epoch):
-            # generate variance for this molecular
-            var  = torch.rand(len(self.up_sample))
-            var *= self.std_range[1] - self.std_range[0]
-            var += self.std_range[0]
-            var  = (var * self.up_sample) ** 2
+        frame = torch.zeros(self.dim_frame.tolist())
+        for m in range(N):
+            # parameters of m molecular
+            mean = mean_set[m]  # [D], float
+            var  = var_set[m]   # [D], float
+            lum  = lum_set[m]   # float
 
-            # build coordinate system of this molecular
-            index = [torch.arange(int(end)) for end in self.dai]
-            grid_cell = torch.meshgrid(*index, indexing='ij')
-            coord = torch.stack([c.reshape(-1) for c in grid_cell], dim=1)
+            # take a slice around the mean where the radia is 4 * std
+            ra = torch.ceil(4 * torch.sqrt(var)).int()  # radius, [D]
+            lo = torch.maximum(torch.round(mean) - ra, torch.zeros(D)).int()
+            up = torch.minimum(torch.round(mean) + ra, self.dim_frame - 1).int()
 
-            # compute the probability density for each point/pixel
-            distribution = MultivariateNormal(self.rad, torch.diag(var))
+            # build coordinate system of the slice
+            index = [torch.arange(l, u+1) for l, u in zip(lo, up)] # type: ignore
+            grid  = torch.meshgrid(*index, indexing='ij')
+            coord = torch.stack([c.ravel() for c in grid], dim=1)
+
+            # compute the probability density for each point/pixel in slice
+            distribution = MultivariateNormal(mean, torch.diag(var))
             pdf  = torch.exp(distribution.log_prob(coord))
             pdf /= torch.max(pdf)  # normalized
 
-            self.mol_list[m] = pdf.reshape(*self.dai.tolist())
-        
-        return self.mol_list
+            # set the luminate
+            pdf *= lum
 
-    # help functions for __getitem__
+            # put the slice back to whole frame
+            frame[tuple(coord.int().T)] += pdf
 
-    def generateData(self) -> Tuple[Tensor, Tensor]:
-        # number of molecular in this frame
-        N = torch.randint(
-            self.mol_range[0], self.mol_range[1] + 1, (1,))
-
-        frame = torch.zeros(self.dim_label.tolist())
-        label = torch.zeros(self.dim_label.tolist())
-        for _ in range(N):
-            # random choose a molecular
-            mol = self.mol_list[torch.randint(self.mol_epoch, (1, ))]
-            mol = mol.reshape(*self.dai.tolist())
-
-            # set the luminance
-            lum  = torch.rand(1) * (self.lum_range[1] - self.lum_range[0])
-            lum += self.lum_range[0]
-            mol *= lum
-
-            # put the molecular in a random position in frame/label
-            mean  = (torch.rand(self.D) * (self.dim_label - 1)).int()
-            lower = torch.max(mean - self.rad, torch.zeros(self.D).int())
-            upper = torch.min(mean + self.rad, self.dim_label - 1)
-            index_mol   = tuple(slice(l, u) for l, u in zip(
-                lower - (mean - self.rad), upper - (mean - self.rad)))
-            index_frame = tuple(slice(l, u) for l, u in zip(lower, upper))
-            frame[index_frame] += mol[index_mol]
-
-            # put the mean of molecular in label
-            label[*mean] = 1
-
-        # prevent lum exceeding 1 or below 0
-        return torch.clip(frame, 0, 1), torch.clip(label, 0, 1)
+        return torch.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
     def generateNoise(self, frame: Tensor) -> Tensor:
         """
-        This function will downsample, i.e., increase pixel size, and add camer
-        noise to the input clean, super-resoluted frame. 
+        This function will add camer noise to the input frame. 
         
-        Since we use torch.nn.functional.interpolate to downsampling the frame,
-        the input frame should be 1D to 3D tensor. 
         We add three type of noise in our camera noise. First we convert the
         gray frame to photons to add shot noise. Then convert to electons to 
         add dark noise. Finally, we round the frame which simulate the loss of 
         information due to limit bitdepth when store data.
 
         Args:
-            frame (Tensor): [W], [H, W], or [D, H, W] tensor where W, H, D are
-                the width, height, and depth of the frame. The frame should be
-                clean and super-resoluted.
-        
+            frame (Tensor): [*self.dim_frame] tensor representing the frame
+                we will add noise.
+
         Return:
-            noise (Tensor): [W'], [H', W'], or [D', H', W'] tensor where W, H, D
-                are the width, height, and depth of the frame. The frame is
-                downsampled and added noise. Note that W', H', D' are different
-                from W, H, D since we downsample the frame. The downsampling
-                scale, i.e., W/W', H/H', D/D', is determined by 
-                `self.up_sample`.
+            noise (Tensor): [*self.dim_frame] tensor representing the frame
+                after we add noise.
         """
-        if frame.dim() not in [1, 2, 3]:
-            raise ValueError("frame should be 1D to 3D tensor.")
 
-        # downsampling: decrease pixel number / increase pixel size
-        frame = F.interpolate(
-            frame.reshape(1, 1, *self.dim_label.tolist()), 
-            size=self.dim_frame.tolist(), mode="nearest"
-        ).reshape(*self.dim_frame.tolist())
-
-        frame *= 2**self.bitdepth - 1  # clean    -> gray
-        frame /= self.sen              # gray     -> electons
-        frame /= self.qe               # electons -> photons
+        frame *= 2**self.bitdepth - 1   # clean    -> gray
+        frame /= self.sensitivity       # gray     -> electons
+        frame /= self.qe                # electons -> photons
         # shot noise / poisson noise
         frame  = torch.poisson(frame)
-        frame *= self.qe               # photons  -> electons
-        frame *= self.sen              # electons -> gray
+        frame *= self.qe                # photons  -> electons
         # dark noise / gaussian noise
-        frame += torch.normal(
-            self.noise_mu  * torch.rand(frame.shape),
-            self.noise_std * torch.rand(frame.shape))
+        frame += torch.normal(0.0, self.dark_noise, size=frame.shape)
+        frame *= self.sensitivity       # electons -> gray
         # reducing resolution casue by limit bitdepth when store data
         frame  = torch.round(frame)
         frame /= 2**self.bitdepth - 1  # gray     -> noised
 
         return torch.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
-
-class SimuDataLoader(DataLoader):
-    def __init__(self, config, num: int) -> None:
-        super().__init__(
-            SimuDataset(config, num),
-            batch_size=config.batch_size, 
-            num_workers=config.num_workers, 
-            pin_memory=True
-        )
-
-    def __iter__(self):
-        """
-        Before each epoch, we generate a new molecular list using the help
-        function `generateMlist` in SimuDataset.
-
-        Return:
-            Please check the document of DataLoader of PyTorch.
-        """
-        self.dataset.generateMlist()  # type: ignore
-        return super().__iter__()
+    def generateLabel(self, mean_set: Tensor) -> Tensor:
+        # low resolution to super resolution, i.e., decrease pixel size
+        mean_set = (mean_set + 0.5) * self.up_sample - 0.5
+        
+        label = torch.zeros(self.dim_label.tolist())
+        label[tuple(torch.round(mean_set).T.int())] = 1
+        
+        return torch.clip(label, 0, 1)  # prevent lum exceeding 1 or below 0
 
 
 class CropDataset(Dataset):
@@ -459,27 +357,21 @@ class CropDataset(Dataset):
             raise RuntimeError("The Crop data is not enough.")
 
 
-class CropDataLoader(DataLoader):
-    def __init__(self, config, num: int) -> None:
-        super().__init__(
-            CropDataset(config, num),
+def getDataLoader(config) -> List[DataLoader]:
+    dataloader = []
+    for d in range(len(config.num)):
+        if config.type[d] == "Simu":
+            dataset = SimuDataset(config, config.num[d])
+        elif config.type[d] == "Crop":
+            dataset = CropDataset(config, config.num[d])
+        else:
+            raise ValueError("Only Crop and Simu dataset is supported.")
+        dataloader.append(DataLoader(
+            dataset,
             batch_size=config.batch_size, 
             num_workers=config.num_workers, 
             pin_memory=True
-        )
-
-
-def getData(config) -> List[Union[SimuDataLoader, CropDataLoader]]:
-    dataloader = []
-    for d in range(len(config.num)):
-        num  = config.num[d]
-        type = config.type[d]
-        if type != "Crop" and num != "Simu":
-            raise ValueError("Only Crop and Simu data is supported.")
-        elif type == "Simu":
-            dataloader.append(SimuDataLoader(config, num))
-        elif type == "Crop":
-            dataloader.append(CropDataLoader(config, num))
+        ))
     return dataloader
 
 
@@ -509,23 +401,14 @@ if __name__ == "__main__":
 
     # test the SimuDataset
     dataset = SimuDataset(config, 10)
-    # test function generateMlist
-    mol_list = dataset.generateMlist()
-    imsave('assets/dataset/mol.tif', 
-           (mol_list[0] * 255).to(torch.uint8).numpy())
-    # test function generateData
-    frame, label = dataset.generateData()
+    frame, label = dataset[7]
     imsave('assets/dataset/frame.tif', (frame * 255).to(torch.uint8).numpy())
     imsave('assets/dataset/label.tif', (label * 255).to(torch.uint8).numpy())
-    # test function generateNoise
-    noise = dataset.generateNoise(frame)
-    imsave('assets/dataset/noise.tif', (noise * 255).to(torch.uint8).numpy())
-    # test the dataloader output
-    frame, label = dataset[0]
-    imsave('assets/dataset/frame0.tif', (frame * 255).to(torch.uint8).numpy())
-    imsave('assets/dataset/label0.tif', (label * 255).to(torch.uint8).numpy())
+
+    """
     # test the input of network
     from torch import nn
     upsample = nn.Upsample(scale_factor=tuple(config.up_sample), mode='nearest')
     intput = upsample(frame.unsqueeze(0).unsqueeze(0)).squeeze(0).squeeze(0)
     imsave('assets/dataset/intput.tif', (intput * 255).to(torch.uint8).numpy())
+    """

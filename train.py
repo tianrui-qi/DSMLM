@@ -6,7 +6,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 import os  # for file checking
 
 from model import UNet2D, Criterion
-from data import getData
+from data import getDataLoader
 
 
 class Train:
@@ -29,7 +29,7 @@ class Train:
         self.valid_num  = 0
 
         # data
-        self.trainloader, self.validloader = getData(config)
+        self.trainloader, self.validloader = getDataLoader(config)
         # model
         self.net        = UNet2D(config).to(self.device)
         self.criterion  = Criterion(config).to(self.device)
@@ -148,6 +148,6 @@ class Train:
 
 
 if __name__ == "__main__":
-    from config import Test_9 as Config
-    trainer = Train(Config)
+    from config import Test_1 as Config
+    trainer = Train(Config())
     trainer.train()

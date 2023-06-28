@@ -41,38 +41,27 @@ class Config:
 
         ## (class) SimDataset
         # config for adjust distribution of molecular
-        self.mol_epoch: int         = 128           # num mol simulated / epoch
-        self.mol_range: List[int]   = [0, 64]       # min, max num of mol/frame
-        self.std_range: List[float] = [0.5, 2.5]    # by pixel in low resolution
-        self.lum_range: List[float] = [1/32, 1.0]
+        self.mol_range: List[int]   = [0, 64]   # min, max num of mol/frame
+        self.std_range: List[List[float]] = [   # std range of each dimension
+            [1.6, 1.3, 1.3],  # [500, 400, 400] nm for FWHM, pixel size 65nm
+            [3.0, 1.6, 1.6],  # [900, 500, 500] nm for FWHM, pixel size 65nm
+        ]
+        self.lum_range: List[float] = [1/8, 3/4]
         # config for reducing resolution and adding noise
-        self.bitdepth : int   = 8
-        self.qe       : float = 0.82
-        self.sen      : float = 5.88
-        self.noise_mu : float = 0.0    # mu of Gaussian noise, by 2^bitdepth
-        self.noise_std: float = 0.0    # variance of dark noise, by 2^bitdepth
+        self.bitdepth   : int   = 16
+        self.qe         : float = 0.82
+        self.sensitivity: float = 5.88
+        self.dark_noise : float = 2.29
 
         ## (class) RawDataset
         self.raw_folder  = "data/raw"
 
 
-class Test_8(Config):
+class Test_1(Config):
     def __init__(self):
         super().__init__()
         # train
-        self.cpt_save_path  = "checkpoints/test_8"
+        self.cpt_save_path  = "checkpoints/test_1"
         self.cpt_save_epoch = True
-
-
-class Test_9(Config):
-    def __init__(self):
-        super().__init__()
-        # train
-        self.lr = 0.0001
-        self.cpt_save_path  = "checkpoints/test_9"
-        self.cpt_save_epoch = True
-        self.cpt_load_path  = "checkpoints/test_8"
         # data
         self.type = ["Simu", "Crop"]
-        self.noise_mu  = 8.0
-        self.noise_std = 8.0

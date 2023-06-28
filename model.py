@@ -4,12 +4,6 @@ from torch import nn as nn
 from torch.nn import functional as F
 
 
-__all__ = [
-    "UNet2D",     # network
-    "Criterion",  # loss function
-]
-
-
 class UNetBlock(nn.Module):
     def __init__(self, in_channels, out_channels) -> None:
         super(UNetBlock, self).__init__()
@@ -162,7 +156,3 @@ class Criterion(nn.Module):
             return F.conv3d(frame, kernel, padding="same")
         else:
             raise ValueError("frame.dim() must be 4 or 5")
-
-
-if __name__ == "__main__":
-    pass
