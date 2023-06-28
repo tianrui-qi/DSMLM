@@ -31,11 +31,9 @@ class Config:
 
         # ============================= data.py ============================== #
 
-        ## (def) getData
+        ## (def) getDataLoader
         self.num : List[int] = [3000  , 900   ]     # num of train, valid data
         self.type: List[str] = ["Simu", "Simu"]     # type of train, valid data
-
-        ## (class) SimDataLoader, CropDataLoader
         self.batch_size : int = 3
         self.num_workers: int = 3
 

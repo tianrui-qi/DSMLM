@@ -379,36 +379,19 @@ if __name__ == "__main__":
     from config import Config
 
     # create dir to store test file
-    if not os.path.exists("assets/dataset"): os.makedirs("assets/dataset")
+    if not os.path.exists("data/test"): os.makedirs("data/test")
 
     # test using default config
     config  = Config()
 
     # test the CropDataset
-    dataset = CropDataset(config, 10)
-    frame, label = dataset[7]
-    imsave('assets/dataset/cframe.tif', (frame * 255).to(torch.uint8).numpy())
-    imsave('assets/dataset/clabel.tif', (label * 255).to(torch.uint8).numpy())
-    # check the density of molecular
-    """
-    total_mol = 0
-    for i in range(len(dataset)):
-        _, label = dataset[i]
-        total_mol += len(torch.nonzero(label))
-    density = total_mol / len(dataset)
-    print(f"molecular density: {density}")
-    """
+    dataset = CropDataset(config, 1)
+    frame, label = dataset[0]
+    imsave('data/test/CropFrame.tif', (frame * 255).to(torch.uint8).numpy())
+    imsave('data/test/CropLabel.tif', (label * 255).to(torch.uint8).numpy())
 
     # test the SimuDataset
-    dataset = SimuDataset(config, 10)
-    frame, label = dataset[7]
-    imsave('assets/dataset/frame.tif', (frame * 255).to(torch.uint8).numpy())
-    imsave('assets/dataset/label.tif', (label * 255).to(torch.uint8).numpy())
-
-    """
-    # test the input of network
-    from torch import nn
-    upsample = nn.Upsample(scale_factor=tuple(config.up_sample), mode='nearest')
-    intput = upsample(frame.unsqueeze(0).unsqueeze(0)).squeeze(0).squeeze(0)
-    imsave('assets/dataset/intput.tif', (intput * 255).to(torch.uint8).numpy())
-    """
+    dataset = SimuDataset(config, 1)
+    frame, label = dataset[0]
+    imsave('data/test/SimuFrame.tif', (frame * 255).to(torch.uint8).numpy())
+    imsave('data/test/SimuLabel.tif', (label * 255).to(torch.uint8).numpy())
