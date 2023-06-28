@@ -14,14 +14,13 @@ from typing import Tuple, List
 class SimuDataset(Dataset):
     def __init__(self, config, num: int) -> None:
         super(SimuDataset, self).__init__()
+        self.num = num
 
-        ## Configuration (final)
         # dimensional config
         self.dim_frame = IntTensor(config.dim_frame)        # [D]
         self.up_sample = IntTensor(config.up_sample)        # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
-        # data num and type
-        self.num       = num
+
         # config for adjust distribution of molecular
         self.mol_range = IntTensor(config.mol_range)    # [2]
         self.std_range = FloatTensor(config.std_range)  # [2, D]
@@ -33,6 +32,21 @@ class SimuDataset(Dataset):
         self.dark_noise  = config.dark_noise
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
+        """
+        This function will return a pair of frame and label where frame with a
+        shape of [*self.dim_frame] and label with a shape of [*self.dim_label],
+        i.e., frame is in low resolution, large pixel size, and label is in high
+        resolution, small pixel size. Both frame and label already normalized
+        to [0, 1] and in torch.float32. Since we generate data in real time, we
+        do not need to use index to get data from disk.
+
+        Args:
+            index (int): The index of the data. This argument is not used.
+        
+        Returns:
+            frame (Tensor): A Tensor with a shape of [*self.dim_frame].
+            label (Tensor): A Tensor with a shape of [*self.dim_label].
+        """
         mean_set, var_set, lum_set = self.generateParas()
         frame = self.generateFrame(mean_set, var_set, lum_set)
         frame = self.generateNoise(frame)
@@ -134,6 +148,23 @@ class SimuDataset(Dataset):
         return torch.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
     def generateLabel(self, mean_set: Tensor) -> Tensor:
+        """
+        This function will generate the label that convert the [N, D] mean_set
+        representing the molecular list to [*self.dim_label] tensor where the
+        location of molecular center in mean_set is 1 in label.
+
+        Note that the mean_set and label are in different resolution, i.e., they
+        have different pixel size. So we need to convert the mean_set to label
+        resolution first.
+
+        Args:
+            mean_set (Tensor): [N, D] tensor representing the molecular list
+                in low resolution, i.e., large pixel size.
+        
+        Return:
+            label (Tensor): [*self.dim_label] tensor representing the label in
+                high resolution, i.e., small pixel size. 
+        """
         # low resolution to super resolution, i.e., decrease pixel size
         mean_set = (mean_set + 0.5) * self.up_sample - 0.5
         
