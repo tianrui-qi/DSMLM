@@ -42,6 +42,7 @@ class Train:
         self.writer     = SummaryWriter()
 
     def train(self) -> None:
+        self.load_checkpoint()
         while self.epoch <= self.max_epoch:
             self.train_epoch()
             self.valid_epoch()
@@ -148,6 +149,6 @@ class Train:
 
 
 if __name__ == "__main__":
-    from config import Test_1 as Config
+    from config import Test_2 as Config
     trainer = Train(Config())
     trainer.train()

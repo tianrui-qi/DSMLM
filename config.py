@@ -63,3 +63,14 @@ class Test_1(Config):
         self.cpt_save_epoch = True
         # data
         self.type = ["Simu", "Crop"]
+
+
+class Test_2(Config):
+    def __init__(self):
+        super().__init__()
+        # train
+        self.cpt_save_path  = "checkpoints/test_2"
+        self.cpt_save_epoch = True
+        self.cpt_load_path  = "checkpoints/test_1"
+        # data
+        self.type = ["Simu", "Crop"]

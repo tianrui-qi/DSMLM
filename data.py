@@ -3,10 +3,10 @@ from torch import Tensor, IntTensor, FloatTensor
 from torch.utils.data import Dataset, DataLoader
 from torch.distributions.multivariate_normal import MultivariateNormal
 
+import numpy as np
 import os
 from tifffile import imread, imsave
 from scipy.io import loadmat, savemat  # type: ignore
-import numpy as np
 
 from typing import Tuple, List
 

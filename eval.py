@@ -4,8 +4,8 @@ import numpy as np
 import cv2
 from tifffile import imsave
 
-from config import Config
-from data import SimuDataset, SimuDataLoader
+
+from data import getDataLoader
 from model import UNet2D
 
 
@@ -73,18 +73,18 @@ def test_epochs(frame, label, config, device, load_dir, save_dir):
 
 
 if __name__ == "__main__":
+    from config import Test_1 as Config
     config = Config()
-    config.dim_frame = [64, 64, 64]
-    config.up_sample = [4, 4, 4]
+    config.batch_size = 1
+    config.num_workers = 1
 
-    torch.manual_seed(1)
-    validloader = SimuDataLoader(config, SimuDataset(config))
-    for i, (frame, label) in enumerate(validloader): 
+    dataloader = getDataLoader(config)[1]
+    for i, (frame, label) in enumerate(dataloader): 
         if i == 20: break
 
         device = torch.device('cpu')
-        load_dir = "checkpoints/test_7"
-        save_dir = "assets/test_7/{}.tif".format(i)
+        load_dir = "checkpoints/test_1"
+        save_dir = "data/test_1/{}.tif".format(i)
         if not os.path.exists(os.path.dirname(save_dir)):
             os.makedirs(os.path.dirname(save_dir))
 
