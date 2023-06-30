@@ -51,7 +51,7 @@ class SimuDataset(Dataset):
         frame = self.generateFrame(mean_set, var_set, lum_set)
         frame = self.generateNoise(frame)
         label = self.generateLabel(mean_set)
-        return frame, label
+        return frame.to(torch.float16), label.to(torch.float16)
 
     def __len__(self) -> int:
         """
@@ -196,7 +196,7 @@ class CropDataset(Dataset):
         self.crop_frames_folder = os.path.join(self.crop_folder, "frames")
         self.crop_mlists_folder = os.path.join(self.crop_folder, "mlists")
         
-        self.file_check()
+        self.fileCheck()
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
         """
@@ -279,7 +279,7 @@ class CropDataset(Dataset):
 
     # help function for __init__
 
-    def file_check(self) -> None:
+    def fileCheck(self) -> None:
         """
         WARNING: Do not reply on this function to check the validity of the raw 
         data. Please check all implementation and documentation of this class to
