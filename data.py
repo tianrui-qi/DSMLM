@@ -1,5 +1,5 @@
 import torch
-from torch import Tensor, IntTensor, FloatTensor
+from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 from torch.distributions.multivariate_normal import MultivariateNormal
 
@@ -17,14 +17,14 @@ class SimuDataset(Dataset):
         self.num = num
 
         # dimensional config
-        self.dim_frame = IntTensor(config.dim_frame)        # [D]
-        self.up_sample = IntTensor(config.up_sample)        # [D]
+        self.dim_frame = Tensor(config.dim_frame).int()     # [D]
+        self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
 
         # config for adjust distribution of molecular
-        self.mol_range = IntTensor(config.mol_range)    # [2]
-        self.std_range = FloatTensor(config.std_range)  # [2, D]
-        self.lum_range = FloatTensor(config.lum_range)  # [2]
+        self.mol_range = Tensor(config.mol_range).int()     # [2]
+        self.std_range = Tensor(config.std_range)           # [2, D]
+        self.lum_range = Tensor(config.lum_range)           # [2]
         # config for reducing resolution and adding noise
         self.bitdepth    = config.bitdepth
         self.qe          = config.qe
@@ -51,7 +51,7 @@ class SimuDataset(Dataset):
         frame = self.generateFrame(mean_set, var_set, lum_set)
         frame = self.generateNoise(frame)
         label = self.generateLabel(mean_set)
-        return frame.to(torch.float16), label.to(torch.float16)
+        return frame, label
 
     def __len__(self) -> int:
         """
