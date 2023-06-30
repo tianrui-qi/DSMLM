@@ -55,7 +55,7 @@ def test_epochs(frame, label, config, device, load_dir, save_dir):
         os.path.join(load_dir, f))])
 
     img = []
-    for epoch in range(num_epoch, 0, -1):
+    for epoch in range(182, 106, -1):
         # load model
         net = UNet2D(config).to(device)  # config not important since load
         net.load_state_dict(torch.load(
@@ -83,8 +83,8 @@ if __name__ == "__main__":
         if i == 20: break
 
         device = torch.device('cpu')
-        load_dir = "checkpoints/test_1"
-        save_dir = "data/test_1/{}.tif".format(i)
+        load_dir = "checkpoints/test_2"
+        save_dir = "data/test_2/{}.tif".format(i)
         if not os.path.exists(os.path.dirname(save_dir)):
             os.makedirs(os.path.dirname(save_dir))
 
