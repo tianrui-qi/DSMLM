@@ -32,14 +32,14 @@ class Config:
         # ============================= data.py ============================== #
 
         ## (def) getDataLoader
-        self.num : List[int] = [3000  , 900   ]     # num of train, valid data
-        self.type: List[str] = ["Simu", "Simu"]     # type of train, valid data
+        self.num : List[int] = [3000  , 900   ]  # num of train, valid data
+        self.type: List[str] = ["Simu", "Simu"]  # type of train, valid data
         self.batch_size : int = 3
         self.num_workers: int = 3
 
         ## (class) SimDataset
         # config for adjust distribution of molecular
-        self.mol_range: List[int]   = [0, 64]   # min, max num of mol/frame
+        self.mol_range: List[int] = [0, 64]     # min, max num of mol/frame
         self.std_range: List[List[float]] = [   # std range of each dimension
             [1.6, 1.3, 1.3],  # [500, 400, 400] nm for FWHM, pixel size 65nm
             [3.0, 1.6, 1.6],  # [900, 500, 500] nm for FWHM, pixel size 65nm
@@ -69,8 +69,21 @@ class Test_2(Config):
     def __init__(self):
         super().__init__()
         # train
+        self.lr             = 0.000001
         self.cpt_save_path  = "checkpoints/test_2"
         self.cpt_save_epoch = True
         self.cpt_load_path  = "checkpoints/test_1"
+        # data
+        self.type = ["Simu", "Crop"]
+
+
+class Test_3(Config):
+    def __init__(self):
+        super().__init__()
+        # train
+        self.lr             = 0.000001
+        self.cpt_save_path  = "checkpoints/test_3"
+        self.cpt_save_epoch = True
+        self.cpt_load_path  = "checkpoints/test_2/184"
         # data
         self.type = ["Simu", "Crop"]

@@ -149,6 +149,6 @@ class Train:
 
 
 if __name__ == "__main__":
-    from config import Test_2 as Config
+    from config import Test_3 as Config
     trainer = Train(Config())
     trainer.train()
