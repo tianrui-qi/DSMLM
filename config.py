@@ -12,9 +12,9 @@ class Config:
 
         ## (class) Train
         # train
-        self.max_epoch: int = 400
+        self.max_epoch: int = 1000
         # learning rate
-        self.lr   : float = 0.00001     # initial learning rate (lr)
+        self.lr   : float = 1e-5     # initial learning rate (lr)
         self.gamma: float = 0.95
         # checkpoint
         self.cpt_save_path : str  = "checkpoints"   # path without .pt
@@ -39,12 +39,12 @@ class Config:
 
         ## (class) SimDataset
         # config for adjust distribution of molecular
-        self.mol_range: List[int] = [0, 64]     # min, max num of mol/frame
+        self.mol_range: List[int] = [0, 128]     # min, max num of mol/frame
         self.std_range: List[List[float]] = [   # std range of each dimension
             [1.6, 1.3, 1.3],  # [500, 400, 400] nm for FWHM, pixel size 65nm
             [3.0, 1.6, 1.6],  # [900, 500, 500] nm for FWHM, pixel size 65nm
         ]
-        self.lum_range: List[float] = [1/8, 3/4]
+        self.lum_range: List[float] = [0.0, 1.0]
         # config for reducing resolution and adding noise
         self.bitdepth   : int   = 16
         self.qe         : float = 0.82
@@ -62,6 +62,8 @@ class Test_1(Config):
         self.cpt_save_path  = "checkpoints/test_1"
         self.cpt_save_epoch = True
         # data
+        self.mol_range = [0, 64]
+        self.lum_range = [1/8, 3/4]
         self.type = ["Simu", "Crop"]
 
 
@@ -69,11 +71,13 @@ class Test_2(Config):
     def __init__(self):
         super().__init__()
         # train
-        self.lr             = 0.000001
+        self.lr             = 1e-6
         self.cpt_save_path  = "checkpoints/test_2"
         self.cpt_save_epoch = True
         self.cpt_load_path  = "checkpoints/test_1"
         # data
+        self.mol_range = [0, 64]
+        self.lum_range = [1/8, 3/4]
         self.type = ["Simu", "Crop"]
 
 
@@ -81,9 +85,36 @@ class Test_3(Config):
     def __init__(self):
         super().__init__()
         # train
-        self.lr             = 0.000001
+        self.lr             = 1e-7
         self.cpt_save_path  = "checkpoints/test_3"
         self.cpt_save_epoch = True
         self.cpt_load_path  = "checkpoints/test_2/184"
+        # data
+        self.mol_range = [0, 64]
+        self.lum_range = [1/8, 3/4]
+        self.type = ["Simu", "Crop"]
+
+
+class Test_4(Config):
+    def __init__(self):
+        super().__init__()
+        # train
+        self.gamma          = 0.99
+        self.cpt_save_path  = "checkpoints/test_4"
+        self.cpt_save_epoch = True
+        self.cpt_load_path  = "checkpoints/test_3/400"
+        # data
+        self.type = ["Simu", "Crop"]
+
+
+class Test_5(Config):
+    def __init__(self):
+        super().__init__()
+        # train
+        self.gamma          = 0.99
+        self.cpt_save_path  = "checkpoints/test_5"
+        self.cpt_save_epoch = True
+        self.cpt_load_path  = "checkpoints/test_4/403"
+        self.cpt_load_lr    = True
         # data
         self.type = ["Simu", "Crop"]

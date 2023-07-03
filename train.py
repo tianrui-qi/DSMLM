@@ -113,7 +113,7 @@ class Train:
     @torch.no_grad()
     def update_lr(self) -> None:
         # update learning rate
-        if self.scheduler.get_last_lr()[0] > 1e-7:
+        if self.scheduler.get_last_lr()[0] > 1e-10:
             self.scheduler.step()
             #self.scheduler.step(self.valid_loss)
 
@@ -149,6 +149,6 @@ class Train:
 
 
 if __name__ == "__main__":
-    from config import Test_3 as Config
+    from config import Test_5 as Config
     trainer = Train(Config())
     trainer.train()
