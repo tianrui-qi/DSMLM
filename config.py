@@ -13,6 +13,7 @@ class Config:
         ## (class) Train
         # train
         self.max_epoch: int = 1000
+        self.accumulation_steps: int = 1    # unit: batch
         # learning rate
         self.lr   : float = 1e-5     # initial learning rate (lr)
         self.gamma: float = 0.95
@@ -132,3 +133,18 @@ class Test_6(Config):
         # data
         self.lum_range = [1/8, 1.0]
         self.type = ["Sim", "Raw"]
+
+
+class Test_7(Config):
+    def __init__(self):
+        super().__init__()
+        # train
+        self.accumulation_steps = 4
+        self.lr = 1e-4
+        self.cpt_save_path  = "checkpoints/test_7"
+        self.cpt_save_epoch = True
+        # data
+        self.num  = [8000 , 2000 ]
+        self.type = ["Sim", "Raw"]
+        self.batch_size  = 2
+        self.num_workers = 2

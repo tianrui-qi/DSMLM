@@ -13,7 +13,8 @@ class Train:
     def __init__(self, config) -> None:
         # Configurations
         # for train
-        self.max_epoch  = config.max_epoch
+        self.max_epoch = config.max_epoch
+        self.accumulation_steps = config.accumulation_steps
         self.device = torch.device(
             'cuda' if torch.cuda.is_available() else 'cpu')
         # for checkpoint
@@ -68,9 +69,10 @@ class Train:
             # loss
             loss = self.criterion(outputs, labels)
             # backward
-            self.optimizer.zero_grad()
             loss.backward()
-            self.optimizer.step()
+            if (i+1) % self.accumulation_steps == 0:
+                self.optimizer.step()
+                self.net.zero_grad()
 
             # record
             self.writer.add_scalars(
@@ -149,6 +151,6 @@ class Train:
 
 
 if __name__ == "__main__":
-    from config import Test_6 as Config
+    from config import Test_7 as Config
     trainer = Train(Config())
     trainer.train()
