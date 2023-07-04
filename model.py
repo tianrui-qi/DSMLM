@@ -34,7 +34,8 @@ class UNet2D(nn.Module):
         self.pool = nn.MaxPool2d(2)
         self.encoder2 = UNetBlock(in_feature * up_c * 2, in_feature * up_c * 4)
         self.upconv = nn.ConvTranspose2d(
-            in_feature * up_c * 4, in_feature * up_c * 2, 4, stride=2, padding=1)
+            in_feature * up_c * 4, in_feature * up_c * 2, 
+            kernel_size=4, stride=2, padding=1)
         self.decoder1 = UNetBlock(in_feature * up_c * 4, in_feature * up_c * 2)
 
         self.output = nn.Sequential(
