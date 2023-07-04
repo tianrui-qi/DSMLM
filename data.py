@@ -11,9 +11,9 @@ from scipy.io import loadmat, savemat  # type: ignore
 from typing import Tuple, List
 
 
-class SimuDataset(Dataset):
+class SimDataset(Dataset):
     def __init__(self, config, num: int) -> None:
-        super(SimuDataset, self).__init__()
+        super(SimDataset, self).__init__()
         self.num = num
 
         # dimensional config
@@ -174,9 +174,9 @@ class SimuDataset(Dataset):
         return torch.clip(label, 0, 1)  # prevent lum exceeding 1 or below 0
 
 
-class CropDataset(Dataset):
+class RawDataset(Dataset):
     def __init__(self, config, num: int) -> None:
-        super(CropDataset, self).__init__()
+        super(RawDataset, self).__init__()
 
         ## Configuration (final)
         # dimensional config
@@ -191,8 +191,7 @@ class CropDataset(Dataset):
         self.raw_mlists_folder = os.path.join(self.raw_folder, "mlists")
         # folder for crop data
         self.crop_folder = os.path.join(
-            os.path.dirname(config.raw_folder), "{}".format(config.dim_frame)
-        )
+            os.path.dirname(config.raw_folder), "crop")
         self.crop_frames_folder = os.path.join(self.crop_folder, "frames")
         self.crop_mlists_folder = os.path.join(self.crop_folder, "mlists")
         
@@ -288,7 +287,7 @@ class CropDataset(Dataset):
         This help function will check if the raw data folder and crop data 
         folder exist. If the raw data does not exist, it will raise 
         FileNotFoundError. If the crop data does not exist, it will create the 
-        crop data by calling `prepareCropData` function.
+        crop data by calling `cropData` function.
         """
 
         # check if raw data exist
@@ -304,13 +303,13 @@ class CropDataset(Dataset):
         if not os.path.exists(self.crop_folder): 
             os.makedirs(self.crop_frames_folder)
             os.makedirs(self.crop_mlists_folder)
-            self.prepareCropData()
+            self.cropData()
         if len(os.listdir(self.crop_frames_folder)) < self.num:
             raise FileNotFoundError("Number of crop frames not enough.")
         if len(os.listdir(self.crop_mlists_folder)) < self.num:
             raise FileNotFoundError("Number of crop mlists not enough.")
 
-    def prepareCropData(self) -> None:
+    def cropData(self) -> None:
         """
         WARNING: This function is not a universal function. It is designed for
         specific raw data. Please check all implementation and documentation of
@@ -318,6 +317,12 @@ class CropDataset(Dataset):
 
         The help function to crop the raw data will following the pre-condition
         of __getitem__ function.
+
+        This function assume the dim_frame = [64 64 64] and the raw data's shape
+        is [64 512 512]. We will pad the raw data to [64 512 512] and then crop
+        the raw data to 100 number of sub-frame with shape [64 64 64]. The step
+        size of the crop is 52, which means that each sub-frame will have 12
+        pixels overlap with each other.
         """
 
         # def the function for reading files in a directory
@@ -332,46 +337,45 @@ class CropDataset(Dataset):
         for file_name in get_files_in_dir(self.raw_frames_folder):
             name = os.path.splitext(file_name)[0]
             
-            # frame
-            # ndarray, uint8, low resolution, [D H W], [0, 255]
+            # frame 
+            # ndarray, uint8, low resolution, [64 512 512], [D H W], [0, 255]
             frame = imread(
                 os.path.join(self.raw_frames_folder, name+".tif")
             )
             frame = np.round(
                 frame / frame.max() * 255).astype(np.uint8) # type: ignore
-            
+            # pad the frame from [512 512 64] to [532 532 64]
+            frame = np.pad(frame, ( (0, 0), (10, 10), (10, 10)))
+
             # molecular list
-            # ndarray, double, low resolution, (H, W, D), [1, 512]
+            # ndarray, double, low resolution, [N 3], [N (H W D)], [1, 512]
             mlist = loadmat( # type: ignore
                 os.path.join(self.raw_mlists_folder, name+".mat")
             )["storm_coords"]
-            # ndarray, double, lwo resolution, (D, H, W), [0, 511]
-            mlist = mlist[:, [2, 0, 1]] - 1 
+            # ndarray, double, lwo resolution, [N (D H W)], [0, 511]
+            mlist = mlist[:, [2, 0, 1]] - 1
+            # match the coordinate of frame after padding
+            mlist[:, 1:]+=10
             
-            # crop the frame to 10 number of dim_frame frame with step size 24
+            # crop the frame to 100 number of dim_frame frame with step size 52
             for sub in range(100):
-                if num_sub == self.num: return 
-
                 h = sub // 10  # index for height
                 w = sub %  10  # index for width
 
                 # the cropped subframe
                 subframe = frame[
-                    0            : self.dim_frame[0], 
-                    h * 24 + 232 : self.dim_frame[1] + h * 24 + 232, 
-                    w * 24       : self.dim_frame[2] + w * 24
+                    0      : 64, 
+                    h * 52 : 64 + h * 52, 
+                    w * 52 : 64 + w * 52,
                 ]
                 
                 # the corresponding sub molecular list
                 submlist = mlist.copy()
-                submlist = submlist[submlist[:, 0] <= int(self.dim_frame[0])-1]
-                submlist = submlist[submlist[:, 1] >= h * 24 + 232]
-                submlist = submlist[
-                    submlist[:, 1] <= (int(self.dim_frame[1])-1) + h * 24 + 232]
-                submlist = submlist[submlist[:, 2] >= w * 24]
-                submlist = submlist[
-                    submlist[:, 2] <= (int(self.dim_frame[2])-1) + w * 24]
-                submlist = submlist - [0, 232+h*24, w*24]  # [0 63]
+                submlist = submlist[submlist[:, 1] >= h * 52]
+                submlist = submlist[submlist[:, 1] <= h * 52 + 63]
+                submlist = submlist[submlist[:, 2] >= w * 52]
+                submlist = submlist[submlist[:, 2] <= w * 52 + 63]
+                submlist = submlist - [0, h*52, w*52]  # [0 63]
 
                 # save the frame and mlist
                 imsave(os.path.join(
@@ -383,20 +387,16 @@ class CropDataset(Dataset):
 
                 num_sub+=1
 
-        # check if the crop data is enough
-        if num_sub < self.num:
-            raise RuntimeError("The Crop data is not enough.")
-
 
 def getDataLoader(config) -> List[DataLoader]:
     dataloader = []
     for d in range(len(config.num)):
-        if config.type[d] == "Simu":
-            dataset = SimuDataset(config, config.num[d])
-        elif config.type[d] == "Crop":
-            dataset = CropDataset(config, config.num[d])
+        if config.type[d] == "Sim":
+            dataset = SimDataset(config, config.num[d])
+        elif config.type[d] == "Raw":
+            dataset = RawDataset(config, config.num[d])
         else:
-            raise ValueError("Only Crop and Simu dataset is supported.")
+            raise ValueError("Only Raw and Sim dataset is supported.")
         dataloader.append(DataLoader(
             dataset,
             batch_size=config.batch_size, 
@@ -415,14 +415,14 @@ if __name__ == "__main__":
     # test using default config
     config  = Config()
 
-    # test the CropDataset
-    dataset = CropDataset(config, 1)
+    # test the RawDataset
+    dataset = RawDataset(config, 1)
     frame, label = dataset[0]
-    imsave('data/test/CropFrame.tif', (frame * 255).to(torch.uint8).numpy())
-    imsave('data/test/CropLabel.tif', (label * 255).to(torch.uint8).numpy())
+    imsave('data/test/RawFrame.tif', (frame * 255).to(torch.uint8).numpy())
+    imsave('data/test/RawLabel.tif', (label * 255).to(torch.uint8).numpy())
 
-    # test the SimuDataset
-    dataset = SimuDataset(config, 1)
+    # test the SimDataset
+    dataset = SimDataset(config, 1)
     frame, label = dataset[0]
-    imsave('data/test/SimuFrame.tif', (frame * 255).to(torch.uint8).numpy())
-    imsave('data/test/SimuLabel.tif', (label * 255).to(torch.uint8).numpy())
+    imsave('data/test/SimFrame.tif', (frame * 255).to(torch.uint8).numpy())
+    imsave('data/test/SimLabel.tif', (label * 255).to(torch.uint8).numpy())
