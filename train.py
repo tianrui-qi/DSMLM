@@ -61,8 +61,8 @@ class Train:
         self.net.train()
         for i, (frames, labels) in enumerate(self.trainloader):
             # put frames and labels in GPU
-            frames = frames.to(torch.float32).to(self.device)
-            labels = labels.to(torch.float32).to(self.device)
+            frames = frames.to(self.device)
+            labels = labels.to(self.device)
             # forward
             outputs = self.net(frames)
             # loss
@@ -88,8 +88,8 @@ class Train:
         self.valid_num = []
         for i, (frames, labels) in enumerate(self.validloader):
             # put frames and labels in GPU
-            frames = frames.to(torch.float32).to(self.device)
-            labels = labels.to(torch.float32).to(self.device)
+            frames = frames.to(self.device)
+            labels = labels.to(self.device)
             # forward
             outputs = self.net(frames)
             # loss
@@ -149,6 +149,6 @@ class Train:
 
 
 if __name__ == "__main__":
-    from config import Test_5 as Config
+    from config import Test_6 as Config
     trainer = Train(Config())
     trainer.train()

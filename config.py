@@ -32,8 +32,8 @@ class Config:
         # ============================= data.py ============================== #
 
         ## (def) getDataLoader
-        self.num : List[int] = [3000  , 900   ]  # num of train, valid data
-        self.type: List[str] = ["Simu", "Simu"]  # type of train, valid data
+        self.num : List[int] = [3000 , 900  ]  # num of train, valid data
+        self.type: List[str] = ["Sim", "Sim"]  # type of train, valid data
         self.batch_size : int = 3
         self.num_workers: int = 3
 
@@ -64,7 +64,7 @@ class Test_1(Config):
         # data
         self.mol_range = [0, 64]
         self.lum_range = [1/8, 3/4]
-        self.type = ["Simu", "Crop"]
+        self.type = ["Sim", "Raw"]
 
 
 class Test_2(Config):
@@ -78,7 +78,7 @@ class Test_2(Config):
         # data
         self.mol_range = [0, 64]
         self.lum_range = [1/8, 3/4]
-        self.type = ["Simu", "Crop"]
+        self.type = ["Sim", "Raw"]
 
 
 class Test_3(Config):
@@ -92,7 +92,7 @@ class Test_3(Config):
         # data
         self.mol_range = [0, 64]
         self.lum_range = [1/8, 3/4]
-        self.type = ["Simu", "Crop"]
+        self.type = ["Sim", "Raw"]
 
 
 class Test_4(Config):
@@ -104,7 +104,7 @@ class Test_4(Config):
         self.cpt_save_epoch = True
         self.cpt_load_path  = "checkpoints/test_3/400"
         # data
-        self.type = ["Simu", "Crop"]
+        self.type = ["Sim", "Raw"]
 
 
 class Test_5(Config):
@@ -117,4 +117,18 @@ class Test_5(Config):
         self.cpt_load_path  = "checkpoints/test_4/403"
         self.cpt_load_lr    = True
         # data
-        self.type = ["Simu", "Crop"]
+        self.type = ["Sim", "Raw"]
+
+
+class Test_6(Config):
+    def __init__(self):
+        super().__init__()
+        # train
+        self.lr             = 1e-5
+        self.gamma          = 0.99
+        self.cpt_save_path  = "checkpoints/test_6"
+        self.cpt_save_epoch = True
+        self.cpt_load_path  = "checkpoints/test_2/184"
+        # data
+        self.lum_range = [1/8, 1.0]
+        self.type = ["Sim", "Raw"]
