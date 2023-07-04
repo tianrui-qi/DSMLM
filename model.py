@@ -61,8 +61,8 @@ class Criterion(nn.Module):
         self.kernel_sigma = config.kernel_sigma
         self.l1_coeff = config.l1_coeff
 
-        # Gaussian kernel using help function generateGaussianKernel
-        self.kernel = self.generateGaussianKernel(
+        # Gaussian kernel using help function gaussianKernel
+        self.kernel = self.gaussianKernel(
             3, self.kernel_size, self.kernel_sigma)
 
         # pad size, pad before convolve Gaussian kernel
@@ -70,9 +70,9 @@ class Criterion(nn.Module):
 
     def forward(self, predi: Tensor, label: Tensor) -> float:
         mse_loss = F.mse_loss(
-            self.generateGaussianBlur3d(
+            self.gaussianBlur3d(
                 F.pad(predi, self.pad, mode='reflect'), self.kernel),
-            self.generateGaussianBlur3d(
+            self.gaussianBlur3d(
                 F.pad(label, self.pad, mode='reflect'), self.kernel),
             reduction="sum"
         )
@@ -87,8 +87,9 @@ class Criterion(nn.Module):
         return self
 
     @staticmethod
-    def generateGaussianKernel(
-        dim: int, kernel_size: int = 7, kernel_sigma: float = 1.0
+    def gaussianKernel(
+        dim: int, 
+        kernel_size: int = 7, kernel_sigma: float = 1.0
     ) -> Tensor:
         """
         This function generates a Gaussian kernel with the given parameters. The
@@ -123,7 +124,7 @@ class Criterion(nn.Module):
         return kernel_nd
 
     @staticmethod
-    def generateGaussianBlur3d(frame: Tensor, kernel: Tensor) -> Tensor:
+    def gaussianBlur3d(frame: Tensor, kernel: Tensor) -> Tensor:
         """
         This function convolve a frame with a 3D Gaussian kernel using
         F.conv3d. We accept frame with shape [B C H W] and [B C D H W]. If the
