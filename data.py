@@ -177,14 +177,13 @@ class SimDataset(Dataset):
 class RawDataset(Dataset):
     def __init__(self, config, num: int) -> None:
         super(RawDataset, self).__init__()
+        self.num = num
 
-        ## Configuration (final)
         # dimensional config
         self.dim_frame = Tensor(config.dim_frame).int()     # [D]
         self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
-        # number of data
-        self.num       = num
+        
         # folder for raw data
         self.raw_folder = config.raw_folder
         self.raw_frames_folder = os.path.join(self.raw_folder, "frames")
@@ -391,6 +390,9 @@ class RawDataset(Dataset):
 
                 num_sub+=1
 
+    def combineFrame(self, subframes: Tensor):
+        # TODO: implement combine 100 number of subframes to one frame
+        pass
 
 def getDataLoader(config) -> List[DataLoader]:
     dataloader = []
