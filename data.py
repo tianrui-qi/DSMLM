@@ -323,6 +323,10 @@ class RawDataset(Dataset):
         the raw data to 100 number of sub-frame with shape [64 64 64]. The step
         size of the crop is 52, which means that each sub-frame will have 12
         pixels overlap with each other.
+
+        We difine this function inside the RawDataset class because we have to
+        match the logic of process and read data between this function and
+        __getitem__ function.
         """
 
         # def the function for reading files in a directory
