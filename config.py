@@ -13,9 +13,9 @@ class Config:
         ## (class) Train
         # train
         self.max_epoch: int = 1000
-        self.accumulation_steps: int = 1    # unit: batch
+        self.accumulation_steps: int = 4    # unit: batch
         # learning rate
-        self.lr   : float = 1e-5     # initial learning rate (lr)
+        self.lr   : float = 1e-4     # initial learning rate (lr)
         self.gamma: float = 0.95
         # checkpoint
         self.cpt_save_path : str  = "checkpoints"   # path without .pt
@@ -33,10 +33,10 @@ class Config:
         # ============================= data.py ============================== #
 
         ## (def) getDataLoader
-        self.num : List[int] = [3000 , 900  ]  # num of train, valid data
+        self.num : List[int] = [8000 , 2000 ]  # num of train, valid data
         self.type: List[str] = ["Sim", "Sim"]  # type of train, valid data
-        self.batch_size : int = 3
-        self.num_workers: int = 3
+        self.batch_size : int = 2
+        self.num_workers: int = 2
 
         ## (class) SimDataset
         # config for adjust distribution of molecular
@@ -56,95 +56,21 @@ class Config:
         self.raw_folder  = "data/raw"
 
 
-class Test_1(Config):
-    def __init__(self):
-        super().__init__()
-        # train
-        self.cpt_save_path  = "checkpoints/test_1"
-        self.cpt_save_epoch = True
-        # data
-        self.mol_range = [0, 64]
-        self.lum_range = [1/8, 3/4]
-        self.type = ["Sim", "Raw"]
-
-
-class Test_2(Config):
-    def __init__(self):
-        super().__init__()
-        # train
-        self.lr             = 1e-6
-        self.cpt_save_path  = "checkpoints/test_2"
-        self.cpt_save_epoch = True
-        self.cpt_load_path  = "checkpoints/test_1"
-        # data
-        self.mol_range = [0, 64]
-        self.lum_range = [1/8, 3/4]
-        self.type = ["Sim", "Raw"]
-
-
-class Test_3(Config):
-    def __init__(self):
-        super().__init__()
-        # train
-        self.lr             = 1e-7
-        self.cpt_save_path  = "checkpoints/test_3"
-        self.cpt_save_epoch = True
-        self.cpt_load_path  = "checkpoints/test_2/184"
-        # data
-        self.mol_range = [0, 64]
-        self.lum_range = [1/8, 3/4]
-        self.type = ["Sim", "Raw"]
-
-
-class Test_4(Config):
-    def __init__(self):
-        super().__init__()
-        # train
-        self.gamma          = 0.99
-        self.cpt_save_path  = "checkpoints/test_4"
-        self.cpt_save_epoch = True
-        self.cpt_load_path  = "checkpoints/test_3/400"
-        # data
-        self.type = ["Sim", "Raw"]
-
-
-class Test_5(Config):
-    def __init__(self):
-        super().__init__()
-        # train
-        self.gamma          = 0.99
-        self.cpt_save_path  = "checkpoints/test_5"
-        self.cpt_save_epoch = True
-        self.cpt_load_path  = "checkpoints/test_4/403"
-        self.cpt_load_lr    = True
-        # data
-        self.type = ["Sim", "Raw"]
-
-
-class Test_6(Config):
-    def __init__(self):
-        super().__init__()
-        # train
-        self.lr             = 1e-5
-        self.gamma          = 0.99
-        self.cpt_save_path  = "checkpoints/test_6"
-        self.cpt_save_epoch = True
-        self.cpt_load_path  = "checkpoints/test_2/184"
-        # data
-        self.lum_range = [1/8, 1.0]
-        self.type = ["Sim", "Raw"]
-
-
 class Test_7(Config):
     def __init__(self):
         super().__init__()
         # train
-        self.accumulation_steps = 4
-        self.lr = 1e-4
         self.cpt_save_path  = "checkpoints/test_7"
         self.cpt_save_epoch = True
         # data
-        self.num  = [8000 , 2000 ]
         self.type = ["Sim", "Raw"]
-        self.batch_size  = 2
-        self.num_workers = 2
+
+
+class Eval(Config):
+    def __init__(self):
+        super().__init__()
+        self.cpt_load_path = "checkpoints/test_7/52"
+        self.num  = [100]
+        self.type = ["Raw"]
+        self.batch_size = 10
+        self.num_workers = 5
