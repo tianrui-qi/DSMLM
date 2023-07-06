@@ -390,9 +390,56 @@ class RawDataset(Dataset):
 
                 num_sub+=1
 
-    def combineFrame(self, subframes: Tensor):
-        # TODO: implement combine 100 number of subframes to one frame
-        pass
+    def combineFrame(self, subframes: Tensor) -> Tensor:
+        """
+        This function will combine the subframes into a frame. The shape of the
+        subframes should be [100 64 64 64] * [1, *self.up_sample] and the shape
+        of the frame will be [64 512 512] * [*self.up_sample].
+        We combine these subframes follow how we crop the frame into subframes
+        in function `cropData`. For each [64 64 64] subframe, we only keep the
+        center [64 52 52] * [*self.up_sample] part and discard the [0 6 6] * 
+        [*self.up_sample] part on each side since the network may not be able to
+        handle the boundary effect. Then, since we pad the [64 512 512] frame by
+        [0 10 10] on each side in function `cropData`, after we combine the 
+        subframes, we will get a [64 520 520] * [*self.up_sample] instead of 
+        [64 512 512] * [*self.up_sample]. Thus, we will discard the [0 4 4] * 
+        [*self.up_sample] part on each side to get the final frame with shape 
+        [64 512 512] * [*self.up_sample].
+
+        Note that this function is independent from the self.up_sample, i.e.,
+        can be used for any self.up_sample. The most important thing is that the
+        shape of the original frame, i.e, with shape [64 512 512] in our case
+        and how we cut it into subframe in function `cropData`. Note that 
+        `cropData` is also independent from self.up_sample.
+
+        Args:
+            subframes (Tensor): The subframes with shape [100 64 64 64] *
+                [1, *self.up_sample].
+        
+        Returns:
+            frame (Tensor): The frame with shape [64 512 512] * 
+                [*self.up_sample].
+        """
+        shape = self.up_sample * Tensor([64, 520, 520]).int()
+        frame = torch.zeros(shape.tolist(), dtype=subframes.dtype)
+        for f in range(100):
+            h = f // 10
+            w = f %  10
+            frame[
+                :, 
+                h * 52 * self.up_sample[1] : (h+1) * 52 * self.up_sample[1], 
+                w * 52 * self.up_sample[2] : (w+1) * 52 * self.up_sample[2],
+            ] = subframes[
+                f, :,
+                6 * self.up_sample[1] : -6 * self.up_sample[1],
+                6 * self.up_sample[2] : -6 * self.up_sample[2],
+            ]
+        return frame[
+            :,
+            4 * self.up_sample[1] : -4 * self.up_sample[1],
+            4 * self.up_sample[2] : -4 * self.up_sample[2],
+        ]
+
 
 def getDataLoader(config) -> List[DataLoader]:
     dataloader = []
