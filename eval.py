@@ -1,23 +1,15 @@
 import torch
-import numpy as np
 from tifffile import imsave
-import time
 
-
-from config import Config as Config
+from config import Eval
 from model import UNet2D, Criterion
 from data import getDataLoader
 
 
 if __name__ == "__main__":
     # configurations
+    config = Eval()
     device = torch.device('cuda')
-    config = Config()
-    config.cpt_load_path = "checkpoints/test_6"
-    config.batch_size = 10
-    config.num_workers = 5
-    config.num = [2000]
-    config.type = ["Raw"]
 
     # load model
     net = UNet2D(config).to(device)  # config not important since load
@@ -35,11 +27,21 @@ if __name__ == "__main__":
 
     # eval
     with torch.no_grad():
-        start = time.time()
+        outputs = None
         for i, (frames, labels) in enumerate(dataloader):
             # forward
             frames = frames.half().to(device)
             labels = labels.half().to(device)
 
-            outputs = Criterion.gaussianBlur3d(net(frames), kernel)
-        print(time.time()-start)
+            output = Criterion.gaussianBlur3d(net(frames), kernel)
+
+            if outputs == None: outputs = output
+            else: outputs = torch.cat((outputs, output))
+            
+            if len(outputs) == 100:
+                frame = dataloader.dataset.combineFrame(outputs) # type: ignore
+                imsave(
+                    'data/eval/frame.tif', 
+                    (frame.detach() * 255).to(torch.uint8).numpy()
+                )
+                outputs = None
