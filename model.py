@@ -128,14 +128,14 @@ class Criterion(nn.Module):
     def gaussianBlur3d(frame: Tensor, kernel: Tensor) -> Tensor:
         """
         This function convolve a frame with a 3D Gaussian kernel using
-        F.conv3d. We accept frame with shape [B C H W] and [B C D H W]. If the
-        shape is [B C H W], we treat the channel as the depth. The kernel should
-        shape like [D H W]. We will reshape the kernel to [1 1 D H W] before
-        call the F.conv3d function.
+        F.conv3d. We accept frame with shape [D H W], [B C H W], or [B C D H W].
+        If the shape is [B C H W], we treat the channel as the depth. The kernel 
+        should shape like [D H W]. We will reshape the kernel to [1 1 D H W] 
+        before call the F.conv3d function.
 
         Args:
             frame (Tensor): The frame to be convolved with the Gaussian kernel
-                with shape [B C H W] or [B C D H W].
+                with shape [D H W], [B C H W], or [B C D H W].
             kernel (Tensor): The Gaussian kernel with shape [D H W].
 
         Returns:
@@ -144,17 +144,22 @@ class Criterion(nn.Module):
 
         Raises:
             ValueError: If the dim of the kernel is not 3.
-            ValueError: If the dim of the frame is not 4 or 5.
+            ValueError: If the dim of the frame is not 3, 4 or 5.
         """
         if kernel.dim() != 3:
             raise ValueError("kernel.dim() must be 3")
         kernel = kernel.reshape(1, 1, *kernel.shape)  # [D H W] to  [1 1 D H W]
 
-        if frame.dim() == 4:
-            return F.conv3d(
-                frame.unsqueeze(1), kernel, padding="same"
-            ).reshape(*frame.shape)
-        elif frame.dim() == 5:
-            return F.conv3d(frame, kernel, padding="same")
+        # set the shape of the frame when convolve with the kernel
+        if frame.dim() == 3:    # [D H W] -> [1 1 D H W]
+            shape = [1, 1, *frame.shape]
+        elif frame.dim() == 4:  # [B C H W] -> [B 1 C H W]
+            shape = [frame.shape[0], 1, *frame.shape[1:]]
+        elif frame.dim() == 5:  # [B C D H W]
+            shape = frame.shape
         else:
-            raise ValueError("frame.dim() must be 4 or 5")
+            raise ValueError("frame.dim() must be 3, 4 or 5")
+
+        return F.conv3d(
+                frame.reshape(*shape), kernel, padding="same"
+            ).reshape(*frame.shape)
