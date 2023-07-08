@@ -70,6 +70,6 @@ class Eval(Config):
     def __init__(self):
         super().__init__()
         self.cpt_load_path = "checkpoints/test_7/30"
-        self.num  = [1000]
+        self.num  = [1000000]
         self.type = ["Raw"]
         self.batch_size = 10
