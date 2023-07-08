@@ -418,10 +418,12 @@ class RawDataset(Dataset):
         
         Returns:
             frame (Tensor): The frame with shape [64 512 512] * 
-                [*self.up_sample].
+                [*self.up_sample] where the dtype and device same to the input
+                `subframes` to avoid data copy between cpu and gpu.
         """
         shape = self.up_sample * Tensor([64, 520, 520]).int()
-        frame = torch.zeros(shape.tolist(), dtype=subframes.dtype)
+        frame = torch.zeros(
+            shape.tolist(), dtype=subframes.dtype, device=subframes.device)
         for f in range(100):
             h = f // 10
             w = f %  10
