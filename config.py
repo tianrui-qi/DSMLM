@@ -8,7 +8,7 @@ class Config:
         self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
         self.up_sample: List[int] = [ 4,  4,  4]    # [C, H, W], by scale
 
-        # ============================= train.py ============================= #
+        # =========================== train & eval =========================== #
 
         ## (class) Train
         # train
@@ -23,14 +23,14 @@ class Config:
         self.cpt_load_path : str  = ""              # path without .pt
         self.cpt_load_lr   : bool = False           # load lr from cpt
 
-        # ============================= model.py ============================= #
+        # =============================== model ============================== #
 
         ## (class) Criterion
         self.kernel_size : int   = 7    # kernel size of GaussianBlur
         self.kernel_sigma: float = 1.0  # sigma of kernel
         self.l1_coeff    : float = 0.0  # set 1 to repeat deep storm
 
-        # ============================= data.py ============================== #
+        # =============================== data =============================== #
 
         ## (def) getDataLoader
         self.num : List[int] = [8000 , 2000 ]  # num of train, valid data
@@ -69,8 +69,7 @@ class Test_7(Config):
 class Eval(Config):
     def __init__(self):
         super().__init__()
-        self.cpt_load_path = "checkpoints/test_7/52"
-        self.num  = [100]
+        self.cpt_load_path = "checkpoints/test_7/30"
+        self.num  = [1000]
         self.type = ["Raw"]
         self.batch_size = 10
-        self.num_workers = 5
