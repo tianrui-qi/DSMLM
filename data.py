@@ -314,14 +314,14 @@ class RawDataset(Dataset):
         specific raw data. Please check all implementation and documentation of
         this class to see each function's pre-condition.
 
-        The help function to crop the raw data will following the pre-condition
-        of __getitem__ function.
-
         This function assume the dim_frame = [64 64 64] and the raw data's shape
-        is [64 512 512]. We will pad the raw data to [64 512 512] and then crop
+        is [64 512 512]. We will pad the raw data to [64 532 532] and then crop
         the raw data to 100 number of sub-frame with shape [64 64 64]. The step
         size of the crop is 52, which means that each sub-frame will have 12
-        pixels overlap with each other.
+        pixels overlap with each other. We will use the network to predict each
+        [64 64 64] subframe and only take the center [64 52 52] part of the
+        prediction as the final prediction. This will avoid the boundary effect
+        of the network.
 
         We difine this function inside the RawDataset class because we have to
         match the logic of process and read data between this function and
@@ -392,6 +392,10 @@ class RawDataset(Dataset):
 
     def combineFrame(self, subframes: Tensor) -> Tensor:
         """
+        WARNING: This function is not a universal function. It is designed for
+        specific raw data. Please check all implementation and documentation of
+        this class to see each function's pre-condition.
+
         This function will combine the subframes into a frame. The shape of the
         subframes should be [100 64 64 64] * [1, *self.up_sample] and the shape
         of the frame will be [64 512 512] * [*self.up_sample].
@@ -462,12 +466,15 @@ def getDataLoader(config) -> List[DataLoader]:
 
 
 if __name__ == "__main__":
-    from config import Config
-
-    # create dir to store test file
+    """
+    Test code for two dataset. We do not need to run this file independently
+    when train the network and evaluate the network.
+    """
+    # create dir to store frame
     if not os.path.exists("data/test"): os.makedirs("data/test")
 
     # test using default config
+    from config import Config
     config  = Config()
 
     # test the RawDataset
