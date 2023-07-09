@@ -56,7 +56,7 @@ class Config:
         self.crop_folder = "data/crop"
 
 
-class Test_7(Config):
+class ConfigTrain(Config):
     def __init__(self):
         super().__init__()
         # train
@@ -66,7 +66,7 @@ class Test_7(Config):
         self.type = ["Sim", "Raw"]
 
 
-class Eval(Config):
+class ConfigEval(Config):
     def __init__(self):
         super().__init__()
         self.cpt_load_path = "checkpoints/test_7/30"

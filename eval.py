@@ -1,14 +1,15 @@
 import torch
+
 from tifffile import imsave
 
-from config import Eval
+from config import ConfigEval
 from model import UNet2D
 from data import getDataLoader
 
 
 if __name__ == "__main__":
     # config
-    config = Eval()
+    config = ConfigEval()
     device = torch.device('cuda')
 
     # model
