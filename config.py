@@ -28,7 +28,6 @@ class Config:
         ## (class) Criterion
         self.kernel_size : int   = 7    # kernel size of GaussianBlur
         self.kernel_sigma: float = 1.0  # sigma of kernel
-        self.l1_coeff    : float = 0.0  # set 1 to repeat deep storm
 
         # =============================== data =============================== #
 

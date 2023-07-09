@@ -57,29 +57,20 @@ class UNet2D(nn.Module):
 class Criterion(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
-        # configuration
-        self.kernel_size = config.kernel_size
-        self.kernel_sigma = config.kernel_sigma
-        self.l1_coeff = config.l1_coeff
-
         # Gaussian kernel using help function gaussianKernel
         self.kernel = self.gaussianKernel(
-            3, self.kernel_size, self.kernel_sigma)
-
+            3, config.kernel_size, config.kernel_sigma)
         # pad size, pad before convolve Gaussian kernel
-        self.pad = [self.kernel_size for _ in range(6)]  # [C H W]
+        self.pad = [config.kernel_size for _ in range(6)]  # [C H W]
 
     def forward(self, predi: Tensor, label: Tensor) -> float:
-        mse_loss = F.mse_loss(
+        return F.mse_loss(
             self.gaussianBlur3d(
                 F.pad(predi, self.pad, mode='reflect'), self.kernel),
             self.gaussianBlur3d(
                 F.pad(label, self.pad, mode='reflect'), self.kernel),
             reduction="sum"
-        )
-        l1_loss = F.l1_loss(predi, torch.zeros_like(predi), reduction="sum")
-        
-        return mse_loss + self.l1_coeff * l1_loss
+        )  # type: ignore
 
     def to(self, device):
         # Call the original 'to' method to move parameters and buffers
@@ -104,7 +95,8 @@ class Criterion(nn.Module):
                 2D Gaussian kernel.
             kernel_size (int): The size of the kernel, usually an odd number
                 like 3, 5, 7, etc. Default: 7.
-            kernel_sigma (float): The sigma of the Gaussian kernel. Default: 1
+            kernel_sigma (float): The sigma of the Gaussian kernel. 
+                Default: 1.0.
         
         Returns:
             kernel_nd (Tensor): A Gaussian kernel with shape 
@@ -119,7 +111,7 @@ class Criterion(nn.Module):
         # build nd Gaussian kernel using einsum
         equation = ','.join(f'{chr(97 + i)}' for i in range(dim))
         operands = [kernel_1d for _ in range(dim)]
-        kernel_nd = torch.einsum(equation, *operands)
+        kernel_nd  = torch.einsum(equation, *operands)
         kernel_nd /= kernel_nd.sum()  # Normalization
 
         return kernel_nd
@@ -127,11 +119,11 @@ class Criterion(nn.Module):
     @staticmethod
     def gaussianBlur3d(frame: Tensor, kernel: Tensor) -> Tensor:
         """
-        This function convolve a frame with a 3D Gaussian kernel using
-        F.conv3d. We accept frame with shape [D H W], [B C H W], or [B C D H W].
-        If the shape is [B C H W], we treat the channel as the depth. The kernel 
-        should shape like [D H W]. We will reshape the kernel to [1 1 D H W] 
-        before call the F.conv3d function.
+        This function convolve the input frame with a 3D Gaussian kernel using
+        F.conv3d. We accept input frame with shape [D H W], [B C H W], or 
+        [B C D H W] and will convolve last three dimension. If the shape is 
+        [B C H W], we treat the channel as the depth. The input kernel should 
+        shape like [D H W].
 
         Args:
             frame (Tensor): The frame to be convolved with the Gaussian kernel
@@ -148,7 +140,7 @@ class Criterion(nn.Module):
         """
         if kernel.dim() != 3:
             raise ValueError("kernel.dim() must be 3")
-        kernel = kernel.reshape(1, 1, *kernel.shape)  # [D H W] to  [1 1 D H W]
+        kernel = kernel.reshape(1, 1, *kernel.shape)  # [D H W] -> [1 1 D H W]
 
         # set the shape of the frame when convolve with the kernel
         if frame.dim() == 3:    # [D H W] -> [1 1 D H W]
