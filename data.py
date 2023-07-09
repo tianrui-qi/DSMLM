@@ -189,8 +189,7 @@ class RawDataset(Dataset):
         self.raw_frames_folder = os.path.join(self.raw_folder, "frames")
         self.raw_mlists_folder = os.path.join(self.raw_folder, "mlists")
         # folder for crop data
-        self.crop_folder = os.path.join(
-            os.path.dirname(config.raw_folder), "crop")
+        self.crop_folder = config.crop_folder
         self.crop_frames_folder = os.path.join(self.crop_folder, "frames")
         self.crop_mlists_folder = os.path.join(self.crop_folder, "mlists")
         
@@ -279,34 +278,40 @@ class RawDataset(Dataset):
 
     def fileCheck(self) -> None:
         """
-        WARNING: Do not reply on this function to check the validity of the raw 
-        data. Please check all implementation and documentation of this class to
-        see each function's pre-condition.
+        This function control the logic of when to crop the raw data to crop
+        data:
 
-        This help function will check if the raw data folder and crop data 
-        folder exist. If the raw data does not exist, it will raise 
-        FileNotFoundError. If the crop data does not exist, it will create the 
-        crop data by calling `cropData` function.
+        check if crop data exist:
+            T: check if the number of crop data are enough
+                T: means the crop data are valid, do nothing
+                F: raise FileNotFoundError
+            F: check if raw data exist
+                T: create crop folder and call help function `cropData`
+                F: raise FileNotFoundError
+
+        Note that in this file check logic, raw data is not necessary if crop
+        data exist so that we can delete the raw data folder after cropping to 
+        save disk space.
+
+        Do not reply on this function to check the validity of the raw data!!!!! 
         """
 
-        # check if raw data exist
-        if not os.path.exists(self.raw_folder):
-            raise FileNotFoundError("Raw data not exist.")
-        elif not os.path.exists(self.raw_frames_folder):
-            raise FileNotFoundError("Raw data frames not exist.")
-        elif not os.path.exists(self.raw_mlists_folder):
-            raise FileNotFoundError("Raw data mlists not exist.")
-        
-        # check if crop data exit
-        # data fold not existing means the raw data has not been cropped
-        if not os.path.exists(self.crop_folder): 
+        # if crop data exist, check if the number of crop data are enough
+        if os.path.exists(self.crop_folder):
+            if len(os.listdir(self.crop_frames_folder)) < self.num or \
+               len(os.listdir(self.crop_mlists_folder)) < self.num:
+                raise FileNotFoundError("Number of crop data not enough.")
+        # if crop data not exsit, means the raw data has not been cropped
+        else:
+            # check if raw data exist
+            if not os.path.exists(self.raw_frames_folder):
+                raise FileNotFoundError("Raw data frames not exist.")
+            if not os.path.exists(self.raw_mlists_folder):
+                raise FileNotFoundError("Raw data mlists not exist.")
+            # create crop data
             os.makedirs(self.crop_frames_folder)
             os.makedirs(self.crop_mlists_folder)
             self.cropData()
-        if len(os.listdir(self.crop_frames_folder)) < self.num:
-            raise FileNotFoundError("Number of crop frames not enough.")
-        if len(os.listdir(self.crop_mlists_folder)) < self.num:
-            raise FileNotFoundError("Number of crop mlists not enough.")
 
     def cropData(self) -> None:
         """
@@ -448,6 +453,35 @@ class RawDataset(Dataset):
 
 
 def getDataLoader(config) -> List[DataLoader]:
+    """
+    This function will return a list of dataloader for each dataset. Two paras
+    in config will be used to create the dataloader, i.e., config.num and
+    config.type. The config.num is a list of int, where each int is the number
+    of data in each dataset. The config.type is a list of str, where each str
+    is the type of each dataset, i.e., "Sim" or "Raw". The length of config.num
+    and config.type should be the same. The dataloader will be created in the
+    order of config.num and config.type. 
+    
+    For example, 
+        if the input config has
+            config.num = [100, 200]
+            config.type = ["Sim", "Raw"]
+        the dataloader list return by this function will be
+            dataloader = [
+                SimDataset with 100 data, 
+                RawDataset with 200 data
+            ]
+    
+    Args:
+        config (Config): The config class for this project.
+    
+    Returns:
+        dataloader (List[DataLoader]): A list of dataloader for each dataset.
+    """
+    if len(config.num) != len(config.type): raise ValueError(
+        "The length of config.num and config.type should be the same."
+    )
+
     dataloader = []
     for d in range(len(config.num)):
         if config.type[d] == "Sim":
@@ -467,10 +501,10 @@ def getDataLoader(config) -> List[DataLoader]:
 
 if __name__ == "__main__":
     """
-    Test code for two dataset. We do not need to run this file independently
-    when train the network and evaluate the network.
+    Test code for two dataset. 
+    No need to run this file independently when train and evaluate the network.
     """
-    # create dir to store frame
+    # create dir to store test frame
     if not os.path.exists("data/test"): os.makedirs("data/test")
 
     # test using default config

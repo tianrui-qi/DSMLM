@@ -53,6 +53,7 @@ class Config:
 
         ## (class) RawDataset
         self.raw_folder  = "data/raw"
+        self.crop_folder = "data/crop"
 
 
 class Test_7(Config):
