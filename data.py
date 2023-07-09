@@ -454,15 +454,12 @@ class RawDataset(Dataset):
 
 def getDataLoader(config) -> List[DataLoader]:
     """
-    This function will return a list of dataloader for each dataset. Two paras
-    in config will be used to create the dataloader, i.e., config.num and
-    config.type. The config.num is a list of int, where each int is the number
-    of data in each dataset. The config.type is a list of str, where each str
-    is the type of each dataset, i.e., "Sim" or "Raw". The length of config.num
-    and config.type should be the same. The dataloader will be created in the
-    order of config.num and config.type. 
+    This function will return a list of dataloader for each dataset. Four paras
+    in config will be used to create the dataloader, i.e., config.num, 
+    config.type, config.batch_size, and config.num_workers. All dataloader will
+    have the same batch_size and num_workers.
     
-    For example, 
+    For example,
         if the input config has
             config.num = [100, 200]
             config.type = ["Sim", "Raw"]
@@ -474,6 +471,12 @@ def getDataLoader(config) -> List[DataLoader]:
     
     Args:
         config (Config): The config class for this project.
+            config.num (List[int]): A list of int, where each int is the number
+                of data in each dataset.
+            config.type (List[str]): A list of str, where each str is the type
+                of each dataset, i.e., "Sim" or "Raw".
+            config.batch_size (int): The batch size for each dataloader.
+            config.num_workers (int): The number of workers for each dataloader.
     
     Returns:
         dataloader (List[DataLoader]): A list of dataloader for each dataset.
