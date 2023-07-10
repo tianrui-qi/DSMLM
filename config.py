@@ -52,8 +52,8 @@ class Config:
         self.dark_noise : float = 2.29
 
         ## (class) RawDataset
-        self.raw_folder  = "data/raw"
-        self.crop_folder = "data/crop"
+        self.frames_folder = "data/raw/frames"
+        self.mlists_folder = "data/raw/mlists"
 
 
 class ConfigTrain(Config):

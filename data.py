@@ -1,14 +1,14 @@
 import torch
 from torch import Tensor
+from torch.nn import functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch.distributions.multivariate_normal import MultivariateNormal
 
-import numpy as np
 import os
-from tifffile import imread, imsave
-from scipy.io import loadmat, savemat  # type: ignore
+from tifffile import imread
+from scipy.io import loadmat  # type: ignore
 
-from typing import Tuple, List
+from typing import Tuple
 
 
 class SimDataset(Dataset):
@@ -59,8 +59,6 @@ class SimDataset(Dataset):
             self.num (int): Total number of data.
         """
         return self.num
-
-    # help functions for __getitem__
 
     def generateParas(self) -> Tuple[Tensor, Tensor, Tensor]:
         D = len(self.dim_frame)
@@ -185,87 +183,55 @@ class RawDataset(Dataset):
         self.dim_label = self.dim_frame * self.up_sample    # [D]
         
         # folder for raw data
-        self.raw_folder = config.raw_folder
-        self.raw_frames_folder = os.path.join(self.raw_folder, "frames")
-        self.raw_mlists_folder = os.path.join(self.raw_folder, "mlists")
-        # folder for crop data
-        self.crop_folder = config.crop_folder
-        self.crop_frames_folder = os.path.join(self.crop_folder, "frames")
-        self.crop_mlists_folder = os.path.join(self.crop_folder, "mlists")
+        self.frames_folder = config.frames_folder
+        self.mlists_folder = config.mlists_folder
         
-        self.fileCheck()
+        # file name generator
+        # using next(generator) to visit next file name
+        def get_files_in_dir(directory: str):
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    if entry.is_file():
+                        yield entry.name
+        self.frames_generator = get_files_in_dir(self.frames_folder)
+        self.mlists_generator = get_files_in_dir(self.mlists_folder)
+        
+        # store the current frame and mlist in memory
+        self.current_frame_index = -1
+        self.frame = None
+        self.mlist = None
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
-        """
-        This function will return the index-th frame and label by loading the
-        frame and molecular list from the disk. We assume the data store in
-        `self.crop_folder` where frame and molecular list are stored in sub-
-        folder `frames` and `mlists` respectively. The file name of frame and
-        molecular list should be `index.tif` and `index.mat` respectively. Also,
-        since we load .mat file as dictionary, we assume the molecular list is
-        stored in the key `mlist` of the dictionary.
+        frame_index = index // 100  # index for frame
+        sub_index   = index %  100  # index for subframe
+        h = sub_index // 10         # height index for subframe
+        w = sub_index %  10         # width index for subframe
 
-        {crop_folder}
-        ├── frames
-        │   ├── 0.tif
-        │   ├── 1.tif
-        │   ├── ...
-        │   └── {sum(self.num) - 1}.tif
-        └── mlists
-            ├── 0.mat
-            ├── 1.mat
-            ├── ...
-            └── {sum(self.num) - 1}.mat
+        # load new frame and mlist if frame index is different
+        if frame_index != self.current_frame_index: self.readNext()
 
-        For the frame store in `self.crop_frames_folder`, we assume they are low
-        resolution, i.e., large pixel size, with shape [*self.dim_frame] and 
-        pixel value is non-normalized. The data type can be any uint type; we
-        will convert the frame to float type and normalize the frame to range
-        [0, 1] before output.
+        # frame
+        subframe = self.frame[  # type: ignore
+            0      : 64, 
+            h * 52 : 64 + h * 52, 
+            w * 52 : 64 + w * 52,
+        ]
 
-        For the molecular list store in `self.crop_mlists_folder`, we assume 
-        they are low resolution, i.e., large pixel size, with a shape of [N, D]
-        where N is the number of molecules and D is number of dimension. The 
-        data store in it represent the coordinate of center of each molecule. 
-        The data type can be any float type; we will convert the molecular list 
-        to high resolution, i.e, small pixel size, and then round to int. Then, 
-        for each location in this high resolution molecular list, we will set 
-        corresponding pixel in high resolution label frame to 1 where the label
-        is a tensor with shape [*self.dim_label].
-
-        Args:
-            index (int): Index of the data. 
-        
-        Return:
-            frame (Tensor): [*self.dim_frame], normalized, low resolution
-            label (Tensor): [*self.dim_label], normalized, super resolution
-        """
-        
-        ## frame
-        # ndarray, any uint, low resolution, non-normalized
-        frame = imread(
-            os.path.join(self.crop_frames_folder, "{}.tif".format(index))
-        )
-        # tensor, float, low resolution, normalized
-        frame = torch.from_numpy(frame)
-        frame = frame.float() / torch.iinfo(frame.dtype).max
-
-        ## molecular list
-        # ndarray, any float, low resolution
-        mlist = loadmat( # type: ignore
-            os.path.join(self.crop_mlists_folder, "{}.mat".format(index))
-        )["mlist"]
-        # tensor, float, high resolution
-        mlist = Tensor(torch.from_numpy(mlist)).float()  # to tensor
-        mlist = (mlist + 0.5) * self.up_sample - 0.5
-        mlist = torch.round(mlist).int()
+        # mlist
+        submlist = self.mlist.clone()  # type: ignore
+        submlist = submlist[submlist[:, 1] >= h * 52]
+        submlist = submlist[submlist[:, 1] <= h * 52 + 63]
+        submlist = submlist[submlist[:, 2] >= w * 52]
+        submlist = submlist[submlist[:, 2] <= w * 52 + 63]
+        submlist = submlist - Tensor([0, h*52, w*52])
+        submlist = (submlist + 0.5) * self.up_sample - 0.5
+        submlist = torch.round(submlist).int()
 
         ## label
-        # tensor, float, high resolution, normalized
-        label = torch.zeros(*self.dim_label.tolist())
-        label[tuple(mlist.t())] = 1
+        sublabel = torch.zeros(*self.dim_label.tolist())
+        sublabel[tuple(submlist.t())] = 1
 
-        return torch.clip(frame, 0, 1), torch.clip(label, 0, 1)
+        return torch.clip(subframe, 0, 1), torch.clip(sublabel, 0, 1)
 
     def __len__(self) -> int:
         """
@@ -274,126 +240,21 @@ class RawDataset(Dataset):
         """
         return self.num
 
-    # help function for __init__
-
-    def fileCheck(self) -> None:
-        """
-        This function control the logic of when to crop the raw data to crop
-        data:
-
-        check if crop data exist:
-            T: check if the number of crop data are enough
-                T: means the crop data are valid, do nothing
-                F: raise FileNotFoundError
-            F: check if raw data exist
-                T: create crop folder and call help function `cropData`
-                F: raise FileNotFoundError
-
-        Note that in this file check logic, raw data is not necessary if crop
-        data exist so that we can delete the raw data folder after cropping to 
-        save disk space.
-
-        Do not reply on this function to check the validity of the raw data!!!!! 
-        """
-
-        # if crop data exist, check if the number of crop data are enough
-        if os.path.exists(self.crop_folder):
-            if len(os.listdir(self.crop_frames_folder)) < self.num or \
-               len(os.listdir(self.crop_mlists_folder)) < self.num:
-                raise FileNotFoundError("Number of crop data not enough.")
-        # if crop data not exsit, means the raw data has not been cropped
-        else:
-            # check if raw data exist
-            if not os.path.exists(self.raw_frames_folder):
-                raise FileNotFoundError("Raw data frames not exist.")
-            if not os.path.exists(self.raw_mlists_folder):
-                raise FileNotFoundError("Raw data mlists not exist.")
-            # create crop data
-            os.makedirs(self.crop_frames_folder)
-            os.makedirs(self.crop_mlists_folder)
-            self.cropData()
-
-    def cropData(self) -> None:
-        """
-        WARNING: This function is not a universal function. It is designed for
-        specific raw data. Please check all implementation and documentation of
-        this class to see each function's pre-condition.
-
-        This function assume the dim_frame = [64 64 64] and the raw data's shape
-        is [64 512 512]. We will pad the raw data to [64 532 532] and then crop
-        the raw data to 100 number of sub-frame with shape [64 64 64]. The step
-        size of the crop is 52, which means that each sub-frame will have 12
-        pixels overlap with each other. We will use the network to predict each
-        [64 64 64] subframe and only take the center [64 52 52] part of the
-        prediction as the final prediction. This will avoid the boundary effect
-        of the network.
-
-        We difine this function inside the RawDataset class because we have to
-        match the logic of process and read data between this function and
-        __getitem__ function.
-        """
-
-        # def the function for reading files in a directory
-        def get_files_in_dir(directory: str):
-            with os.scandir(directory) as entries:
-                for entry in entries:
-                    if entry.is_file():
-                        yield entry.name
+    def readNext(self) -> None:
+        # frame
+        self.frame = torch.from_numpy(imread(
+            os.path.join(self.frames_folder, next(self.frames_generator))
+        ))
+        self.frame = (self.frame / torch.max(self.frame)).float()
+        self.frame = F.pad(self.frame, (10, 10, 10, 10))
         
-        # read each frame in the raw data folder
-        num_sub = 0
-        for file_name in get_files_in_dir(self.raw_frames_folder):
-            name = os.path.splitext(file_name)[0]
-            
-            # frame 
-            # ndarray, uint8, low resolution, [64 512 512], [D H W], [0, 255]
-            frame = imread(
-                os.path.join(self.raw_frames_folder, name+".tif")
-            )
-            frame = np.round(
-                frame / frame.max() * 255).astype(np.uint8) # type: ignore
-            # pad the frame from [512 512 64] to [532 532 64]
-            frame = np.pad(frame, ( (0, 0), (10, 10), (10, 10)))
-
-            # molecular list
-            # ndarray, double, low resolution, [N 3], [N (H W D)], [1, 512]
-            mlist = loadmat( # type: ignore
-                os.path.join(self.raw_mlists_folder, name+".mat")
-            )["storm_coords"]
-            # ndarray, double, lwo resolution, [N (D H W)], [0, 511]
-            mlist = mlist[:, [2, 0, 1]] - 1
-            # match the coordinate of frame after padding
-            mlist[:, 1:]+=10
-            
-            # crop the frame to 100 number of dim_frame frame with step size 52
-            for sub in range(100):
-                h = sub // 10  # index for height
-                w = sub %  10  # index for width
-
-                # the cropped subframe
-                subframe = frame[
-                    0      : 64, 
-                    h * 52 : 64 + h * 52, 
-                    w * 52 : 64 + w * 52,
-                ]
-                
-                # the corresponding sub molecular list
-                submlist = mlist.copy()
-                submlist = submlist[submlist[:, 1] >= h * 52]
-                submlist = submlist[submlist[:, 1] <= h * 52 + 63]
-                submlist = submlist[submlist[:, 2] >= w * 52]
-                submlist = submlist[submlist[:, 2] <= w * 52 + 63]
-                submlist = submlist - [0, h*52, w*52]  # [0 63]
-
-                # save the frame and mlist
-                imsave(os.path.join(
-                    self.crop_frames_folder, "{}.tif".format(num_sub)
-                ), subframe)
-                savemat(os.path.join(  # type: ignore
-                    self.crop_mlists_folder, "{}.mat".format(num_sub)
-                ), {"mlist": submlist})
-
-                num_sub+=1
+        # mlist
+        _, self.mlist = loadmat( # type: ignore
+            os.path.join(self.mlists_folder, next(self.mlists_generator))
+        ).popitem()
+        self.mlist = torch.from_numpy(self.mlist).float()
+        self.mlist = self.mlist[:, [2, 0, 1]] - 1  # (H W D) -> (D H W)
+        self.mlist[:, 1:] += 10  # match the coordinate of frame after padding
 
     def combineFrame(self, subframes: Tensor) -> Tensor:
         """
@@ -452,23 +313,23 @@ class RawDataset(Dataset):
         ]
 
 
-def getDataLoader(config) -> List[DataLoader]:
+def getDataLoader(config) -> Tuple[DataLoader, ...]:
     """
-    This function will return a list of dataloader for each dataset. Four paras
+    This function will return a tuple of dataloader for each dataset. Four paras
     in config will be used to create the dataloader, i.e., config.num, 
     config.type, config.batch_size, and config.num_workers. All dataloader will
     have the same batch_size and num_workers.
     
-    For example,
+    For example:
         if the input config has
             config.num = [100, 200]
             config.type = ["Sim", "Raw"]
-        the dataloader list return by this function will be
-            dataloader = [
+        the dataloader tuple return by this function will be
+            dataloader = (
                 SimDataset with 100 data, 
                 RawDataset with 200 data
-            ]
-    
+            )
+
     Args:
         config (Config): The config class for this project.
             config.num (List[int]): A list of int, where each int is the number
@@ -479,8 +340,10 @@ def getDataLoader(config) -> List[DataLoader]:
             config.num_workers (int): The number of workers for each dataloader.
     
     Returns:
-        dataloader (List[DataLoader]): A list of dataloader for each dataset.
+        dataloader (Tuple[DataLoader]): A tuple of dataloader for each dataset.
+            Will have same length as config.num and config.type.
     """
+
     if len(config.num) != len(config.type): raise ValueError(
         "The length of config.num and config.type should be the same."
     )
@@ -499,7 +362,7 @@ def getDataLoader(config) -> List[DataLoader]:
             num_workers=config.num_workers, 
             pin_memory=True
         ))
-    return dataloader
+    return tuple(dataloader)
 
 
 if __name__ == "__main__":
@@ -507,11 +370,13 @@ if __name__ == "__main__":
     Test code for two dataset. 
     No need to run this file independently when train and evaluate the network.
     """
+    from tifffile import imsave
+    from config import Config
+
     # create dir to store test frame
     if not os.path.exists("data/test"): os.makedirs("data/test")
 
     # test using default config
-    from config import Config
     config  = Config()
 
     # test the RawDataset
