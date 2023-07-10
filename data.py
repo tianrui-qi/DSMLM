@@ -186,20 +186,14 @@ class RawDataset(Dataset):
         self.frames_folder = config.frames_folder
         self.mlists_folder = config.mlists_folder
         
-        # file name generator
-        # using next(generator) to visit next file name
-        def get_files_in_dir(directory: str):
-            with os.scandir(directory) as entries:
-                for entry in entries:
-                    if entry.is_file():
-                        yield entry.name
-        self.frames_generator = get_files_in_dir(self.frames_folder)
-        self.mlists_generator = get_files_in_dir(self.mlists_folder)
+        # file name list
+        self.frames_list = os.listdir(self.frames_folder)
+        self.mlists_list = os.listdir(self.mlists_folder)
         
         # store the current frame and mlist in memory
-        self.current_frame_index = -1
         self.frame = None
         self.mlist = None
+        self.current_frame_index = -1
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
         frame_index = index // 100  # index for frame
@@ -208,7 +202,9 @@ class RawDataset(Dataset):
         w = sub_index %  10         # width index for subframe
 
         # load new frame and mlist if frame index is different
-        if frame_index != self.current_frame_index: self.readNext()
+        if frame_index != self.current_frame_index: 
+            self.readNext(frame_index)
+            self.current_frame_index = frame_index
 
         # frame
         subframe = self.frame[  # type: ignore
@@ -218,8 +214,8 @@ class RawDataset(Dataset):
         ]
 
         # mlist
-        submlist = self.mlist.clone()  # type: ignore
-        submlist = submlist[submlist[:, 1] >= h * 52]
+        submlist = self.mlist  # type: ignore
+        submlist = submlist[submlist[:, 1] >= h * 52]  # type: ignore
         submlist = submlist[submlist[:, 1] <= h * 52 + 63]
         submlist = submlist[submlist[:, 2] >= w * 52]
         submlist = submlist[submlist[:, 2] <= w * 52 + 63]
@@ -227,11 +223,11 @@ class RawDataset(Dataset):
         submlist = (submlist + 0.5) * self.up_sample - 0.5
         submlist = torch.round(submlist).int()
 
-        ## label
+        # label
         sublabel = torch.zeros(*self.dim_label.tolist())
         sublabel[tuple(submlist.t())] = 1
 
-        return torch.clip(subframe, 0, 1), torch.clip(sublabel, 0, 1)
+        return subframe, sublabel
 
     def __len__(self) -> int:
         """
@@ -240,17 +236,17 @@ class RawDataset(Dataset):
         """
         return self.num
 
-    def readNext(self) -> None:
+    def readNext(self, index) -> None:
         # frame
         self.frame = torch.from_numpy(imread(
-            os.path.join(self.frames_folder, next(self.frames_generator))
+            os.path.join(self.frames_folder, self.frames_list[index])
         ))
         self.frame = (self.frame / torch.max(self.frame)).float()
         self.frame = F.pad(self.frame, (10, 10, 10, 10))
         
         # mlist
         _, self.mlist = loadmat( # type: ignore
-            os.path.join(self.mlists_folder, next(self.mlists_generator))
+            os.path.join(self.mlists_folder, self.mlists_list[index])
         ).popitem()
         self.mlist = torch.from_numpy(self.mlist).float()
         self.mlist = self.mlist[:, [2, 0, 1]] - 1  # (H W D) -> (D H W)
@@ -377,7 +373,7 @@ if __name__ == "__main__":
     if not os.path.exists("data/test"): os.makedirs("data/test")
 
     # test using default config
-    config  = Config()
+    config = Config()
 
     # test the RawDataset
     dataset = RawDataset(config, 1)
