@@ -23,28 +23,35 @@ if __name__ == "__main__":
     # data
     dataloader = getDataLoader(config)[0]
 
-    # eval
+    # progress bar
+    pbar = tqdm(
+        total=len(dataloader) * config.batch_size / 100, 
+        desc=config.cpt_load_path
+    )
+
     with torch.no_grad():
         outputs = None
         frame = None
-        for i, (frames, _) in tqdm(
-            enumerate(dataloader), total=len(dataloader), desc="Eval"
-        ):
+        for i, (frames, _) in enumerate(dataloader):
             # store subframe to a [100, *output.shape] tensor, i.e., outputs
             output = net(frames.half().to(device))
-            if outputs == None: outputs = output
+            if outputs is None: outputs = output
             else: outputs = torch.cat((outputs, output))
 
             # combine 100 subframe, i.e., outputs, to a frame
             if len(outputs) != 100: continue
-            if frame == None: 
+            if frame is None: 
                 frame  = dataloader.dataset.combineFrame(outputs) # type: ignore
             else:
                 frame += dataloader.dataset.combineFrame(outputs) # type: ignore
             outputs = None
+            
+            # update the progress bar every frame
+            pbar.update()
+    pbar.close()
 
     # save
     frame /= torch.max(frame)  # type: ignore
     imsave(
-        'data/30.tif', (frame.cpu().detach() * 255).to(torch.uint8).numpy()
+        'data/eval.tif', (frame.cpu().detach() * 255).to(torch.uint8).numpy()
     )
