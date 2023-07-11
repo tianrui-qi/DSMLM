@@ -71,4 +71,4 @@ class ConfigEval(Config):
         # data
         self.num  = [3000000]
         self.type = ["Raw"]
-        self.batch_size = 10
+        self.batch_size = 4
