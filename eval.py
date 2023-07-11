@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     # progress bar
     pbar = tqdm(
-        total=len(dataloader) * config.batch_size / 100, 
+        total=int(len(dataloader) * config.batch_size / 100), 
         desc=config.cpt_load_path
     )
 
