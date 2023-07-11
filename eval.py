@@ -28,7 +28,8 @@ if __name__ == "__main__":
         outputs = None
         frame = None
         for i, (frames, _) in tqdm(
-            enumerate(dataloader), total=len(dataloader), desc="Processing"):
+            enumerate(dataloader), total=len(dataloader), desc="Eval"
+        ):
             # store subframe to a [100, *output.shape] tensor, i.e., outputs
             output = net(frames.half().to(device))
             if outputs == None: outputs = output
