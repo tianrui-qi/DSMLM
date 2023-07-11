@@ -1,5 +1,5 @@
 import torch
-
+from tqdm import tqdm
 from tifffile import imsave
 
 from config import ConfigEval
@@ -27,7 +27,8 @@ if __name__ == "__main__":
     with torch.no_grad():
         outputs = None
         frame = None
-        for i, (frames, _) in enumerate(dataloader):
+        for i, (frames, _) in tqdm(
+            enumerate(dataloader), total=len(dataloader), desc="Processing"):
             # store subframe to a [100, *output.shape] tensor, i.e., outputs
             output = net(frames.half().to(device))
             if outputs == None: outputs = output
@@ -44,5 +45,5 @@ if __name__ == "__main__":
     # save
     frame /= torch.max(frame)  # type: ignore
     imsave(
-        'data/eval/30.tif', (frame.cpu().detach() * 255).to(torch.uint8).numpy()
+        'data/30.tif', (frame.cpu().detach() * 255).to(torch.uint8).numpy()
     )

@@ -8,9 +8,8 @@ class Config:
         self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
         self.up_sample: List[int] = [ 4,  4,  4]    # [C, H, W], by scale
 
-        # =========================== train & eval =========================== #
+        # =============================== train ============================== #
 
-        ## (class) Train
         # train
         self.max_epoch: int = 1000
         self.accumulation_steps: int = 4    # unit: batch
@@ -52,14 +51,13 @@ class Config:
         self.dark_noise : float = 2.29
 
         ## (class) RawDataset
-        self.frames_folder = "data/raw/frames"
-        self.mlists_folder = "data/raw/mlists"
+        self.frames_folder = "data/frames"
+        self.mlists_folder = "data/mlists"
 
 
 class ConfigTrain(Config):
     def __init__(self):
         super().__init__()
-        # train
         self.cpt_save_path  = "checkpoints/test_7"
         self.cpt_save_epoch = True
         # data
@@ -70,6 +68,7 @@ class ConfigEval(Config):
     def __init__(self):
         super().__init__()
         self.cpt_load_path = "checkpoints/test_7/30"
-        self.num  = [1000000]
+        # data
+        self.num  = [3000000]
         self.type = ["Raw"]
         self.batch_size = 10
