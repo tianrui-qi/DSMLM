@@ -30,12 +30,6 @@ class Config:
 
         # =============================== data =============================== #
 
-        ## (def) getDataLoader
-        self.num : List[int] = [8000 , 2000 ]  # num of train, valid data
-        self.type: List[str] = ["Sim", "Sim"]  # type of train, valid data
-        self.batch_size : int = 2
-        self.num_workers: int = 2
-
         ## (class) SimDataset
         # config for adjust distribution of molecular
         self.mol_range: List[int] = [0, 128]     # min, max num of mol/frame
@@ -51,8 +45,19 @@ class Config:
         self.dark_noise : float = 2.29
 
         ## (class) RawDataset
+        # subframe index
+        self.h_range: List[int] = [0, 9]
+        self.w_range: List[int] = [0, 9]
+        self.num_sub: int = 100
+        # data path
         self.frames_folder = "C:/Users/tianrui/Desktop/frames"
         self.mlists_folder = "C:/Users/tianrui/Desktop/mlists"
+
+        ## (def) getDataLoader
+        self.num : List[int] = [8000 , 2000 ]  # num of train, valid data
+        self.type: List[str] = ["Sim", "Sim"]  # type of train, valid data
+        self.batch_size : int = 2
+        self.num_workers: int = 2
 
 
 class ConfigTrain(Config):
@@ -69,6 +74,12 @@ class ConfigEval(Config):
         super().__init__()
         self.cpt_load_path = "checkpoints/test_7/30"
         # data
-        self.num  = [3000000]
+        ## (class) RawDataset
+        self.h_range = [5, 7]
+        self.w_range = [6, 9]
+        self.num_sub = 12
+        ## (def) getDataLoader
+        self.num  = [100 * self.num_sub]
         self.type = ["Raw"]
-        self.batch_size = 4
+        self.batch_size = 12
+        self.num_workers = 2

@@ -182,7 +182,13 @@ class RawDataset(Dataset):
         self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
         
-        # folder for raw data
+        # subframe index
+        self.h_range = config.h_range
+        self.w_range = config.w_range
+        self.num_sub = config.num_sub
+        self.num_sub_h = self.h_range[1] - self.h_range[0] + 1
+        self.num_sub_w = self.w_range[1] - self.w_range[0] + 1
+        # data path
         self.frames_folder = config.frames_folder
         self.mlists_folder = config.mlists_folder
         
@@ -196,10 +202,10 @@ class RawDataset(Dataset):
         self.current_frame_index = -1
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
-        frame_index = index // 100  # index for frame
-        sub_index   = index %  100  # index for subframe
-        h = sub_index // 10         # height index for subframe
-        w = sub_index %  10         # width index for subframe
+        frame_index = index // self.num_sub        # frame index
+        sub_index   = index %  self.num_sub        # subframe index
+        h = sub_index // self.num_sub_w + self.h_range[0]   # height index 
+        w = sub_index %  self.num_sub_w + self.w_range[0]   # width index 
 
         # load new frame and mlist if frame index is different
         if frame_index != self.current_frame_index: 
@@ -253,55 +259,25 @@ class RawDataset(Dataset):
         self.mlist[:, 1:] += 10  # match the coordinate of frame after padding
 
     def combineFrame(self, subframes: Tensor) -> Tensor:
-        """
-        WARNING: This function is not a universal function. It is designed for
-        specific raw data. Please check all implementation and documentation of
-        this class to see each function's pre-condition.
-
-        This function will combine the subframes into a frame. The shape of the
-        subframes should be [100 64 64 64] * [1, *self.up_sample] and the shape
-        of the frame will be [64 512 512] * [*self.up_sample].
-        We combine these subframes follow how we crop the frame into subframes
-        in function `cropData`. For each [64 64 64] subframe, we only keep the
-        center [64 52 52] * [*self.up_sample] part and discard the [0 6 6] * 
-        [*self.up_sample] part on each side since the network may not be able to
-        handle the boundary effect. Then, since we pad the [64 512 512] frame by
-        [0 10 10] on each side in function `cropData`, after we combine the 
-        subframes, we will get a [64 520 520] * [*self.up_sample] instead of 
-        [64 512 512] * [*self.up_sample]. Thus, we will discard the [0 4 4] * 
-        [*self.up_sample] part on each side to get the final frame with shape 
-        [64 512 512] * [*self.up_sample].
-
-        Note that this function is independent from the self.up_sample, i.e.,
-        can be used for any self.up_sample. The most important thing is that the
-        shape of the original frame, i.e, with shape [64 512 512] in our case
-        and how we cut it into subframe in function `cropData`. Note that 
-        `cropData` is also independent from self.up_sample.
-
-        Args:
-            subframes (Tensor): The subframes with shape [100 64 64 64] *
-                [1, *self.up_sample].
-        
-        Returns:
-            frame (Tensor): The frame with shape [64 512 512] * 
-                [*self.up_sample] where the dtype and device same to the input
-                `subframes` to avoid data copy between cpu and gpu.
-        """
-        shape = self.up_sample * Tensor([64, 520, 520]).int()
+        shape = self.up_sample * \
+            Tensor([64, 52 * self.num_sub_h, 52 * self.num_sub_w]).int()
         frame = torch.zeros(
             shape.tolist(), dtype=subframes.dtype, device=subframes.device)
-        for f in range(100):
-            h = f // 10
-            w = f %  10
+        
+        for sub_index in range(self.num_sub):
+            h = sub_index // self.num_sub_w
+            w = sub_index %  self.num_sub_w
+
             frame[
-                :, 
+                :,
                 h * 52 * self.up_sample[1] : (h+1) * 52 * self.up_sample[1], 
                 w * 52 * self.up_sample[2] : (w+1) * 52 * self.up_sample[2],
             ] = subframes[
-                f, :,
+                sub_index, :,
                 6 * self.up_sample[1] : -6 * self.up_sample[1],
                 6 * self.up_sample[2] : -6 * self.up_sample[2],
             ]
+
         return frame[
             :,
             4 * self.up_sample[1] : -4 * self.up_sample[1],

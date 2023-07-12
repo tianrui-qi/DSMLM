@@ -1,4 +1,5 @@
 import torch
+import time
 from tqdm import tqdm
 from tifffile import imsave
 
@@ -25,7 +26,7 @@ if __name__ == "__main__":
 
     # progress bar
     pbar = tqdm(
-        total=int(len(dataloader) * config.batch_size / 100), 
+        total=int(len(dataloader) * config.batch_size / config.num_sub), 
         desc=config.cpt_load_path
     )
 
@@ -39,8 +40,8 @@ if __name__ == "__main__":
             else: outputs = torch.cat((outputs, output))
 
             # combine 100 subframe, i.e., outputs, to a frame
-            if len(outputs) != 100: continue
-            if frame is None: 
+            if len(outputs) < config.num_sub: continue
+            if frame is None:
                 frame  = dataloader.dataset.combineFrame(outputs) # type: ignore
             else:
                 frame += dataloader.dataset.combineFrame(outputs) # type: ignore
