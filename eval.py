@@ -30,6 +30,7 @@ if __name__ == "__main__":
         desc=config.cpt_load_path
     )
 
+    # eval
     with torch.no_grad():
         outputs = None
         frame = None

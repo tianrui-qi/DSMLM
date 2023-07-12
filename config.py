@@ -75,11 +75,10 @@ class ConfigEval(Config):
         self.cpt_load_path = "checkpoints/test_7/30"
         # data
         ## (class) RawDataset
-        self.h_range = [5, 7]
+        self.h_range = [4, 7]
         self.w_range = [6, 9]
-        self.num_sub = 12
+        self.num_sub = 16
         ## (def) getDataLoader
-        self.num  = [100 * self.num_sub]
+        self.num  = [30000 * self.num_sub]
         self.type = ["Raw"]
-        self.batch_size = 12
-        self.num_workers = 2
+        self.batch_size = 16
