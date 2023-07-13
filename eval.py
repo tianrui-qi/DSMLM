@@ -1,5 +1,4 @@
 import torch
-import time
 from tqdm import tqdm
 from tifffile import imsave
 

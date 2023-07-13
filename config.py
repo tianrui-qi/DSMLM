@@ -60,7 +60,7 @@ class Config:
         self.num_workers: int = 2
 
 
-class ConfigTrain(Config):
+class Test7(Config):
     def __init__(self):
         super().__init__()
         self.cpt_save_path  = "checkpoints/test_7"
@@ -69,16 +69,28 @@ class ConfigTrain(Config):
         self.type = ["Sim", "Raw"]
 
 
+class Test8(Config):
+    def __init__(self):
+        super().__init__()
+        self.cpt_save_path  = "checkpoints/test_8"
+        self.cpt_save_epoch = True
+        self.cpt_load_path  = "checkpoints/test_7/52"
+        self.cpt_load_lr    = True
+        # data
+        self.type = ["Sim", "Raw"]
+
+
 class ConfigEval(Config):
     def __init__(self):
         super().__init__()
-        self.cpt_load_path = "checkpoints/test_7/30"
+        self.cpt_load_path = "checkpoints/test_7"
         # data
         ## (class) RawDataset
-        self.h_range = [4, 7]
-        self.w_range = [6, 9]
-        self.num_sub = 16
+        self.h_range = [3, 8]
+        self.w_range = [4, 9]
+        self.num_sub = 36
         ## (def) getDataLoader
-        self.num  = [30000 * self.num_sub]
+        self.num  = [300 * self.num_sub]
         self.type = ["Raw"]
-        self.batch_size = 16
+        self.batch_size = 12
+        self.num_workers = 2

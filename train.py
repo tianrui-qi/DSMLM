@@ -5,7 +5,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 import os  # for file checking
 
-from config import ConfigTrain
+import config
 from model import UNet2D, Criterion
 from data import getDataLoader
 
@@ -152,5 +152,5 @@ class Train:
 
 
 if __name__ == "__main__":
-    trainer = Train(ConfigTrain())
+    trainer = Train(config.Test8())
     trainer.train()
