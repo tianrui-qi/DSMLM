@@ -39,7 +39,7 @@ class Eval:
         self.net.eval()
         outputs = None
         frame = None
-        for i, (frames, _) in enumerate(self.dataloader):
+        for _, (frames, _) in enumerate(self.dataloader):
             # store subframe to a [100, *output.shape] tensor, i.e., outputs
             output = self.net(frames.half().to(self.device))
             if outputs is None: outputs = output
@@ -47,10 +47,10 @@ class Eval:
 
             # combine 100 subframe, i.e., outputs, to a frame
             if len(outputs) < self.num_sub: continue
-            if frame is None:
-                frame  = dataloader.dataset.combineFrame(outputs) # type: ignore
-            else:
-                frame += dataloader.dataset.combineFrame(outputs) # type: ignore
+            if frame is None: frame = \
+                self.dataloader.dataset.combineFrame(outputs) # type: ignore
+            else: frame += \
+                self.dataloader.dataset.combineFrame(outputs) # type: ignore
             outputs = None
             
             # update the progress bar every frame
