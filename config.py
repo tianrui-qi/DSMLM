@@ -6,15 +6,15 @@ class Config:
         # dimensional config
         # MUST be same accross whole pipline
         self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
-        self.up_sample: List[int] = [ 4,  4,  4]    # [C, H, W], by scale
+        self.up_sample: List[int] = [ 8,  8,  2]    # [C, H, W], by scale
 
         # =============================== train ============================== #
 
         ## (Class) Train
         # train
         self.device: str = "cuda"
-        self.max_epoch: int = 1000
-        self.accumulation_steps: int = 4    # unit: batch
+        self.max_epoch: int = 500
+        self.accumulation_steps: int = 80   # unit: batch
         # learning rate
         self.lr   : float = 1e-4     # initial learning rate (lr)
         self.gamma: float = 0.95
@@ -42,7 +42,7 @@ class Config:
 
         ## (class) SimDataset
         # config for adjust distribution of molecular
-        self.mol_range: List[int] = [0, 128]    # min, max num of mol/frame
+        self.mol_range: List[int] = [0, 32]     # min, max num of mol/frame
         self.std_range: List[List[float]] = [   # std range of each dimension
             [1.6, 1.3, 1.3],  # [500, 400, 400] nm for FWHM, pixel size 65nm
             [3.0, 1.6, 1.6],  # [900, 500, 500] nm for FWHM, pixel size 65nm
@@ -66,8 +66,8 @@ class Config:
         ## (def) getDataLoader
         self.num : List[int] = [8000 , 2000 ]  # num of train, valid data
         self.type: List[str] = ["Sim", "Sim"]  # Sim or Raw
-        self.batch_size : int = 2
-        self.num_workers: int = 2
+        self.batch_size : int = 1
+        self.num_workers: int = 1
 
 
 class ConfigTrain_1(Config):
