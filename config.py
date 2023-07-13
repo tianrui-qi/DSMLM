@@ -76,6 +76,8 @@ class ConfigTrain_1(Config):
         ## (Class) Train
         self.ckpt_save_path  = "ckpt/train_1"
         self.ckpt_save_epoch = True
+        self.ckpt_load_path  = "ckpt/train_1/4"
+        self.ckpt_load_lr    = True
         ## (def) getDataLoader
         self.type = ["Sim", "Raw"]
 
