@@ -37,7 +37,7 @@ class Eval:
         )
     
     @torch.no_grad()
-    def eval(self):
+    def eval(self) -> None:
         self.net.eval()
         outputs = None
         result = None
