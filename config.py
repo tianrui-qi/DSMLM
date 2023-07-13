@@ -19,15 +19,15 @@ class Config:
         self.lr   : float = 1e-4     # initial learning rate (lr)
         self.gamma: float = 0.95
         # checkpoint
-        self.cpt_save_path : str  = "checkpoints"   # path without .pt
-        self.cpt_save_epoch: bool = False           # save pt every epoch
-        self.cpt_load_path : str  = ""              # path without .pt
-        self.cpt_load_lr   : bool = False           # load lr from cpt
+        self.ckpt_save_path : str  = "ckpt"     # path without .pt
+        self.ckpt_save_epoch: bool = False      # save pt every epoch
+        self.ckpt_load_path : str  = ""         # path without .pt
+        self.ckpt_load_lr   : bool = False      # load lr from ckpt
 
         # =============================== eval =============================== #
 
         ## (class) Eval - also use some config of train and data
-        # train: self.device, self.cpt_load_path
+        # train: self.device, self.ckpt_load_path
         # eval
         self.result_save_path: str = "data/eval"    # path without .tif
         # data: self.num_sub, self.batch_size
@@ -60,8 +60,8 @@ class Config:
         self.w_range: List[int] = [0, 9]
         self.num_sub: int = 100
         # data path
-        self.frames_folder = "C:/Users/tianrui/Desktop/frames"
-        self.mlists_folder = "C:/Users/tianrui/Desktop/mlists"
+        self.frames_folder = "D:/frames"
+        self.mlists_folder = "D:/mlists"
 
         ## (def) getDataLoader
         self.num : List[int] = [8000 , 2000 ]  # num of train, valid data
@@ -74,8 +74,8 @@ class ConfigTrain_1(Config):
     def __init__(self) -> None:
         super().__init__()
         ## (Class) Train
-        self.cpt_save_path  = "checkpoints/train_1" # path without .pt
-        self.cpt_save_epoch = True
+        self.ckpt_save_path  = "ckpt/train_1"
+        self.ckpt_save_epoch = True
         ## (def) getDataLoader
         self.type = ["Sim", "Raw"]
 
@@ -84,8 +84,8 @@ class ConfigEval_1(Config):
     def __init__(self) -> None:
         super().__init__()
         ## (class) Eval
-        self.cpt_load_path = "checkpoints/train_1"  # path without .pt
-        self.result_save_path = "data/eval/result"  # path without .tif
+        self.ckpt_load_path = "ckpt/train_1"
+        self.result_save_path = "data/eval/result"
         ## (class) RawDataset
         self.h_range = [3, 8]
         self.w_range = [4, 9]

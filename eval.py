@@ -13,7 +13,7 @@ class Eval:
     def __init__(self, config) -> None:
         # train
         self.device = config.device
-        self.cpt_load_path = config.cpt_load_path
+        self.ckpt_load_path = config.ckpt_load_path
         # eval
         self.result_save_path = config.result_save_path
         # data
@@ -25,7 +25,7 @@ class Eval:
         # model
         self.net = UNet2D(config).to(self.device)
         self.net.load_state_dict(torch.load(
-            "{}.pt".format(self.cpt_load_path), 
+            "{}.ckpt".format(self.ckpt_load_path), 
             map_location=self.device)['net']
         )
         self.net.half()
@@ -33,7 +33,7 @@ class Eval:
         # record eval
         self.pbar = tqdm(
             total=len(self.dataloader) * self.batch_size / self.num_sub, 
-            desc=self.cpt_load_path
+            desc=self.ckpt_load_path
         )
     
     @torch.no_grad()

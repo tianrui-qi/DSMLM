@@ -20,10 +20,10 @@ class Train:
         self.lr    = config.lr
         self.gamma = config.gamma
         # checkpoint
-        self.cpt_save_path  = config.cpt_save_path
-        self.cpt_save_epoch = config.cpt_save_epoch
-        self.cpt_load_path  = config.cpt_load_path
-        self.cpt_load_lr    = config.cpt_load_lr
+        self.ckpt_save_path  = config.ckpt_save_path
+        self.ckpt_save_epoch = config.ckpt_save_epoch
+        self.ckpt_load_path  = config.ckpt_load_path
+        self.ckpt_load_lr    = config.ckpt_load_lr
 
         # index
         self.epoch      = 1    # epoch index start from 1
@@ -46,18 +46,18 @@ class Train:
         self.writer = SummaryWriter()
 
     def train(self) -> None:
-        self.load_checkpoint()
+        self.load_ckpt()
         while self.epoch <= self.max_epoch:
             self.train_epoch()
             self.valid_epoch()
             self.update_lr()
 
-            if self.cpt_save_epoch:
-                self.save_checkpoint("{}/{}".format(
-                    self.cpt_save_path, self.epoch))
+            if self.ckpt_save_epoch:
+                self.save_ckpt("{}/{}".format(
+                    self.ckpt_save_path, self.epoch))
             if self.valid_loss < self.best_loss:
                 self.best_loss = self.valid_loss
-                self.save_checkpoint(self.cpt_save_path)
+                self.save_ckpt(self.ckpt_save_path)
 
             self.epoch+=1
 
@@ -128,29 +128,29 @@ class Train:
             self.epoch*len(self.trainloader))
 
     @torch.no_grad()
-    def save_checkpoint(self, path: str) -> None:
+    def save_ckpt(self, path: str) -> None:
         # file path checking
-        if not os.path.exists(os.path.dirname(self.cpt_save_path)):
-            os.makedirs(os.path.dirname(self.cpt_save_path))
-        if not os.path.exists(self.cpt_save_path + "/"): 
-            if self.cpt_save_epoch: os.makedirs(self.cpt_save_path)
+        if not os.path.exists(os.path.dirname(self.ckpt_save_path)):
+            os.makedirs(os.path.dirname(self.ckpt_save_path))
+        if not os.path.exists(self.ckpt_save_path + "/"): 
+            if self.ckpt_save_epoch: os.makedirs(self.ckpt_save_path)
 
         torch.save({
             'epoch': self.epoch,  # epoch index start from 1
             'net': self.net.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'scheduler': self.scheduler.state_dict()
-            }, "{}.pt".format(path))
+            }, "{}.ckpt".format(path))
 
     @torch.no_grad()
-    def load_checkpoint(self) -> None:
-        if self.cpt_load_path == "": return
-        checkpoint = torch.load("{}.pt".format(self.cpt_load_path))
-        self.epoch = checkpoint['epoch']+1  # start train from next epoch index
-        self.net.load_state_dict(checkpoint['net'])
-        if self.cpt_load_lr:
-            self.optimizer.load_state_dict(checkpoint['optimizer'])
-            self.scheduler.load_state_dict(checkpoint['scheduler'])
+    def load_ckpt(self) -> None:
+        if self.ckpt_load_path == "": return
+        ckpt = torch.load("{}.ckpt".format(self.ckpt_load_path))
+        self.epoch = ckpt['epoch']+1  # start train from next epoch index
+        self.net.load_state_dict(ckpt['net'])
+        if self.ckpt_load_lr:
+            self.optimizer.load_state_dict(ckpt['optimizer'])
+            self.scheduler.load_state_dict(ckpt['scheduler'])
 
 
 if __name__ == "__main__":
