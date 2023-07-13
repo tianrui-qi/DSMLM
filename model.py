@@ -25,17 +25,21 @@ class UNet2D(nn.Module):
         super(UNet2D, self).__init__()
 
         in_feature = config.dim_frame[0]  # input feature/channel/depth num
-        up_c = config.up_sample[0]  # upsampling scale, channel/depth
+        up_c       = config.up_sample[0]  # upsampling scale, channel/depth
 
         self.input = nn.Upsample(
             scale_factor=tuple(config.up_sample), mode='nearest')
 
         self.encoder1 = UNetBlock(in_feature * up_c * 1, in_feature * up_c * 2)
-        self.pool = nn.MaxPool2d(2)
+        self.down     = nn.MaxPool2d(kernel_size=2)
         self.encoder2 = UNetBlock(in_feature * up_c * 2, in_feature * up_c * 4)
-        self.upconv = nn.ConvTranspose2d(
-            in_feature * up_c * 4, in_feature * up_c * 2, 
-            kernel_size=4, stride=2, padding=1)
+        self.up = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode='nearest'),
+            nn.Conv2d(
+                in_feature * up_c * 4, in_feature * up_c * 2, 
+                kernel_size=3, padding=1
+            )
+        )
         self.decoder1 = UNetBlock(in_feature * up_c * 4, in_feature * up_c * 2)
 
         self.output = nn.Sequential(
@@ -46,9 +50,9 @@ class UNet2D(nn.Module):
         up = self.input(x.unsqueeze(1)).squeeze(1)
         # up   = self.input(x)
         enc1 = self.encoder1(up)
-        enc2 = self.pool(enc1)
+        enc2 = self.down(enc1)
         enc2 = self.encoder2(enc2)
-        enc2 = self.upconv(enc2)
+        enc2 = self.up(enc2)
         dec2 = torch.cat((enc1, enc2), dim=1)
         dec2 = self.decoder1(dec2)
         return self.output(dec2)

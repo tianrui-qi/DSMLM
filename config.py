@@ -70,21 +70,21 @@ class Config:
         self.num_workers: int = 2
 
 
-class ConfigTrain_7(Config):
+class ConfigTrain_1(Config):
     def __init__(self) -> None:
         super().__init__()
         ## (Class) Train
-        self.cpt_save_path  = "checkpoints/train_7" # path without .pt
+        self.cpt_save_path  = "checkpoints/train_1" # path without .pt
         self.cpt_save_epoch = True
         ## (def) getDataLoader
         self.type = ["Sim", "Raw"]
 
 
-class ConfigEval_7(Config):
+class ConfigEval_1(Config):
     def __init__(self) -> None:
         super().__init__()
         ## (class) Eval
-        self.cpt_load_path = "checkpoints/train_7"  # path without .pt
+        self.cpt_load_path = "checkpoints/train_1"  # path without .pt
         self.result_save_path = "data/eval/result"  # path without .tif
         ## (class) RawDataset
         self.h_range = [3, 8]
@@ -99,7 +99,7 @@ class ConfigEval_7(Config):
 
 def getConfig(mode: str) -> Config:
     if mode == "train":
-        return ConfigTrain_7()
+        return ConfigTrain_1()
     if mode == "eval":
-        return ConfigEval_7()
+        return ConfigEval_1()
     raise ValueError("mode must be 'train' or 'eval'")
