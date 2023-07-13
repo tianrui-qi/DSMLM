@@ -4,6 +4,7 @@ from torch.optim import lr_scheduler
 from torch.utils.tensorboard.writer import SummaryWriter
 
 import os
+from tqdm import tqdm
 
 from config import getConfig
 from model import UNet2D, Criterion
@@ -42,16 +43,25 @@ class Train:
         self.scheduler = lr_scheduler.ExponentialLR(
             self.optimizer, gamma=self.gamma)
         
-        # record training
+        # record
         self.writer = SummaryWriter()
 
     def train(self) -> None:
+        # load checkpoint
         self.load_ckpt()
+
+        # progress bar
+        pbar = tqdm(
+            total=self.max_epoch, desc=self.ckpt_save_path, position=0,
+            unit="epoch", initial=self.epoch
+        )
+
         while self.epoch <= self.max_epoch:
             self.train_epoch()
             self.valid_epoch()
             self.update_lr()
 
+            # save checkpoint
             if self.ckpt_save_epoch:
                 self.save_ckpt("{}/{}".format(
                     self.ckpt_save_path, self.epoch))
@@ -59,11 +69,15 @@ class Train:
                 self.best_loss = self.valid_loss
                 self.save_ckpt(self.ckpt_save_path)
 
-            self.epoch+=1
+            pbar.update()  # update progress bar
+            self.epoch+=1  # update epoch index
 
     def train_epoch(self) -> None:
         self.net.train()
-        for i, (frames, labels) in enumerate(self.trainloader):
+        for i, (frames, labels) in enumerate(tqdm(
+            self.trainloader, desc='train_epoch', position=1, 
+            leave=False, unit="iteration"
+        )):
             # put frames and labels in GPU
             frames = frames.to(self.device)
             labels = labels.to(self.device)
@@ -87,11 +101,14 @@ class Train:
     
     @torch.no_grad()
     def valid_epoch(self) -> None:
-        # validation
-        self.net.eval()
         self.valid_loss = []
         self.valid_num = []
-        for i, (frames, labels) in enumerate(self.validloader):
+        
+        self.net.eval()
+        for _, (frames, labels) in enumerate(tqdm(
+            self.validloader, desc='valid_epoch', position=1, 
+            leave=False, unit="iteration"
+        )):
             # put frames and labels in GPU
             frames = frames.to(self.device)
             labels = labels.to(self.device)
@@ -99,6 +116,7 @@ class Train:
             outputs = self.net(frames)
             # loss
             loss = self.criterion(outputs, labels)
+            
             # record
             self.valid_loss.append(loss.item() / len(outputs))
             self.valid_num.append(len(torch.nonzero(outputs)) / len(outputs))

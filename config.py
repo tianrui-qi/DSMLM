@@ -6,14 +6,14 @@ class Config:
         # dimensional config
         # MUST be same accross whole pipline
         self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
-        self.up_sample: List[int] = [ 8,  8,  2]    # [C, H, W], by scale
+        self.up_sample: List[int] = [ 2,  8,  8]    # [C, H, W], by scale
 
         # =============================== train ============================== #
 
         ## (Class) Train
         # train
         self.device: str = "cuda"
-        self.max_epoch: int = 500
+        self.max_epoch: int = 200
         self.accumulation_steps: int = 20   # unit: batch
         # learning rate
         self.lr   : float = 1e-4     # initial learning rate (lr)
@@ -64,8 +64,8 @@ class Config:
         self.mlists_folder = "D:/mlists"
 
         ## (def) getDataLoader
-        self.num : List[int] = [8000 , 2000 ]  # num of train, valid data
-        self.type: List[str] = ["Sim", "Sim"]  # Sim or Raw
+        self.num : List[int] = [8000 , 2000 ]   # num of train, valid data
+        self.type: List[str] = ["Sim", "Sim"]   # Sim or Raw
         self.batch_size : int = 1
         self.num_workers: int = 1
 
@@ -76,8 +76,6 @@ class ConfigTrain_1(Config):
         ## (Class) Train
         self.ckpt_save_path  = "ckpt/train_1"
         self.ckpt_save_epoch = True
-        self.ckpt_load_path  = "ckpt/train_1/4"
-        self.ckpt_load_lr    = True
         ## (def) getDataLoader
         self.type = ["Sim", "Raw"]
 

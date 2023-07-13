@@ -29,15 +29,15 @@ class Eval:
             map_location=self.device)['net']
         )
         self.net.half()
-
-        # record eval
-        self.pbar = tqdm(
-            total=len(self.dataloader) * self.batch_size / self.num_sub, 
-            desc=self.ckpt_load_path
-        )
     
     @torch.no_grad()
     def eval(self) -> None:
+        # progress bar
+        pbar = tqdm(
+            total=len(self.dataloader) * self.batch_size / self.num_sub, 
+            desc=self.ckpt_load_path, unit="frame"
+        )
+
         self.net.eval()
         outputs = None
         result = None
@@ -55,8 +55,7 @@ class Eval:
                 self.dataloader.dataset.combineFrame(outputs) # type: ignore
             outputs = None
             
-            # update the progress bar every frame
-            self.pbar.update()
+            pbar.update()  # update progress bar
         result /= torch.max(result)  # type: ignore
 
         # save
