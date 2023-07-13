@@ -23,6 +23,54 @@ class UNetBlock(nn.Module):
 class UNet2D(nn.Module):
     def __init__(self, config) -> None:
         super(UNet2D, self).__init__()
+        in_feature = config.dim_frame[0]  # input feature/channel/depth num
+        up_c       = config.up_sample[0]  # upsampling scale, channel/depth
+
+        self.encoder1 = UNetBlock(in_feature * 1, in_feature * 2)
+        self.encoder2 = UNetBlock(in_feature * 2, in_feature * 4)
+        self.decoder1 = UNetBlock(in_feature * 4, in_feature * 2)
+        self.decoder2 = UNetBlock(in_feature * up_c * 2, in_feature * up_c * 1)
+
+        self.left  = nn.MaxPool2d(kernel_size=2)
+        self.right = nn.Sequential(
+            nn.Upsample(scale_factor=2),
+            nn.Conv2d(
+                in_feature * 4, in_feature * 2, 
+                kernel_size=3, padding=1
+            )
+        )
+        self.sr_left  = nn.Upsample(scale_factor=tuple(config.up_sample))
+        self.sr_right = nn.Sequential(
+            nn.Upsample(scale_factor=tuple(config.up_sample[1:])),
+            nn.Conv2d(
+                in_feature * 2, in_feature * up_c, 
+                kernel_size=3, padding=1
+            )
+        )
+
+        self.output = nn.Sequential(
+            nn.Conv2d(in_feature * up_c, in_feature * up_c, 1),
+            nn.ReLU()
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        temp1 = self.sr_left(x.unsqueeze(1)).squeeze(1)
+        enc1 = self.encoder1(x)
+        enc2 = self.left(enc1)
+        enc2 = self.encoder2(enc2)
+        enc2 = self.right(enc2)
+        dec1 = torch.cat((enc1, enc2), dim=1)
+        dec1 = self.decoder1(dec1)
+        dec1 = self.sr_right(dec1)
+        dec2 = torch.cat((temp1, dec1), dim=1)
+        dec2 = self.decoder2(dec2)
+        return self.output(dec2)
+
+
+"""
+class UNet2D(nn.Module):
+    def __init__(self, config) -> None:
+        super(UNet2D, self).__init__()
 
         in_feature = config.dim_frame[0]  # input feature/channel/depth num
         up_c       = config.up_sample[0]  # upsampling scale, channel/depth
@@ -48,7 +96,6 @@ class UNet2D(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         up = self.input(x.unsqueeze(1)).squeeze(1)
-        # up   = self.input(x)
         enc1 = self.encoder1(up)
         enc2 = self.down(enc1)
         enc2 = self.encoder2(enc2)
@@ -56,6 +103,7 @@ class UNet2D(nn.Module):
         dec2 = torch.cat((enc1, enc2), dim=1)
         dec2 = self.decoder1(dec2)
         return self.output(dec2)
+"""
 
 
 class Criterion(nn.Module):
