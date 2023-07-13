@@ -44,8 +44,8 @@ class Config:
         # config for adjust distribution of molecular
         self.mol_range: List[int] = [0, 64]     # min, max num of mol/frame
         self.std_range: List[List[float]] = [   # std range of each dimension
-            [1.6, 1.3, 1.3],  # [500, 400, 400] nm for FWHM, pixel size 65nm
-            [3.0, 1.6, 1.6],  # [900, 500, 500] nm for FWHM, pixel size 65nm
+            [2.6, 1.0, 1.0],  # FWHM [400 300 300], pixel size [65 130 130]
+            [5.9, 2.0, 2.0],  # FWHM [900 600 600], pixel size [65 130 130]
         ]
         self.lum_range: List[float] = [0.0, 1.0]
         # config for reducing resolution and adding noise
