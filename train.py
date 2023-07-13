@@ -5,25 +5,26 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 import os  # for file checking
 
-import config
+from config import getConfig
 from model import UNet2D, Criterion
 from data import getDataLoader
 
 
 class Train:
     def __init__(self, config) -> None:
-        # Configurations
-        # for train
+        # train
+        self.device = config.device
         self.max_epoch = config.max_epoch
         self.accumulation_steps = config.accumulation_steps
-        self.device = torch.device(
-            'cuda' if torch.cuda.is_available() else 'cpu')
-        # for checkpoint
+        # learning rate
+        self.lr    = config.lr
+        self.gamma = config.gamma
+        # checkpoint
         self.cpt_save_path  = config.cpt_save_path
         self.cpt_save_epoch = config.cpt_save_epoch
         self.cpt_load_path  = config.cpt_load_path
         self.cpt_load_lr    = config.cpt_load_lr
-        
+
         # index
         self.epoch      = 1    # epoch index start from 1
         self.valid_loss = torch.tensor(float("inf"))
@@ -37,9 +38,10 @@ class Train:
         self.criterion  = Criterion(config).to(self.device)
 
         # optimizer
-        self.optimizer  = optim.Adam(self.net.parameters(), lr=config.lr)
+        self.optimizer  = optim.Adam(self.net.parameters(), lr=self.lr)
         self.scheduler  = lr_scheduler.ExponentialLR(
-            self.optimizer, gamma=config.gamma)
+            self.optimizer, gamma=self.gamma)
+        
         # record training
         self.writer     = SummaryWriter()
 
@@ -126,7 +128,7 @@ class Train:
             self.epoch*len(self.trainloader))
 
     @torch.no_grad()
-    def save_checkpoint(self, path) -> None:
+    def save_checkpoint(self, path: str) -> None:
         # file path checking
         if not os.path.exists(os.path.dirname(self.cpt_save_path)):
             os.makedirs(os.path.dirname(self.cpt_save_path))
@@ -152,5 +154,5 @@ class Train:
 
 
 if __name__ == "__main__":
-    trainer = Train(config.Test8())
+    trainer = Train(getConfig("train"))
     trainer.train()

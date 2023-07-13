@@ -2,7 +2,7 @@ from typing import List
 
 
 class Config:
-    def __init__(self):
+    def __init__(self) -> None:
         # dimensional config
         # MUST be same accross whole pipline
         self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
@@ -10,7 +10,9 @@ class Config:
 
         # =============================== train ============================== #
 
+        ## (Class) Train
         # train
+        self.device: str = "cuda"
         self.max_epoch: int = 1000
         self.accumulation_steps: int = 4    # unit: batch
         # learning rate
@@ -21,6 +23,14 @@ class Config:
         self.cpt_save_epoch: bool = False           # save pt every epoch
         self.cpt_load_path : str  = ""              # path without .pt
         self.cpt_load_lr   : bool = False           # load lr from cpt
+
+        # =============================== eval =============================== #
+
+        ## (class) Eval - also use some config of train and data
+        # train: self.device, self.cpt_load_path
+        # eval
+        self.result_save_path: str = "data/eval"    # path without .tif
+        # data: self.num_sub, self.batch_size
 
         # =============================== model ============================== #
 
@@ -60,37 +70,35 @@ class Config:
         self.num_workers: int = 2
 
 
-class Test7(Config):
-    def __init__(self):
+class ConfigTrain7(Config):
+    def __init__(self) -> None:
         super().__init__()
+        ## (Class) Train
         self.cpt_save_path  = "checkpoints/test_7"
         self.cpt_save_epoch = True
-        # data
+        ## (def) getDataLoader
         self.type = ["Sim", "Raw"]
 
 
-class Test8(Config):
-    def __init__(self):
+class ConfigEval7(Config):
+    def __init__(self) -> None:
         super().__init__()
-        self.cpt_save_path  = "checkpoints/test_8"
-        self.cpt_save_epoch = True
-        self.cpt_load_path  = "checkpoints/test_7/52"
-        self.cpt_load_lr    = True
-        # data
-        self.type = ["Sim", "Raw"]
-
-
-class ConfigEval(Config):
-    def __init__(self):
-        super().__init__()
+        ## (class) Eval
         self.cpt_load_path = "checkpoints/test_7"
-        # data
         ## (class) RawDataset
         self.h_range = [3, 8]
         self.w_range = [4, 9]
         self.num_sub = 36
         ## (def) getDataLoader
-        self.num  = [300 * self.num_sub]
+        self.num  = [30 * self.num_sub]
         self.type = ["Raw"]
         self.batch_size = 12
         self.num_workers = 2
+
+
+def getConfig(mode: str) -> Config:
+    if mode == "train":
+        return ConfigTrain7()
+    if mode == "eval":
+        return ConfigEval7()
+    raise ValueError("mode must be 'train' or 'eval'")

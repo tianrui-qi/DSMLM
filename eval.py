@@ -2,45 +2,51 @@ import torch
 from tqdm import tqdm
 from tifffile import imsave
 
-from config import ConfigEval
+from config import getConfig
 from model import UNet2D
 from data import getDataLoader
 
 
-if __name__ == "__main__":
-    # config
-    config = ConfigEval()
-    device = torch.device('cuda')
+class Eval:
+    def __init__(self, config) -> None:
+        # train
+        self.device = config.device
+        self.cpt_load_path = config.cpt_load_path
+        # eval
+        self.result_save_path = config.result_save_path
+        # data
+        self.num_sub = config.num_sub
+        self.batch_size = config.batch_size
 
-    # model
-    net = UNet2D(config).to(device)  # config not important since load
-    net.load_state_dict(torch.load(
-        "{}.pt".format(config.cpt_load_path), 
-        map_location=device)['net']
-    )
-    net.eval().half()
+        # data
+        self.dataloader = getDataLoader(config)[0]
+        # model
+        self.net = UNet2D(config).to(self.device)
+        self.net.load_state_dict(torch.load(
+            "{}.pt".format(self.cpt_load_path), 
+            map_location=self.device)['net']
+        )
+        self.net.half()
 
-    # data
-    dataloader = getDataLoader(config)[0]
-
-    # progress bar
-    pbar = tqdm(
-        total=int(len(dataloader) * config.batch_size / config.num_sub), 
-        desc=config.cpt_load_path
-    )
-
-    # eval
-    with torch.no_grad():
+        # record eval
+        self.pbar = tqdm(
+            total=len(self.dataloader) * self.batch_size / self.num_sub, 
+            desc=self.cpt_load_path
+        )
+    
+    @torch.no_grad()
+    def eval(self):
+        self.net.eval()
         outputs = None
         frame = None
-        for i, (frames, _) in enumerate(dataloader):
+        for i, (frames, _) in enumerate(self.dataloader):
             # store subframe to a [100, *output.shape] tensor, i.e., outputs
-            output = net(frames.half().to(device))
+            output = self.net(frames.half().to(self.device))
             if outputs is None: outputs = output
             else: outputs = torch.cat((outputs, output))
 
             # combine 100 subframe, i.e., outputs, to a frame
-            if len(outputs) < config.num_sub: continue
+            if len(outputs) < self.num_sub: continue
             if frame is None:
                 frame  = dataloader.dataset.combineFrame(outputs) # type: ignore
             else:
@@ -48,11 +54,16 @@ if __name__ == "__main__":
             outputs = None
             
             # update the progress bar every frame
-            pbar.update()
-    pbar.close()
+            self.pbar.update()
 
-    # save
-    frame /= torch.max(frame)  # type: ignore
-    imsave(
-        'data/eval.tif', (frame.cpu().detach() * 255).to(torch.uint8).numpy()
-    )
+        # save
+        frame /= torch.max(frame)  # type: ignore
+        imsave(
+            "{}.tif".format(self.result_save_path), 
+            (frame.cpu().detach() * 255).to(torch.uint8).numpy()
+        )
+
+
+if __name__ == "__main__":
+    trainer = Eval(getConfig("eval"))
+    trainer.eval()
