@@ -2,7 +2,7 @@
 achieve/
 data/
 runs/
-checkpoints/
+ckpt/
 
 # (matlab-achieve) generated data by dataGenerator.m and dataGeneratorHelper.m
 generated/
