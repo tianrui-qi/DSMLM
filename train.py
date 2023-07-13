@@ -34,16 +34,16 @@ class Train:
         # data
         self.trainloader, self.validloader = getDataLoader(config)
         # model
-        self.net        = UNet2D(config).to(self.device)
-        self.criterion  = Criterion(config).to(self.device)
+        self.net       = UNet2D(config).to(self.device)
+        self.criterion = Criterion(config).to(self.device)
 
         # optimizer
-        self.optimizer  = optim.Adam(self.net.parameters(), lr=self.lr)
-        self.scheduler  = lr_scheduler.ExponentialLR(
+        self.optimizer = optim.Adam(self.net.parameters(), lr=self.lr)
+        self.scheduler = lr_scheduler.ExponentialLR(
             self.optimizer, gamma=self.gamma)
         
         # record training
-        self.writer     = SummaryWriter()
+        self.writer = SummaryWriter()
 
     def train(self) -> None:
         self.load_checkpoint()
