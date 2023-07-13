@@ -3,7 +3,7 @@ from torch import optim
 from torch.optim import lr_scheduler
 from torch.utils.tensorboard.writer import SummaryWriter
 
-import os  # for file checking
+import os
 
 from config import getConfig
 from model import UNet2D, Criterion
