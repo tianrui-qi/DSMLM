@@ -14,7 +14,7 @@ class Config:
         # train
         self.device: str = "cuda"
         self.max_epoch: int = 500
-        self.accumulation_steps: int = 80   # unit: batch
+        self.accumulation_steps: int = 20   # unit: batch
         # learning rate
         self.lr   : float = 1e-4     # initial learning rate (lr)
         self.gamma: float = 0.95
