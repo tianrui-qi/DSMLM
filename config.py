@@ -14,15 +14,15 @@ class Config:
         # train
         self.device: str = "cuda"
         self.max_epoch: int = 200
-        self.accumulation_steps: int = 20   # unit: batch
+        self.accumulation_steps: int = 8    # unit: batch
         # learning rate
-        self.lr   : float = 1e-4     # initial learning rate (lr)
+        self.lr   : float = 1e-3     # initial learning rate (lr)
         self.gamma: float = 0.95
         # checkpoint
-        self.ckpt_save_path : str  = "ckpt"     # path without .pt
-        self.ckpt_save_epoch: bool = False      # save pt every epoch
-        self.ckpt_load_path : str  = ""         # path without .pt
-        self.ckpt_load_lr   : bool = False      # load lr from ckpt
+        self.ckpt_save_path : str  = "ckpt/train"   # path without .pt
+        self.ckpt_save_epoch: bool = True           # save pt every epoch
+        self.ckpt_load_path : str  = ""             # path without .pt
+        self.ckpt_load_lr   : bool = False          # load lr from ckpt
 
         # =============================== eval =============================== #
 
@@ -42,7 +42,7 @@ class Config:
 
         ## (class) SimDataset
         # config for adjust distribution of molecular
-        self.mol_range: List[int] = [0, 32]     # min, max num of mol/frame
+        self.mol_range: List[int] = [0, 64]     # min, max num of mol/frame
         self.std_range: List[List[float]] = [   # std range of each dimension
             [1.6, 1.3, 1.3],  # [500, 400, 400] nm for FWHM, pixel size 65nm
             [3.0, 1.6, 1.6],  # [900, 500, 500] nm for FWHM, pixel size 65nm
@@ -66,8 +66,8 @@ class Config:
         ## (def) getDataLoader
         self.num : List[int] = [8000 , 2000 ]   # num of train, valid data
         self.type: List[str] = ["Sim", "Sim"]   # Sim or Raw
-        self.batch_size : int = 1
-        self.num_workers: int = 1
+        self.batch_size : int = 2
+        self.num_workers: int = 2
 
 
 class ConfigTrain_1(Config):
@@ -75,7 +75,6 @@ class ConfigTrain_1(Config):
         super().__init__()
         ## (Class) Train
         self.ckpt_save_path  = "ckpt/train_1"
-        self.ckpt_save_epoch = True
         ## (def) getDataLoader
         self.type = ["Sim", "Raw"]
 
@@ -84,7 +83,7 @@ class ConfigEval_1(Config):
     def __init__(self) -> None:
         super().__init__()
         ## (class) Eval
-        self.ckpt_load_path = "ckpt/train_1"
+        self.ckpt_load_path   = "ckpt/train_1"
         self.result_save_path = "data/eval/result"
         ## (class) RawDataset
         self.h_range = [3, 8]
@@ -94,7 +93,6 @@ class ConfigEval_1(Config):
         self.num  = [30 * self.num_sub]
         self.type = ["Raw"]
         self.batch_size = 12
-        self.num_workers = 2
 
 
 def getConfig(mode: str) -> Config:
