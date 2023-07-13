@@ -1,4 +1,5 @@
 import torch
+import os
 from tqdm import tqdm
 from tifffile import imsave
 
@@ -38,7 +39,7 @@ class Eval:
     def eval(self):
         self.net.eval()
         outputs = None
-        frame = None
+        result = None
         for _, (frames, _) in enumerate(self.dataloader):
             # store subframe to a [100, *output.shape] tensor, i.e., outputs
             output = self.net(frames.half().to(self.device))
@@ -47,20 +48,22 @@ class Eval:
 
             # combine 100 subframe, i.e., outputs, to a frame
             if len(outputs) < self.num_sub: continue
-            if frame is None: frame = \
+            if result is None: result = \
                 self.dataloader.dataset.combineFrame(outputs) # type: ignore
-            else: frame += \
+            else: result += \
                 self.dataloader.dataset.combineFrame(outputs) # type: ignore
             outputs = None
             
             # update the progress bar every frame
             self.pbar.update()
+        result /= torch.max(result)  # type: ignore
 
         # save
-        frame /= torch.max(frame)  # type: ignore
+        if not os.path.exists(os.path.dirname(self.result_save_path)):
+            os.makedirs(os.path.dirname(self.result_save_path))
         imsave(
             "{}.tif".format(self.result_save_path), 
-            (frame.cpu().detach() * 255).to(torch.uint8).numpy()
+            (result.cpu().detach() * 255).to(torch.uint8).numpy()
         )
 
 

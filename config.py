@@ -42,7 +42,7 @@ class Config:
 
         ## (class) SimDataset
         # config for adjust distribution of molecular
-        self.mol_range: List[int] = [0, 128]     # min, max num of mol/frame
+        self.mol_range: List[int] = [0, 128]    # min, max num of mol/frame
         self.std_range: List[List[float]] = [   # std range of each dimension
             [1.6, 1.3, 1.3],  # [500, 400, 400] nm for FWHM, pixel size 65nm
             [3.0, 1.6, 1.6],  # [900, 500, 500] nm for FWHM, pixel size 65nm
@@ -65,26 +65,27 @@ class Config:
 
         ## (def) getDataLoader
         self.num : List[int] = [8000 , 2000 ]  # num of train, valid data
-        self.type: List[str] = ["Sim", "Sim"]  # type of train, valid data
+        self.type: List[str] = ["Sim", "Sim"]  # Sim or Raw
         self.batch_size : int = 2
         self.num_workers: int = 2
 
 
-class ConfigTrain7(Config):
+class ConfigTrain_7(Config):
     def __init__(self) -> None:
         super().__init__()
         ## (Class) Train
-        self.cpt_save_path  = "checkpoints/test_7"
+        self.cpt_save_path  = "checkpoints/train_7" # path without .pt
         self.cpt_save_epoch = True
         ## (def) getDataLoader
         self.type = ["Sim", "Raw"]
 
 
-class ConfigEval7(Config):
+class ConfigEval_7(Config):
     def __init__(self) -> None:
         super().__init__()
         ## (class) Eval
-        self.cpt_load_path = "checkpoints/test_7"
+        self.cpt_load_path = "checkpoints/train_7"  # path without .pt
+        self.result_save_path = "data/eval/result"  # path without .tif
         ## (class) RawDataset
         self.h_range = [3, 8]
         self.w_range = [4, 9]
@@ -98,7 +99,7 @@ class ConfigEval7(Config):
 
 def getConfig(mode: str) -> Config:
     if mode == "train":
-        return ConfigTrain7()
+        return ConfigTrain_7()
     if mode == "eval":
-        return ConfigEval7()
+        return ConfigEval_7()
     raise ValueError("mode must be 'train' or 'eval'")
