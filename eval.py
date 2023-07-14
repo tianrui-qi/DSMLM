@@ -15,7 +15,7 @@ class Eval:
         self.device = config.device
         self.ckpt_load_path = config.ckpt_load_path
         # eval
-        self.result_save_path = config.result_save_path
+        self.outputs_save_path = config.outputs_save_path
         # data
         self.num_sub = config.num_sub
         self.batch_size = config.batch_size
@@ -38,32 +38,33 @@ class Eval:
             desc=self.ckpt_load_path, unit="frame"
         )
 
-        self.net.eval()
-        outputs = None
-        result = None
-        for _, (frames, _) in enumerate(self.dataloader):
-            # store subframe to a [100, *output.shape] tensor, i.e., outputs
-            output = self.net(frames.half().to(self.device))
-            if outputs is None: outputs = output
-            else: outputs = torch.cat((outputs, output))
+        outputs_cat = None  # output after concatenation
+        outputs_cmb = None  # output after combination
 
-            # combine 100 subframe, i.e., outputs, to a frame
-            if len(outputs) < self.num_sub: continue
-            if result is None: result = \
-                self.dataloader.dataset.combineFrame(outputs) # type: ignore
-            else: result += \
-                self.dataloader.dataset.combineFrame(outputs) # type: ignore
-            outputs = None
+        self.net.eval()
+        for _, (frames, labels) in enumerate(self.dataloader):
+            # store subframes to a [self.num_sub, *output.shape]
+            outputs = self.net(frames.half().to(self.device))
+            if outputs_cat is None: outputs_cat = outputs
+            else: outputs_cat = torch.cat((outputs_cat, outputs))
+
+            # combine self.num_sub subframes to a frame
+            if len(outputs_cat) < self.num_sub: continue
+            if outputs_cmb is None: outputs_cmb = \
+                self.dataloader.dataset.combineFrame(outputs_cat) # type: ignore
+            else: outputs_cmb += \
+                self.dataloader.dataset.combineFrame(outputs_cat) # type: ignore
+            outputs_cat = None
             
             pbar.update()  # update progress bar
-        result /= torch.max(result)  # type: ignore
+        outputs_cmb /= torch.max(outputs_cmb)  # type: ignore
 
         # save
-        if not os.path.exists(os.path.dirname(self.result_save_path)):
-            os.makedirs(os.path.dirname(self.result_save_path))
+        if not os.path.exists(os.path.dirname(self.outputs_save_path)):
+            os.makedirs(os.path.dirname(self.outputs_save_path))
         imsave(
-            "{}.tif".format(self.result_save_path), 
-            (result.cpu().detach() * 255).to(torch.uint8).numpy()
+            "{}.tif".format(self.outputs_save_path), 
+            (outputs_cmb.cpu().detach() * 255).to(torch.uint8).numpy()
         )
 
 
