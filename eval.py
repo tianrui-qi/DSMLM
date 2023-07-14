@@ -16,12 +16,15 @@ class Eval:
         self.ckpt_load_path = config.ckpt_load_path
         # eval
         self.outputs_save_path = config.outputs_save_path
+        self.labels_save_path = config.labels_save_path
+        self.labels_save = config.labels_save
         # data
         self.num_sub = config.num_sub
         self.batch_size = config.batch_size
 
         # data
         self.dataloader = getDataLoader(config)[0]
+        self.dataset = self.dataloader.dataset  # to call static method
         # model
         self.net = UNet2D(config).to(self.device)
         self.net.load_state_dict(torch.load(
@@ -40,24 +43,34 @@ class Eval:
 
         outputs_cat = None  # output after concatenation
         outputs_cmb = None  # output after combination
+        labels_cat  = None  # label after concatenation
+        labels_cmb  = None  # label after combination
 
         self.net.eval()
         for _, (frames, labels) in enumerate(self.dataloader):
-            # store subframes to a [self.num_sub, *output.shape]
+            # store subframes to a [self.num_sub, *output.shape] tensor
             outputs = self.net(frames.half().to(self.device))
-            if outputs_cat is None: outputs_cat = outputs
+            if outputs_cat == None: outputs_cat = outputs
             else: outputs_cat = torch.cat((outputs_cat, outputs))
+            if labels_cat == None: labels_cat = labels
+            else: labels_cat = torch.cat((labels_cat, labels))
 
-            # combine self.num_sub subframes to a frame
+            # combine self.num_sub subframes to a [*output.shape] frame
             if len(outputs_cat) < self.num_sub: continue
-            if outputs_cmb is None: outputs_cmb = \
-                self.dataloader.dataset.combineFrame(outputs_cat) # type: ignore
-            else: outputs_cmb += \
-                self.dataloader.dataset.combineFrame(outputs_cat) # type: ignore
+            if outputs_cmb == None: 
+                outputs_cmb = self.dataset.combineFrame(outputs_cat) # type: ignore
+            else:
+                outputs_cmb += self.dataset.combineFrame(outputs_cat) # type: ignore
+            if labels_cmb == None:
+                labels_cmb = self.dataset.combineFrame(labels_cat)  # type: ignore
+            else:
+                labels_cmb += self.dataset.combineFrame(labels_cat)  # type: ignore
             outputs_cat = None
-            
+            labels_cat = None
+
             pbar.update()  # update progress bar
         outputs_cmb /= torch.max(outputs_cmb)  # type: ignore
+        labels_cmb /= torch.max(labels_cmb)  # type: ignore
 
         # save
         if not os.path.exists(os.path.dirname(self.outputs_save_path)):
@@ -65,6 +78,10 @@ class Eval:
         imsave(
             "{}.tif".format(self.outputs_save_path), 
             (outputs_cmb.cpu().detach() * 255).to(torch.uint8).numpy()
+        )
+        imsave(
+            "{}.tif".format(self.labels_save_path), 
+            (labels_cmb * 255).to(torch.uint8).numpy()
         )
 
 

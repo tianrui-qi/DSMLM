@@ -6,7 +6,7 @@ class Config:
         # dimensional config
         # MUST be same accross whole pipline
         self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
-        self.up_sample: List[int] = [ 2,  8,  8]    # [C, H, W], by scale
+        self.up_sample: List[int] = [ 2,  2,  2]    # [C, H, W], by scale
 
         # =============================== train ============================== #
 
@@ -14,14 +14,14 @@ class Config:
         # train
         self.device: str = "cuda"
         self.max_epoch: int = 200
-        self.accumulation_steps: int = 8    # unit: batch
+        self.accumulation_steps: int = 4    # unit: batch
         # learning rate
         self.lr   : float = 1e-3     # initial learning rate (lr)
         self.gamma: float = 0.95
         # checkpoint
-        self.ckpt_save_path : str  = "ckpt/train"   # path without .pt
+        self.ckpt_save_path : str  = "ckpt/train"   # path without .ckpt
         self.ckpt_save_epoch: bool = True           # save pt every epoch
-        self.ckpt_load_path : str  = ""             # path without .pt
+        self.ckpt_load_path : str  = ""             # path without .ckpt
         self.ckpt_load_lr   : bool = False          # load lr from ckpt
 
         # =============================== eval =============================== #
@@ -29,7 +29,9 @@ class Config:
         ## (class) Eval - also use some config of train and data
         # train: self.device, self.ckpt_load_path
         # eval
-        self.result_save_path: str = "data/eval"    # path without .tif
+        self.outputs_save_path: str = "data/eval/outputs"   # path without .tif
+        self.labels_save_path : str = "data/eval/labels"    # path without .tif
+        self.labels_save      : bool = True
         # data: self.num_sub, self.batch_size
 
         # =============================== model ============================== #
@@ -77,22 +79,22 @@ class ConfigTrain_1(Config):
         self.ckpt_save_path  = "ckpt/train_1"
         ## (def) getDataLoader
         self.type = ["Sim", "Raw"]
+        self.batch_size = 4
 
 
 class ConfigEval_1(Config):
     def __init__(self) -> None:
         super().__init__()
         ## (class) Eval
-        self.ckpt_load_path   = "ckpt/train_1"
-        self.result_save_path = "data/eval/result"
+        self.ckpt_load_path   = "ckpt/train_1/6"
         ## (class) RawDataset
-        self.h_range = [3, 8]
-        self.w_range = [4, 9]
-        self.num_sub = 36
+        self.h_range = [5, 8]
+        self.w_range = [6, 9]
+        self.num_sub = 16
         ## (def) getDataLoader
-        self.num  = [30 * self.num_sub]
+        self.num  = [10 * self.num_sub]
         self.type = ["Raw"]
-        self.batch_size = 12
+        self.batch_size = 8
 
 
 def getConfig(mode: str) -> Config:
