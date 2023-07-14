@@ -20,6 +20,7 @@ class UNetBlock(nn.Module):
         return self.block(x)
 
 
+"""
 class UNet2D(nn.Module):
     def __init__(self, config) -> None:
         super(UNet2D, self).__init__()
@@ -65,9 +66,9 @@ class UNet2D(nn.Module):
         dec2 = torch.cat((temp1, dec1), dim=1)
         dec2 = self.decoder2(dec2)
         return self.output(dec2)
-
-
 """
+
+
 class UNet2D(nn.Module):
     def __init__(self, config) -> None:
         super(UNet2D, self).__init__()
@@ -103,7 +104,6 @@ class UNet2D(nn.Module):
         dec2 = torch.cat((enc1, enc2), dim=1)
         dec2 = self.decoder1(dec2)
         return self.output(dec2)
-"""
 
 
 class Criterion(nn.Module):
