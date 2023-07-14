@@ -31,7 +31,6 @@ class Config:
         # eval
         self.outputs_save_path: str = "data/eval/outputs"   # path without .tif
         self.labels_save_path : str = "data/eval/labels"    # path without .tif
-        self.labels_save      : bool = True
         # data: self.num_sub, self.batch_size
 
         # =============================== model ============================== #

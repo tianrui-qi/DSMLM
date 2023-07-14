@@ -17,7 +17,6 @@ class Eval:
         # eval
         self.outputs_save_path = config.outputs_save_path
         self.labels_save_path = config.labels_save_path
-        self.labels_save = config.labels_save
         # data
         self.num_sub = config.num_sub
         self.batch_size = config.batch_size
@@ -75,6 +74,8 @@ class Eval:
         # save
         if not os.path.exists(os.path.dirname(self.outputs_save_path)):
             os.makedirs(os.path.dirname(self.outputs_save_path))
+        if not os.path.exists(os.path.dirname(self.labels_save_path)):
+            os.makedirs(os.path.dirname(self.labels_save_path))
         imsave(
             "{}.tif".format(self.outputs_save_path), 
             (outputs_cmb.cpu().detach() * 255).to(torch.uint8).numpy()
