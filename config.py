@@ -14,10 +14,10 @@ class Config:
         # train
         self.device: str = "cuda"
         self.max_epoch   : int = 500
-        self.accumu_steps: int = 20  # unit: batch
+        self.accumu_steps: int = 50  # unit: batch
         # learning rate
-        self.lr   : float = 1e-3    # initial learning rate (lr)
-        self.gamma: float = 0.95
+        self.lr   : float = 1e-4    # initial learning rate (lr)
+        self.gamma: float = 0.98
         # checkpoint
         self.ckpt_save_folder: str  = "ckpt"    # folder store ckpt every epoch
         self.ckpt_load_path  : str  = ""        # path without .ckpt
@@ -42,7 +42,7 @@ class Config:
 
         ## (class) SimDataset
         # config for adjust distribution of molecular
-        self.mol_range: List[int] = [0, 64]     # min, max num of mol/frame
+        self.mol_range: List[int] = [0, 96]     # min, max num of mol/frame
         self.std_range: List[List[float]] = [   # std range of each dimension
             [2.6, 1.0, 1.0],  # FWHM [400 300 300], pixel size [65 130 130]
             [5.9, 2.0, 2.0],  # FWHM [900 600 600], pixel size [65 130 130]
@@ -73,8 +73,6 @@ class Config:
 class ConfigTrain(Config):
     def __init__(self) -> None:
         super().__init__()
-        self.ckpt_load_path = "ckpt/13"
-        self.ckpt_load_lr   = True
 
 
 class ConfigEval(ConfigTrain):
@@ -86,7 +84,7 @@ class ConfigEval(ConfigTrain):
         self.outputs_save_path = "data/outputs_{}".format(checkpoint)
         self.labels_save_path  = "data/labels_{}".format(checkpoint) 
         ## (class) RawDataset
-        self.h_range = [5, 8]
+        self.h_range = [4, 7]
         self.w_range = [6, 9]
         self.num_sub = 16
         ## (def) getDataLoader
