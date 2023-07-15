@@ -21,16 +21,12 @@ class Train:
         self.lr    = config.lr
         self.gamma = config.gamma
         # checkpoint
-        self.ckpt_save_path  = config.ckpt_save_path
-        self.ckpt_save_epoch = config.ckpt_save_epoch
-        self.ckpt_load_path  = config.ckpt_load_path
-        self.ckpt_load_lr    = config.ckpt_load_lr
+        self.ckpt_save_folder = config.ckpt_save_folder
+        self.ckpt_load_path   = config.ckpt_load_path
+        self.ckpt_load_lr     = config.ckpt_load_lr
 
         # index
-        self.epoch      = 1    # epoch index start from 1
-        self.valid_loss = torch.tensor(float("inf"))
-        self.best_loss  = torch.tensor(float("inf"))
-        self.valid_num  = 0
+        self.epoch = 1  # epoch index may update in load_ckpt()
 
         # data
         self.trainloader, self.validloader = getDataLoader(config)
@@ -52,7 +48,7 @@ class Train:
 
         # progress bar
         pbar = tqdm(
-            total=self.max_epoch, desc=self.ckpt_save_path, position=0,
+            total=self.max_epoch, desc=self.ckpt_save_folder, position=0,
             unit="epoch", initial=self.epoch
         )
 
@@ -60,14 +56,7 @@ class Train:
             self.train_epoch()
             self.valid_epoch()
             self.update_lr()
-
-            # save checkpoint
-            if self.ckpt_save_epoch:
-                self.save_ckpt("{}/{}".format(
-                    self.ckpt_save_path, self.epoch))
-            if self.valid_loss < self.best_loss:
-                self.best_loss = self.valid_loss
-                self.save_ckpt(self.ckpt_save_path)
+            self.save_ckpt()
 
             pbar.update()  # update progress bar
             self.epoch+=1  # update epoch index
@@ -101,8 +90,8 @@ class Train:
     
     @torch.no_grad()
     def valid_epoch(self) -> None:
-        self.valid_loss = []
-        self.valid_num = []
+        valid_loss = []
+        valid_num = []
         
         self.net.eval()
         for _, (frames, labels) in enumerate(tqdm(
@@ -118,19 +107,19 @@ class Train:
             loss = self.criterion(outputs, labels)
             
             # record
-            self.valid_loss.append(loss.item() / len(outputs))
-            self.valid_num.append(len(torch.nonzero(outputs)) / len(outputs))
+            valid_loss.append(loss.item() / len(outputs))
+            valid_num.append(len(torch.nonzero(outputs)) / len(outputs))
         
         # validation loss
-        self.valid_loss = torch.mean(torch.as_tensor(self.valid_loss))
-        self.valid_num = torch.mean(torch.as_tensor(self.valid_num))
+        valid_loss = torch.mean(torch.as_tensor(valid_loss))
+        valid_num = torch.mean(torch.as_tensor(valid_num))
         
         # record
         self.writer.add_scalars(
-            'Loss', {'valid': self.valid_loss}, 
+            'Loss', {'valid': valid_loss}, 
             self.epoch*len(self.trainloader))
         self.writer.add_scalars(
-            'Num', {'valid': self.valid_num}, 
+            'Num', {'valid': valid_num}, 
             self.epoch*len(self.trainloader))
 
     @torch.no_grad()
@@ -138,7 +127,6 @@ class Train:
         # update learning rate
         if self.scheduler.get_last_lr()[0] > 1e-10:
             self.scheduler.step()
-            #self.scheduler.step(self.valid_loss)
 
         # record
         self.writer.add_scalar(
@@ -146,19 +134,17 @@ class Train:
             self.epoch*len(self.trainloader))
 
     @torch.no_grad()
-    def save_ckpt(self, path: str) -> None:
+    def save_ckpt(self) -> None:
         # file path checking
-        if not os.path.exists(os.path.dirname(self.ckpt_save_path)):
-            os.makedirs(os.path.dirname(self.ckpt_save_path))
-        if not os.path.exists(self.ckpt_save_path + "/"): 
-            if self.ckpt_save_epoch: os.makedirs(self.ckpt_save_path)
+        if not os.path.exists(self.ckpt_save_folder): 
+            os.makedirs(self.ckpt_save_folder)
 
         torch.save({
             'epoch': self.epoch,  # epoch index start from 1
             'net': self.net.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'scheduler': self.scheduler.state_dict()
-            }, "{}.ckpt".format(path))
+            }, "{}/{}.ckpt".format(self.ckpt_save_folder, self.epoch))
 
     @torch.no_grad()
     def load_ckpt(self) -> None:

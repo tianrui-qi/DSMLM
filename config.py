@@ -6,7 +6,7 @@ class Config:
         # dimensional config
         # MUST be same accross whole pipline
         self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
-        self.up_sample: List[int] = [ 2,  2,  2]    # [C, H, W], by scale
+        self.up_sample: List[int] = [ 2,  4,  4]    # [C, H, W], by scale
 
         # =============================== train ============================== #
 
@@ -19,18 +19,17 @@ class Config:
         self.lr   : float = 1e-3     # initial learning rate (lr)
         self.gamma: float = 0.95
         # checkpoint
-        self.ckpt_save_path : str  = "ckpt/train"   # path without .ckpt
-        self.ckpt_save_epoch: bool = True           # save pt every epoch
-        self.ckpt_load_path : str  = ""             # path without .ckpt
-        self.ckpt_load_lr   : bool = False          # load lr from ckpt
+        self.ckpt_save_folder: str  = "ckpt"    # folder store ckpt every epoch
+        self.ckpt_load_path  : str  = ""        # path without .ckpt
+        self.ckpt_load_lr    : bool = False     # load lr from ckpt
 
         # =============================== eval =============================== #
 
         ## (class) Eval - also use some config of train and data
         # train: self.device, self.ckpt_load_path
         # eval
-        self.outputs_save_path: str = "data/eval/outputs"   # path without .tif
-        self.labels_save_path : str = "data/eval/labels"    # path without .tif
+        self.outputs_save_path: str = "data/outputs"   # path without .tif
+        self.labels_save_path : str = "data/labels"    # path without .tif
         # data: self.num_sub, self.batch_size
 
         # =============================== model ============================== #
@@ -65,7 +64,7 @@ class Config:
         self.mlists_folder = "D:/mlists"
 
         ## (def) getDataLoader
-        self.num : List[int] = [8000 , 2000 ]   # num of train, valid data
+        self.num : List[int] = [80 , 20 ]   # num of train, valid data
         self.type: List[str] = ["Sim", "Sim"]   # Sim or Raw
         self.batch_size : int = 2
         self.num_workers: int = 2
@@ -75,7 +74,7 @@ class ConfigTrain_1(Config):
     def __init__(self) -> None:
         super().__init__()
         ## (Class) Train
-        self.ckpt_save_path  = "ckpt/train_1"
+        self.ckpt_save_folder = "ckpt/train_1"
         ## (def) getDataLoader
         self.type = ["Sim", "Raw"]
         self.batch_size = 4
@@ -85,13 +84,13 @@ class ConfigEval_1(Config):
     def __init__(self) -> None:
         super().__init__()
         ## (class) Eval
-        self.ckpt_load_path   = "ckpt/train_1/6"
+        self.ckpt_load_path   = "ckpt/train_1/7"
         ## (class) RawDataset
         self.h_range = [5, 8]
         self.w_range = [6, 9]
         self.num_sub = 16
         ## (def) getDataLoader
-        self.num  = [10 * self.num_sub]
+        self.num  = [20 * self.num_sub]
         self.type = ["Raw"]
         self.batch_size = 8
 
