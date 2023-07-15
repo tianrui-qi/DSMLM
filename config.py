@@ -88,10 +88,10 @@ class ConfigEval(ConfigTrain):
         self.w_range = [6, 9]
         self.num_sub = 16
         ## (def) getDataLoader
-        self.num  = [100 * self.num_sub]
+        self.num  = [1000 * self.num_sub]
         self.type = ["Raw"]
-        self.batch_size  = 8
-        self.num_workers = 1
+        self.batch_size  = 16
+        self.num_workers = 8
 
 
 def getConfig(mode: str) -> Config:
