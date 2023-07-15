@@ -13,7 +13,7 @@ class Config:
         ## (Class) Train
         # train
         self.device: str = "cuda"
-        self.max_epoch: int = 500
+        self.max_epoch   : int = 500
         self.accumu_steps: int = 20  # unit: batch
         # learning rate
         self.lr   : float = 1e-3    # initial learning rate (lr)
@@ -73,6 +73,8 @@ class Config:
 class ConfigTrain(Config):
     def __init__(self) -> None:
         super().__init__()
+        self.ckpt_load_path = "ckpt/13"
+        self.ckpt_load_lr   = True
 
 
 class ConfigEval(ConfigTrain):
