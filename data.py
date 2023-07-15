@@ -189,12 +189,12 @@ class RawDataset(Dataset):
         self.num_sub_h = self.h_range[1] - self.h_range[0] + 1
         self.num_sub_w = self.w_range[1] - self.w_range[0] + 1
         # data path
-        self.frames_folder = config.frames_folder
-        self.mlists_folder = config.mlists_folder
+        self.frames_load_folder = config.frames_load_folder
+        self.mlists_load_folder = config.mlists_load_folder
         
         # file name list
-        self.frames_list = os.listdir(self.frames_folder)
-        self.mlists_list = os.listdir(self.mlists_folder)
+        self.frames_list = os.listdir(self.frames_load_folder)
+        self.mlists_list = os.listdir(self.mlists_load_folder)
         
         # store the current frame and mlist in memory
         self.frame = None
@@ -245,14 +245,14 @@ class RawDataset(Dataset):
     def readNext(self, index) -> None:
         # frame
         self.frame = torch.from_numpy(imread(
-            os.path.join(self.frames_folder, self.frames_list[index])
+            os.path.join(self.frames_load_folder, self.frames_list[index])
         ))
         self.frame = (self.frame / torch.max(self.frame)).float()
         self.frame = F.pad(self.frame, (10, 10, 10, 10))
         
         # mlist
         _, self.mlist = loadmat( # type: ignore
-            os.path.join(self.mlists_folder, self.mlists_list[index])
+            os.path.join(self.mlists_load_folder, self.mlists_list[index])
         ).popitem()
         self.mlist = torch.from_numpy(self.mlist).float()
         self.mlist = self.mlist[:, [2, 0, 1]] - 1  # (H W D) -> (D H W)

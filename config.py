@@ -60,8 +60,8 @@ class Config:
         self.w_range: List[int] = [0, 9]
         self.num_sub: int = 100
         # data path
-        self.frames_folder = "D:/frames"
-        self.mlists_folder = "D:/mlists"
+        self.frames_load_folder = "D:/frames"
+        self.mlists_load_folder = "D:/mlists"
 
         ## (def) getDataLoader
         self.num : List[int] = [5000 , 5000 ]
