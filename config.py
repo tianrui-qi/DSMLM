@@ -13,8 +13,8 @@ class Config:
         ## (Class) Train
         # train
         self.device: str = "cuda"
-        self.max_epoch: int = 800
-        self.accumu_steps: int = 16  # unit: batch
+        self.max_epoch: int = 500
+        self.accumu_steps: int = 20  # unit: batch
         # learning rate
         self.lr   : float = 1e-3    # initial learning rate (lr)
         self.gamma: float = 0.95
@@ -64,7 +64,7 @@ class Config:
         self.mlists_folder = "D:/mlists"
 
         ## (def) getDataLoader
-        self.num : List[int] = [8000 , 8000 ]
+        self.num : List[int] = [5000 , 5000 ]
         self.type: List[str] = ["Sim", "Raw"]
         self.batch_size : int = 1
         self.num_workers: int = 1
