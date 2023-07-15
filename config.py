@@ -13,10 +13,10 @@ class Config:
         ## (Class) Train
         # train
         self.device: str = "cuda"
-        self.max_epoch: int = 200
-        self.accumulation_steps: int = 4    # unit: batch
+        self.max_epoch: int = 800
+        self.accumu_steps: int = 16  # unit: batch
         # learning rate
-        self.lr   : float = 1e-3     # initial learning rate (lr)
+        self.lr   : float = 1e-3    # initial learning rate (lr)
         self.gamma: float = 0.95
         # checkpoint
         self.ckpt_save_folder: str  = "ckpt"    # folder store ckpt every epoch
@@ -64,40 +64,39 @@ class Config:
         self.mlists_folder = "D:/mlists"
 
         ## (def) getDataLoader
-        self.num : List[int] = [80 , 20 ]   # num of train, valid data
-        self.type: List[str] = ["Sim", "Sim"]   # Sim or Raw
-        self.batch_size : int = 2
-        self.num_workers: int = 2
+        self.num : List[int] = [8000 , 8000 ]
+        self.type: List[str] = ["Sim", "Raw"]
+        self.batch_size : int = 1
+        self.num_workers: int = 1
 
 
-class ConfigTrain_1(Config):
+class ConfigTrain(Config):
     def __init__(self) -> None:
         super().__init__()
-        ## (Class) Train
-        self.ckpt_save_folder = "ckpt/train_1"
-        ## (def) getDataLoader
-        self.type = ["Sim", "Raw"]
-        self.batch_size = 4
 
 
-class ConfigEval_1(Config):
+class ConfigEval(ConfigTrain):
     def __init__(self) -> None:
         super().__init__()
         ## (class) Eval
-        self.ckpt_load_path   = "ckpt/train_1/7"
+        checkpoint = 1
+        self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
+        self.outputs_save_path = "data/outputs_{}".format(checkpoint)
+        self.labels_save_path  = "data/labels_{}".format(checkpoint) 
         ## (class) RawDataset
         self.h_range = [5, 8]
         self.w_range = [6, 9]
         self.num_sub = 16
         ## (def) getDataLoader
-        self.num  = [20 * self.num_sub]
+        self.num  = [100 * self.num_sub]
         self.type = ["Raw"]
-        self.batch_size = 8
+        self.batch_size  = 8
+        self.num_workers = 1
 
 
 def getConfig(mode: str) -> Config:
     if mode == "train":
-        return ConfigTrain_1()
+        return ConfigTrain()
     if mode == "eval":
-        return ConfigEval_1()
+        return ConfigEval()
     raise ValueError("mode must be 'train' or 'eval'")

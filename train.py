@@ -16,7 +16,7 @@ class Train:
         # train
         self.device = config.device
         self.max_epoch = config.max_epoch
-        self.accumulation_steps = config.accumulation_steps
+        self.accumu_steps = config.accumu_steps
         # learning rate
         self.lr    = config.lr
         self.gamma = config.gamma
@@ -43,23 +43,16 @@ class Train:
         self.writer = SummaryWriter()
 
     def train(self) -> None:
-        # load checkpoint
         self.load_ckpt()
-
-        # progress bar
-        pbar = tqdm(
+        for self.epoch in tqdm(
+            range(self.epoch, self.max_epoch+1), 
             total=self.max_epoch, desc=self.ckpt_save_folder, position=0,
             unit="epoch", initial=self.epoch
-        )
-
-        while self.epoch <= self.max_epoch:
+        ):
             self.train_epoch()
             self.valid_epoch()
             self.update_lr()
             self.save_ckpt()
-
-            pbar.update()  # update progress bar
-            self.epoch+=1  # update epoch index
 
     def train_epoch(self) -> None:
         self.net.train()
@@ -76,7 +69,7 @@ class Train:
             loss = self.criterion(outputs, labels)
             # backward
             loss.backward()
-            if (i+1) % self.accumulation_steps == 0:
+            if (i+1) % self.accumu_steps == 0:
                 self.optimizer.step()
                 self.net.zero_grad()
 
@@ -125,8 +118,7 @@ class Train:
     @torch.no_grad()
     def update_lr(self) -> None:
         # update learning rate
-        if self.scheduler.get_last_lr()[0] > 1e-10:
-            self.scheduler.step()
+        if self.scheduler.get_last_lr()[0] > 1e-8: self.scheduler.step()
 
         # record
         self.writer.add_scalar(
