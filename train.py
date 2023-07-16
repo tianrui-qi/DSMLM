@@ -63,15 +63,16 @@ class Train:
             # put frames and labels in GPU
             frames = frames.to(self.device)
             labels = labels.to(self.device)
-            # forward
+
+            # forward and backward
             outputs = self.net(frames)
-            # loss
-            loss = self.criterion(outputs, labels)
-            # backward
+            loss = self.criterion(outputs, labels) / self.accumu_steps
             loss.backward()
+
+            # update model parameters
             if (i+1) % self.accumu_steps == 0:
                 self.optimizer.step()
-                self.net.zero_grad()
+                self.optimizer.zero_grad()
 
             # record
             self.writer.add_scalars(
@@ -97,8 +98,8 @@ class Train:
             # forward
             outputs = self.net(frames)
             # loss
-            loss = self.criterion(outputs, labels)
-            
+            loss = self.criterion(outputs, labels) / self.accumu_steps
+
             # record
             valid_loss.append(loss.item() / len(outputs))
             valid_num.append(len(torch.nonzero(outputs)) / len(outputs))
