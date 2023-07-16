@@ -1,12 +1,10 @@
 import torch
 
 import os
-from tqdm import tqdm
-from tifffile import imsave
+import tifffile
+import tqdm
 
-from config import getConfig
-from model import UNet2D
-from data import getDataLoader
+import config, model, data
 
 
 class Eval:
@@ -24,10 +22,10 @@ class Eval:
         self.batch_size = config.batch_size
 
         # data
-        self.dataloader = getDataLoader(config)[0]
+        self.dataloader = data.getDataLoader(config)[0]
         self.dataset = self.dataloader.dataset  # to call static method
         # model
-        self.net = UNet2D(config).to(self.device)
+        self.net = model.UNet2D(config).to(self.device)
         self.net.load_state_dict(torch.load(
             "{}.ckpt".format(self.ckpt_load_path), 
             map_location=self.device)['net']
@@ -37,7 +35,7 @@ class Eval:
     @torch.no_grad()
     def eval(self) -> None:
         # progress bar
-        pbar = tqdm(
+        pbar = tqdm.tqdm(
             total=len(self.dataloader) * self.batch_size / self.num_sub, 
             desc=self.ckpt_load_path, unit="frame"
         )
@@ -78,16 +76,16 @@ class Eval:
             os.makedirs(os.path.dirname(self.outputs_save_path))
         if not os.path.exists(os.path.dirname(self.labels_save_path)):
             os.makedirs(os.path.dirname(self.labels_save_path))
-        imsave(
+        tifffile.imsave(
             "{}.tif".format(self.outputs_save_path), 
             (outputs_cmb.cpu().detach() * 255).to(torch.uint8).numpy()
         )
-        imsave(
+        tifffile.imsave(
             "{}.tif".format(self.labels_save_path), 
             (labels_cmb * 255).to(torch.uint8).numpy()
         )
 
 
 if __name__ == "__main__":
-    trainer = Eval(getConfig("eval"))
+    trainer = Eval(config.getConfig("eval"))
     trainer.eval()
