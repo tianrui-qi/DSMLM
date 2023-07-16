@@ -18,7 +18,9 @@ class Eval:
         self.outputs_save_path = config.outputs_save_path
         self.labels_save_path = config.labels_save_path
         # data
-        self.num_sub = config.num_sub
+        num_sub_h = config.h_range[1] - config.h_range[0] + 1
+        num_sub_w = config.w_range[1] - config.w_range[0] + 1
+        self.num_sub = num_sub_h * num_sub_w
         self.batch_size = config.batch_size
 
         # data

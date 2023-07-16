@@ -185,9 +185,9 @@ class RawDataset(Dataset):
         # subframe index
         self.h_range = config.h_range
         self.w_range = config.w_range
-        self.num_sub = config.num_sub
         self.num_sub_h = self.h_range[1] - self.h_range[0] + 1
         self.num_sub_w = self.w_range[1] - self.w_range[0] + 1
+        self.num_sub = self.num_sub_h * self.num_sub_w
         # data path
         self.frames_load_folder = config.frames_load_folder
         self.mlists_load_folder = config.mlists_load_folder
