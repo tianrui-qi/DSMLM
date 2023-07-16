@@ -1,14 +1,13 @@
 import torch
-from torch import optim
-from torch.optim import lr_scheduler
-from torch.utils.tensorboard.writer import SummaryWriter
+import torch.cuda.amp as amp
+import torch.optim as optim
+import torch.optim.lr_scheduler as lr_scheduler
+import torch.utils.tensorboard.writer as writer
 
 import os
-from tqdm import tqdm
+import tqdm
 
-from config import getConfig
-from model import UNet2D, Criterion
-from data import getDataLoader
+import config, data, model
 
 
 class Train:
@@ -29,22 +28,23 @@ class Train:
         self.epoch = 1  # epoch index may update in load_ckpt()
 
         # data
-        self.trainloader, self.validloader = getDataLoader(config)
+        self.trainloader, self.validloader = data.getDataLoader(config)
         # model
-        self.net       = UNet2D(config).to(self.device)
-        self.criterion = Criterion(config).to(self.device)
+        self.net       = model.UNet2D(config).to(self.device)
+        self.criterion = model.Criterion(config).to(self.device)
 
         # optimizer
+        self.scaler    = amp.GradScaler()  # type: ignore
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.lr)
         self.scheduler = lr_scheduler.ExponentialLR(
             self.optimizer, gamma=self.gamma)
         
         # record
-        self.writer = SummaryWriter()
+        self.writer = writer.SummaryWriter()
 
     def train(self) -> None:
         self.load_ckpt()
-        for self.epoch in tqdm(
+        for self.epoch in tqdm.tqdm(
             range(self.epoch, self.max_epoch+1), 
             total=self.max_epoch, desc=self.ckpt_save_folder, position=0,
             unit="epoch", initial=self.epoch
@@ -56,7 +56,7 @@ class Train:
 
     def train_epoch(self) -> None:
         self.net.train()
-        for i, (frames, labels) in enumerate(tqdm(
+        for i, (frames, labels) in enumerate(tqdm.tqdm(
             self.trainloader, desc='train_epoch', position=1, 
             leave=False, unit="iteration"
         )):
@@ -88,7 +88,7 @@ class Train:
         valid_num = []
         
         self.net.eval()
-        for _, (frames, labels) in enumerate(tqdm(
+        for _, (frames, labels) in enumerate(tqdm.tqdm(
             self.validloader, desc='valid_epoch', position=1, 
             leave=False, unit="iteration"
         )):
@@ -151,5 +151,5 @@ class Train:
 
 
 if __name__ == "__main__":
-    trainer = Train(getConfig("train"))
+    trainer = Train(config.getConfig("train"))
     trainer.train()

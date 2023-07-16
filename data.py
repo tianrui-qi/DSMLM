@@ -1,12 +1,12 @@
 import torch
-from torch import Tensor
-from torch.nn import functional as F
+import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch.distributions.multivariate_normal import MultivariateNormal
+from torch import Tensor
 
 import os
-from tifffile import imread
-from scipy.io import loadmat  # type: ignore
+import tifffile
+import scipy.io
 
 from typing import Tuple
 
@@ -244,14 +244,14 @@ class RawDataset(Dataset):
 
     def readNext(self, index) -> None:
         # frame
-        self.frame = torch.from_numpy(imread(
+        self.frame = torch.from_numpy(tifffile.imread(
             os.path.join(self.frames_load_folder, self.frames_list[index])
         ))
         self.frame = (self.frame / torch.max(self.frame)).float()
         self.frame = F.pad(self.frame, (10, 10, 10, 10))
         
         # mlist
-        _, self.mlist = loadmat( # type: ignore
+        _, self.mlist = scipy.io.loadmat( # type: ignore
             os.path.join(self.mlists_load_folder, self.mlists_list[index])
         ).popitem()
         self.mlist = torch.from_numpy(self.mlist).float()
