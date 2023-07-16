@@ -29,7 +29,7 @@ class Train:
         # data
         self.trainloader, self.validloader = data.getDataLoader(config)
         # model
-        self.net       = model.UNet2D(config).to(self.device)
+        self.net       = model.ResUNet2D(config).to(self.device)
         self.criterion = model.Criterion(config).to(self.device)
 
         # optimizer

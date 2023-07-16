@@ -4,54 +4,136 @@ import torch.nn.functional as F
 from torch import Tensor
 
 
-class UNetBlock(nn.Module):
+class UNetBlock2D(nn.Module):
     def __init__(self, in_channels, out_channels) -> None:
-        super(UNetBlock, self).__init__()
-        self.block = nn.Sequential(
+        super(UNetBlock2D, self).__init__()
+        # UNet Component
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels, in_channels, 3, padding=1, bias=False),
+            nn.BatchNorm2d(in_channels)
+        )
+        self.conv2 = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, 3, padding=1, bias=False),
+            nn.BatchNorm2d(out_channels)
+        )
+        self.relu = nn.ReLU()
+
+    def forward(self, x: Tensor) -> Tensor:
+        out  = self.conv1(x)
+        out  = self.relu(out)
+        out  = self.conv2(out)
+        out  = self.relu(out)
+        return out
+
+
+class UNetBlock3D(nn.Module):
+    def __init__(self, in_channels, out_channels) -> None:
+        super(UNetBlock3D, self).__init__()
+        # UNet Component
+        self.conv1 = nn.Sequential(
+            nn.Conv3d(in_channels, in_channels, 3, padding=1, bias=False),
+            nn.BatchNorm3d(in_channels)
+        )
+        self.conv2 = nn.Sequential(
+            nn.Conv3d(in_channels, out_channels, 3, padding=1, bias=False),
+            nn.BatchNorm3d(out_channels)
+        )
+        self.relu = nn.ReLU()
+
+    def forward(self, x: Tensor) -> Tensor:
+        out  = self.conv1(x)
+        out  = self.relu(out)
+        out  = self.conv2(out)
+        out  = self.relu(out)
+        return out
+
+
+class ResUNetBlock2D(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(ResUNetBlock2D, self).__init__()
+        # UNet Component
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels, in_channels, 3, padding=1, bias=False),
+            nn.BatchNorm2d(in_channels)
+        )
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 3, padding=1, bias=False),
+            nn.BatchNorm2d(out_channels)
+        )
+        self.relu = nn.ReLU()
+        # Residual Component
+        self.skip = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(),
-            nn.Conv2d(out_channels, out_channels, 3, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels),
+        )
+        if in_channels == out_channels: self.skip = nn.Identity()
+
+    def forward(self, x):
+        residual = x
+        out  = self.conv1(x)
+        out  = self.relu(out)
+        out  = self.conv2(out)
+        out += self.skip(residual)
+        out  = self.relu(out)
+        return out
+
+
+class ResUNetBlock3D(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(ResUNetBlock3D, self).__init__()
+        # UNet Component
+        self.conv1 = nn.Sequential(
+            nn.Conv3d(in_channels, in_channels, 3, padding=1, bias=False),
+            nn.BatchNorm3d(in_channels)
+        )
+        self.conv2 = nn.Sequential(
+            nn.Conv3d(in_channels, out_channels, 3, padding=1, bias=False),
+            nn.BatchNorm3d(out_channels)
+        )
+        self.relu = nn.ReLU()
+        # Residual Component
+        self.skip = nn.Sequential(
+            nn.Conv3d(in_channels, out_channels, kernel_size=1, bias=False),
+            nn.BatchNorm3d(out_channels),
+        )
+        if in_channels == out_channels: self.skip = nn.Identity()
+
+    def forward(self, x):
+        residual = x
+        out  = self.conv1(x)
+        out  = self.relu(out)
+        out  = self.conv2(out)
+        out += self.skip(residual)
+        out  = self.relu(out)
+        return out
+
+
+class ResUNet2D(nn.Module):
+    def __init__(self, config) -> None:
+        super(ResUNet2D, self).__init__()
+        in_feature = config.dim_frame[0]  # input feature/channel/depth num
+        up_c       = config.up_sample[0]  # upsampling scale, channel/depth
+
+        self.input    = nn.Upsample(scale_factor=tuple(config.up_sample))
+        self.encoder1 = ResUNetBlock2D(in_feature*up_c*1, in_feature*up_c*2)
+        self.max_pool = nn.MaxPool2d(kernel_size=2)
+        self.encoder2 = ResUNetBlock2D(in_feature*up_c*2, in_feature*up_c*4)
+        self.up_conv  = nn.Sequential(
+            nn.Upsample(scale_factor=2),
+            nn.Conv2d(in_feature*up_c*4, in_feature*up_c*2, 3, padding=1)
+        )
+        self.decoder1 = ResUNetBlock2D(in_feature*up_c*4, in_feature*up_c*2)
+        self.output   = nn.Sequential(
+            nn.Conv2d(in_feature * up_c * 2, in_feature * up_c, 1),
             nn.ReLU()
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        return self.block(x)
-
-
-class UNet2D(nn.Module):
-    def __init__(self, config) -> None:
-        super(UNet2D, self).__init__()
-
-        in_feature = config.dim_frame[0]  # input feature/channel/depth num
-        up_c       = config.up_sample[0]  # upsampling scale, channel/depth
-
-        self.input = nn.Upsample(
-            scale_factor=tuple(config.up_sample), mode='nearest')
-
-        self.encoder1 = UNetBlock(in_feature * up_c * 1, in_feature * up_c * 2)
-        self.down     = nn.MaxPool2d(kernel_size=2)
-        self.encoder2 = UNetBlock(in_feature * up_c * 2, in_feature * up_c * 4)
-        self.up = nn.Sequential(
-            nn.Upsample(scale_factor=2, mode='nearest'),
-            nn.Conv2d(
-                in_feature * up_c * 4, in_feature * up_c * 2, 
-                kernel_size=3, padding=1
-            )
-        )
-        self.decoder1 = UNetBlock(in_feature * up_c * 4, in_feature * up_c * 2)
-
-        self.output = nn.Sequential(
-            nn.Conv2d(in_feature * up_c * 2, in_feature * up_c, 1),
-            nn.ReLU())
-
-    def forward(self, x: Tensor) -> Tensor:
-        up = self.input(x.unsqueeze(1)).squeeze(1)
-        enc1 = self.encoder1(up)
-        enc2 = self.down(enc1)
+        enc1 = self.input(x.unsqueeze(1)).squeeze(1)
+        enc1 = self.encoder1(enc1)
+        enc2 = self.max_pool(enc1)
         enc2 = self.encoder2(enc2)
-        enc2 = self.up(enc2)
+        enc2 = self.up_conv(enc2)
         dec2 = torch.cat((enc1, enc2), dim=1)
         dec2 = self.decoder1(dec2)
         return self.output(dec2)
