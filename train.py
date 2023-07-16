@@ -1,5 +1,4 @@
 import torch
-import torch.cuda.amp as amp
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 import torch.utils.tensorboard.writer as writer
@@ -34,7 +33,6 @@ class Train:
         self.criterion = model.Criterion(config).to(self.device)
 
         # optimizer
-        self.scaler    = amp.GradScaler()  # type: ignore
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.lr)
         self.scheduler = lr_scheduler.ExponentialLR(
             self.optimizer, gamma=self.gamma)
