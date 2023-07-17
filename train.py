@@ -44,7 +44,7 @@ class Train:
         self.load_ckpt()
         for self.epoch in tqdm.tqdm(
             range(self.epoch, self.max_epoch+1), 
-            total=self.max_epoch, desc=self.ckpt_save_folder, position=0,
+            total=self.max_epoch, desc=self.ckpt_save_folder, smoothing=0.0,
             unit="epoch", initial=self.epoch
         ):
             self.train_epoch()
@@ -54,10 +54,14 @@ class Train:
 
     def train_epoch(self) -> None:
         self.net.train()
-        for i, (frames, labels) in enumerate(tqdm.tqdm(
-            self.trainloader, desc='train_epoch', position=1, 
-            leave=False, unit="iteration"
-        )):
+
+        # record: progress bar
+        pbar = tqdm.tqdm(
+            total=int(len(self.trainloader)/self.accumu_steps), 
+            desc='train_epoch', leave=False, unit="steps", smoothing=1.0
+        )
+
+        for i, (frames, labels) in enumerate(self.trainloader):
             # put frames and labels in GPU
             frames = frames.to(self.device)
             labels = labels.to(self.device)
@@ -68,28 +72,38 @@ class Train:
             loss.backward()
 
             # update model parameters
-            if (i+1) % self.accumu_steps == 0:
-                self.optimizer.step()
-                self.optimizer.zero_grad()
+            if (i+1) % self.accumu_steps != 0: continue
+            self.optimizer.step()
+            self.optimizer.zero_grad()
 
-            # record
+            # record: tensorboard
             self.writer.add_scalars(
                 'Loss', {'train': loss.item() / len(outputs)}, 
-                (self.epoch-1)*len(self.trainloader)+i)
+                (self.epoch - 1) * len(self.trainloader) / self.accumu_steps + 
+                (i + 1) / self.accumu_steps
+            )
             self.writer.add_scalars(
                 'Num', {'train': len(torch.nonzero(outputs)) / len(outputs)}, 
-                (self.epoch-1)*len(self.trainloader)+i)
-    
+                (self.epoch - 1) * len(self.trainloader) / self.accumu_steps + 
+                (i + 1) / self.accumu_steps
+            )
+            # record: progress bar
+            pbar.update()
+
     @torch.no_grad()
     def valid_epoch(self) -> None:
-        valid_loss = []
-        valid_num = []
-        
         self.net.eval()
-        for _, (frames, labels) in enumerate(tqdm.tqdm(
-            self.validloader, desc='valid_epoch', position=1, 
-            leave=False, unit="iteration"
-        )):
+
+        # record: progress bar
+        pbar = tqdm.tqdm(
+            total=len(self.validloader)/self.accumu_steps, 
+            desc="valid_epoch", leave=False, unit="steps", smoothing=1.0
+        )
+        # record: tensorboard
+        valid_loss = []
+        valid_num  = []
+
+        for i, (frames, labels) in enumerate(self.validloader):
             # put frames and labels in GPU
             frames = frames.to(self.device)
             labels = labels.to(self.device)
@@ -98,31 +112,32 @@ class Train:
             # loss
             loss = self.criterion(outputs, labels) / self.accumu_steps
 
-            # record
+            # record: tensorboard
             valid_loss.append(loss.item() / len(outputs))
             valid_num.append(len(torch.nonzero(outputs)) / len(outputs))
+            # record: progress bar
+            if (i+1) % self.accumu_steps == 0: pbar.update()
         
-        # validation loss
-        valid_loss = torch.mean(torch.as_tensor(valid_loss))
-        valid_num = torch.mean(torch.as_tensor(valid_num))
-        
-        # record
+        # record: tensorboard
         self.writer.add_scalars(
-            'Loss', {'valid': valid_loss}, 
-            self.epoch*len(self.trainloader))
+            'Loss', {'valid': torch.mean(torch.as_tensor(valid_loss))}, 
+            self.epoch * len(self.trainloader) / self.accumu_steps
+        )
         self.writer.add_scalars(
-            'Num', {'valid': valid_num}, 
-            self.epoch*len(self.trainloader))
+            'Num', {'valid': torch.mean(torch.as_tensor(valid_num))}, 
+            self.epoch * len(self.trainloader) / self.accumu_steps
+        )
 
     @torch.no_grad()
     def update_lr(self) -> None:
         # update learning rate
         if self.scheduler.get_last_lr()[0] > 1e-8: self.scheduler.step()
 
-        # record
+        # record: tensorboard
         self.writer.add_scalar(
             'LR', self.optimizer.param_groups[0]['lr'], 
-            self.epoch*len(self.trainloader))
+            self.epoch * len(self.trainloader) / self.accumu_steps
+        )
 
     @torch.no_grad()
     def save_ckpt(self) -> None:
