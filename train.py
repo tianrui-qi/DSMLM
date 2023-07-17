@@ -39,12 +39,13 @@ class Train:
         # data
         self.trainloader, self.validloader = data.getDataLoader(config)
         # model
-        self.net     = model.getNet(config).to(self.device)
+        self.model   = model.getModel(config).to(self.device)
+        # losses
         self.loss_fn = losses.GaussianBlurredMSELoss(config).to(self.device)
 
         # optimizer
         self.scaler    = amp.GradScaler()  # type: ignore
-        self.optimizer = optim.Adam(self.net.parameters(), lr=self.lr)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = lr_scheduler.ExponentialLR(
             self.optimizer, gamma=self.gamma)
         
@@ -64,7 +65,7 @@ class Train:
             self.save_ckpt()
 
     def train_epoch(self) -> None:
-        self.net.train()
+        self.model.train()
 
         # record: progress bar
         pbar = tqdm.tqdm(
@@ -79,7 +80,7 @@ class Train:
 
             # forward and backward
             with amp.autocast(dtype=torch.float16):  # type: ignore
-                outputs = self.net(frames)
+                outputs = self.model(frames)
                 loss = self.loss_fn(outputs, labels) / self.accumu_steps
             self.scaler.scale(loss).backward()  # type: ignore
 
@@ -105,7 +106,7 @@ class Train:
 
     @torch.no_grad()
     def valid_epoch(self) -> None:
-        self.net.eval()
+        self.model.eval()
 
         # record: progress bar
         pbar = tqdm.tqdm(
@@ -121,7 +122,7 @@ class Train:
             frames = frames.to(self.device)
             labels = labels.to(self.device)
             # forward
-            outputs = self.net(frames)
+            outputs = self.model(frames)
             # loss
             loss = self.loss_fn(outputs, labels) / self.accumu_steps
 
@@ -160,7 +161,7 @@ class Train:
 
         torch.save({
             'epoch': self.epoch,  # epoch index start from 1
-            'net': self.net.state_dict(),
+            'model': self.model.state_dict(),
             'scaler': self.scaler.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'scheduler': self.scheduler.state_dict()
@@ -172,7 +173,7 @@ class Train:
         ckpt = torch.load("{}.ckpt".format(self.ckpt_load_path))
         
         self.epoch = ckpt['epoch']+1  # start train from next epoch index
-        self.net.load_state_dict(ckpt['net'])
+        self.model.load_state_dict(ckpt['model'])
         self.scaler.load_state_dict(ckpt['scaler'])
         
         if not self.ckpt_load_lr: return

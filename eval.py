@@ -30,22 +30,22 @@ class Eval:
         self.dataloader = data.getDataLoader(config)[0]
         self.dataset = self.dataloader.dataset  # to call static method
         # model
-        self.net = model.getNet(config).to(self.device)
-        self.net.load_state_dict(torch.load(
+        self.model = model.getModel(config).to(self.device)
+        self.model.load_state_dict(torch.load(
             "{}.ckpt".format(self.ckpt_load_path), 
-            map_location=self.device)['net']
+            map_location=self.device)['model']
         )
-        self.net.half()
+        self.model.half()
 
         # print model parameters
         para_num = sum(
-            p.numel() for p in self.net.parameters() if p.requires_grad
+            p.numel() for p in self.model.parameters() if p.requires_grad
         )
         print(f'The model has {para_num:,} trainable parameters')
     
     @torch.no_grad()
     def eval(self) -> None:
-        self.net.eval()
+        self.model.eval()
 
         # record: progress bar
         pbar = tqdm.tqdm(
@@ -60,7 +60,7 @@ class Eval:
 
         for _, (frames, labels) in enumerate(self.dataloader):
             # store subframes to a [self.num_sub, *output.shape] tensor
-            outputs = self.net(frames.half().to(self.device))
+            outputs = self.model(frames.half().to(self.device))
             if outputs_cat == None: outputs_cat = outputs
             else: outputs_cat = torch.cat((outputs_cat, outputs))
             if labels_cat == None: labels_cat = labels

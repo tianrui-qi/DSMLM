@@ -48,8 +48,8 @@ class Config:
 
         ## ResUNet3D
         self.base: int = 8  # base channel number of ResUNet3D
-        ## getNet
-        self.type_net: str = "ResUNet3D"
+        ## getModel
+        self.type_model: str = "ResUNet3D"
 
         # ============================== losses ============================== #
 
