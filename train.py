@@ -9,6 +9,10 @@ import tqdm
 import config, data, model
 
 
+torch.backends.cudnn.enabled = True     # type: ignore
+torch.backends.cudnn.benchmark = True   # type: ignore
+
+
 class Train:
     def __init__(self, config) -> None:
         # train
