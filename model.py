@@ -111,26 +111,24 @@ class ResUNetBlock3D(nn.Module):
 class ResUNet2D(nn.Module):
     def __init__(self, config) -> None:
         super(ResUNet2D, self).__init__()
-        in_feature = config.dim_frame[0]  # input feature/channel/depth num
-        up_c       = config.up_sample[0]  # upsampling scale, channel/depth
-
+        base = config.dim_frame[0] * config.up_sample[0]
         self.input    = nn.Upsample(scale_factor=tuple(config.up_sample))
-        self.encoder1 = ResUNetBlock2D(in_feature*up_c*1, in_feature*up_c*2)
+        self.encoder1 = ResUNetBlock2D(base*1, base*2)
         self.maxpool1 = nn.MaxPool2d(kernel_size=2)
-        self.encoder2 = ResUNetBlock2D(in_feature*up_c*2, in_feature*up_c*4)
+        self.encoder2 = ResUNetBlock2D(base*2, base*4)
         self.maxpool2 = nn.MaxPool2d(2)
-        self.encoder3 = ResUNetBlock2D(in_feature*up_c*4, in_feature*up_c*8)
+        self.encoder3 = ResUNetBlock2D(base*4, base*8)
         self.up_conv2 = nn.Sequential(
             nn.Upsample(scale_factor=2),
-            nn.Conv2d(in_feature*up_c*8, in_feature*up_c*4, 3, padding=1)
+            nn.Conv2d(base*8, base*4, 3, padding=1)
         )
-        self.decoder2 = ResUNetBlock2D(in_feature*up_c*8, in_feature*up_c*4)
+        self.decoder2 = ResUNetBlock2D(base*8, base*4)
         self.up_conv1 = nn.Sequential(
             nn.Upsample(scale_factor=2),
-            nn.Conv2d(in_feature*up_c*4, in_feature*up_c*2, 3, padding=1)
+            nn.Conv2d(base*4, base*2, 3, padding=1)
         )
-        self.decoder1 = ResUNetBlock2D(in_feature*up_c*4, in_feature*up_c*2)
-        self.output_c = nn.Conv2d(in_feature*up_c*2, in_feature*up_c, 1)
+        self.decoder1 = ResUNetBlock2D(base*4, base*2)
+        self.output_c = nn.Conv2d(base*2, base, 1)
         self.output_f = nn.ReLU()
 
     def forward(self, x: Tensor) -> Tensor:
@@ -152,23 +150,24 @@ class ResUNet2D(nn.Module):
 class ResUNet3D(nn.Module):
     def __init__(self, config) -> None:
         super(ResUNet3D, self).__init__()
+        base = config.base
         self.intput   = nn.Upsample(scale_factor=tuple(config.up_sample))
-        self.encoder1 = ResUNetBlock3D(1, 16)
+        self.encoder1 = ResUNetBlock3D(1, base)
         self.maxpool1 = nn.MaxPool3d(2)
-        self.encoder2 = ResUNetBlock3D(16, 32)
+        self.encoder2 = ResUNetBlock3D(base*1, base*2)
         self.maxpool2 = nn.MaxPool3d(2)
-        self.encoder3 = ResUNetBlock3D(32, 64)
+        self.encoder3 = ResUNetBlock3D(base*2, base*4)
         self.up_conv2  = nn.Sequential(
             nn.Upsample(scale_factor=2),
-            nn.Conv3d(64, 32, kernel_size=3, padding=1)
+            nn.Conv3d(base*4, base*2, kernel_size=3, padding=1)
         )
-        self.decoder2 = ResUNetBlock3D(64, 32)
+        self.decoder2 = ResUNetBlock3D(base*4, base*2)
         self.up_conv1  = nn.Sequential(
             nn.Upsample(scale_factor=2),
-            nn.Conv3d(32, 16, kernel_size=3, padding=1)
+            nn.Conv3d(base*2, base*1, kernel_size=3, padding=1)
         )
-        self.decoder1 = ResUNetBlock3D(32, 16)
-        self.output_c = nn.Conv3d(16, 1, kernel_size=1)
+        self.decoder1 = ResUNetBlock3D(base*2, base*1)
+        self.output_c = nn.Conv3d(base*1, 1, kernel_size=1)
         self.output_f = nn.ReLU()
 
     def forward(self, x: Tensor) -> Tensor:

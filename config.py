@@ -5,7 +5,7 @@ class Config:
     def __init__(self) -> None:
         # dimensional config - MUST be same accross whole pipline
         self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
-        self.up_sample: List[int] = [ 2,  2,  2]    # [C, H, W], by scale
+        self.up_sample: List[int] = [ 2,  4,  4]    # [C, H, W], by scale
 
         # =============================== data =============================== #
 
@@ -39,6 +39,8 @@ class Config:
 
         # =============================== model ============================== #
 
+        ## (class) ResUNet3D
+        self.base: int = 8              # base channel number of ResUNet3D
         ## (class) Criterion
         self.kernel_size : int   = 7    # kernel size of GaussianBlur
         self.kernel_sigma: float = 1.0  # sigma of kernel
@@ -74,7 +76,7 @@ class ConfigEval(ConfigTrain):
     def __init__(self) -> None:
         super().__init__()
         ## (class) Eval
-        checkpoint = 7
+        checkpoint = 1
         self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
         self.outputs_save_path = "data/outputs_{}".format(checkpoint)
         self.labels_save_path  = "data/labels_{}".format(checkpoint) 

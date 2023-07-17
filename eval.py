@@ -32,10 +32,11 @@ class Eval:
         )
         self.net.half()
 
-        def count_parameters(model):
-            return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
-        print(f'The model has {count_parameters(self.net):,} trainable parameters')
+        # print model parameters
+        para_num = sum(
+            p.numel() for p in self.net.parameters() if p.requires_grad
+        )
+        print(f'The model has {para_num:,} trainable parameters')
     
     @torch.no_grad()
     def eval(self) -> None:
