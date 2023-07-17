@@ -39,9 +39,11 @@ class Eval:
     
     @torch.no_grad()
     def eval(self) -> None:
-        # progress bar
+        self.net.eval()
+
+        # record: progress bar
         pbar = tqdm.tqdm(
-            total=len(self.dataloader) * self.batch_size / self.num_sub, 
+            total=len(self.dataloader)*self.batch_size/self.num_sub, 
             desc=self.ckpt_load_path, unit="frame"
         )
 
@@ -50,7 +52,6 @@ class Eval:
         labels_cat  = None  # label after concatenation
         labels_cmb  = None  # label after combination
 
-        self.net.eval()
         for _, (frames, labels) in enumerate(self.dataloader):
             # store subframes to a [self.num_sub, *output.shape] tensor
             outputs = self.net(frames.half().to(self.device))
@@ -73,6 +74,7 @@ class Eval:
             labels_cat = None
 
             pbar.update()  # update progress bar
+
         outputs_cmb /= torch.max(outputs_cmb)  # type: ignore
         labels_cmb /= torch.max(labels_cmb)  # type: ignore
 
@@ -82,7 +84,7 @@ class Eval:
         if not os.path.exists(os.path.dirname(self.labels_save_path)):
             os.makedirs(os.path.dirname(self.labels_save_path))
         tifffile.imsave(
-            "{}.tif".format(self.outputs_save_path), 
+            "{}.tif".format(self.outputs_save_path),
             (outputs_cmb.cpu().detach() * 255).to(torch.uint8).numpy()
         )
         tifffile.imsave(
