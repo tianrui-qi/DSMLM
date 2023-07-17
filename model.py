@@ -68,7 +68,7 @@ class ResUNetBlock2D(nn.Module):
         )
         if in_channels == out_channels: self.skip = nn.Identity()
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         residual = x
         out  = self.conv1(x)
         out  = self.relu(out)
@@ -98,7 +98,7 @@ class ResUNetBlock3D(nn.Module):
         )
         if in_channels == out_channels: self.skip = nn.Identity()
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         residual = x
         out  = self.conv1(x)
         out  = self.relu(out)
@@ -116,9 +116,9 @@ class ResUNet2D(nn.Module):
 
         self.input    = nn.Upsample(scale_factor=tuple(config.up_sample))
         self.encoder1 = ResUNetBlock2D(in_feature*up_c*1, in_feature*up_c*2)
-        self.max_pool = nn.MaxPool2d(kernel_size=2)
+        self.maxpool1 = nn.MaxPool2d(kernel_size=2)
         self.encoder2 = ResUNetBlock2D(in_feature*up_c*2, in_feature*up_c*4)
-        self.up_conv  = nn.Sequential(
+        self.up_conv1  = nn.Sequential(
             nn.Upsample(scale_factor=2),
             nn.Conv2d(in_feature*up_c*4, in_feature*up_c*2, 3, padding=1)
         )
@@ -131,12 +131,50 @@ class ResUNet2D(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         enc1 = self.input(x.unsqueeze(1)).squeeze(1)
         enc1 = self.encoder1(enc1)
-        enc2 = self.max_pool(enc1)
-        enc2 = self.encoder2(enc2)
-        enc2 = self.up_conv(enc2)
-        dec2 = torch.cat((enc1, enc2), dim=1)
-        dec2 = self.decoder1(dec2)
-        return self.output(dec2)
+        dec1 = self.maxpool1(enc1)
+        dec1 = self.encoder2(dec1)
+        dec1 = self.up_conv1(dec1)
+        dec1 = torch.cat((enc1, dec1), dim=1)
+        dec1 = self.decoder1(dec1)
+        return self.output(dec1)
+
+
+class ResUNet3D(nn.Module):
+    def __init__(self, config) -> None:
+        super(ResUNet3D, self).__init__()
+        self.intput = nn.Sequential(
+            nn.Upsample(scale_factor=tuple(config.up_sample)),
+            nn.Conv3d(1, 8, kernel_size=1)
+        )
+        self.encoder1 = ResUNetBlock3D(8, 16)
+        self.maxpool1 = nn.MaxPool3d(2)
+        self.encoder2 = ResUNetBlock3D(16, 32)
+        #self.maxpool2 = nn.MaxPool3d(2)
+        #self.encoder3 = ResUNetBlock3D(32, 64)
+        #self.up_conv2  = nn.Sequential(
+        #    nn.Upsample(scale_factor=2),
+        #    nn.Conv3d(64, 32, kernel_size=3, padding=1)
+        #)
+        #self.decoder2 = ResUNetBlock3D(64, 32)
+        self.up_conv1  = nn.Sequential(
+            nn.Upsample(scale_factor=2),
+            nn.Conv3d(32, 16, kernel_size=3, padding=1)
+        )
+        self.decoder1 = ResUNetBlock3D(32, 16)
+        self.output   = nn.Sequential(
+            nn.Conv3d(16, 1, kernel_size=1),
+            nn.ReLU()
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        enc1 = self.intput(x)
+        enc1 = self.encoder1(enc1)
+        dec1 = self.maxpool1(enc1)
+        dec1 = self.encoder2(dec1)
+        dec1 = self.up_conv1(dec1)
+        dec1 = torch.cat((enc1, dec1), dim=1)
+        dec1 = self.decoder1(dec1)
+        return self.output(dec1)
 
 
 class Criterion(nn.Module):
@@ -150,10 +188,8 @@ class Criterion(nn.Module):
 
     def forward(self, predi: Tensor, label: Tensor) -> float:
         return F.mse_loss(
-            self.gaussianBlur3d(
-                F.pad(predi, self.pad, mode='reflect'), self.kernel),
-            self.gaussianBlur3d(
-                F.pad(label, self.pad, mode='reflect'), self.kernel),
+            self.gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
+            self.gaussianBlur3d(F.pad(label, self.pad), self.kernel),
             reduction="sum"
         )  # type: ignore
 
