@@ -1,4 +1,5 @@
 import torch
+import torch.cuda.amp as amp
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 import torch.utils.tensorboard.writer as writer
@@ -37,6 +38,7 @@ class Train:
         self.criterion = model.Criterion(config).to(self.device)
 
         # optimizer
+        self.scaler    = amp.GradScaler()  # type: ignore
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.lr)
         self.scheduler = lr_scheduler.ExponentialLR(
             self.optimizer, gamma=self.gamma)
@@ -71,13 +73,15 @@ class Train:
             labels = labels.to(self.device)
 
             # forward and backward
-            outputs = self.net(frames)
-            loss = self.criterion(outputs, labels) / self.accumu_steps
-            loss.backward()
+            with amp.autocast(dtype=torch.float16):  # type: ignore
+                outputs = self.net(frames)
+                loss = self.criterion(outputs, labels) / self.accumu_steps
+            self.scaler.scale(loss).backward()  # type: ignore
 
             # update model parameters
             if (i+1) % self.accumu_steps != 0: continue
-            self.optimizer.step()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
             self.optimizer.zero_grad()
 
             # record: tensorboard
@@ -152,6 +156,7 @@ class Train:
         torch.save({
             'epoch': self.epoch,  # epoch index start from 1
             'net': self.net.state_dict(),
+            'scaler': self.scaler.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'scheduler': self.scheduler.state_dict()
             }, "{}/{}.ckpt".format(self.ckpt_save_folder, self.epoch))
@@ -162,6 +167,7 @@ class Train:
         ckpt = torch.load("{}.ckpt".format(self.ckpt_load_path))
         self.epoch = ckpt['epoch']+1  # start train from next epoch index
         self.net.load_state_dict(ckpt['net'])
+        self.scaler.load_state_dict(ckpt['scaler'])
         if self.ckpt_load_lr:
             self.optimizer.load_state_dict(ckpt['optimizer'])
             self.scheduler.load_state_dict(ckpt['scheduler'])
