@@ -1,12 +1,16 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch import Tensor
 
 
-class UNetBlock2D(nn.Module):
+__all__ = [
+    "ResUNet2D", "ResUNet3D"
+]
+
+
+class _UNetBlock2D(nn.Module):
     def __init__(self, in_channels, out_channels) -> None:
-        super(UNetBlock2D, self).__init__()
+        super(_UNetBlock2D, self).__init__()
         # UNet Component
         self.conv1 = nn.Sequential(
             nn.Conv2d(in_channels, in_channels, 3, padding=1, bias=False),
@@ -26,9 +30,9 @@ class UNetBlock2D(nn.Module):
         return out
 
 
-class UNetBlock3D(nn.Module):
+class _UNetBlock3D(nn.Module):
     def __init__(self, in_channels, out_channels) -> None:
-        super(UNetBlock3D, self).__init__()
+        super(_UNetBlock3D, self).__init__()
         # UNet Component
         self.conv1 = nn.Sequential(
             nn.Conv3d(in_channels, in_channels, 3, padding=1, bias=False),
@@ -48,9 +52,9 @@ class UNetBlock3D(nn.Module):
         return out
 
 
-class ResUNetBlock2D(nn.Module):
+class _ResUNetBlock2D(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super(ResUNetBlock2D, self).__init__()
+        super(_ResUNetBlock2D, self).__init__()
         # UNet Component
         self.conv1 = nn.Sequential(
             nn.Conv2d(in_channels, in_channels, 3, padding=1, bias=False),
@@ -78,9 +82,9 @@ class ResUNetBlock2D(nn.Module):
         return out
 
 
-class ResUNetBlock3D(nn.Module):
+class _ResUNetBlock3D(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super(ResUNetBlock3D, self).__init__()
+        super(_ResUNetBlock3D, self).__init__()
         # UNet Component
         self.conv1 = nn.Sequential(
             nn.Conv3d(in_channels, in_channels, 3, padding=1, bias=False),
@@ -113,21 +117,21 @@ class ResUNet2D(nn.Module):
         super(ResUNet2D, self).__init__()
         base = config.dim_frame[0] * config.up_sample[0]
         self.input    = nn.Upsample(scale_factor=tuple(config.up_sample))
-        self.encoder1 = ResUNetBlock2D(base*1, base*2)
+        self.encoder1 = _ResUNetBlock2D(base*1, base*2)
         self.maxpool1 = nn.MaxPool2d(kernel_size=2)
-        self.encoder2 = ResUNetBlock2D(base*2, base*4)
+        self.encoder2 = _ResUNetBlock2D(base*2, base*4)
         self.maxpool2 = nn.MaxPool2d(2)
-        self.encoder3 = ResUNetBlock2D(base*4, base*8)
+        self.encoder3 = _ResUNetBlock2D(base*4, base*8)
         self.up_conv2 = nn.Sequential(
             nn.Upsample(scale_factor=2),
             nn.Conv2d(base*8, base*4, 3, padding=1)
         )
-        self.decoder2 = ResUNetBlock2D(base*8, base*4)
+        self.decoder2 = _ResUNetBlock2D(base*8, base*4)
         self.up_conv1 = nn.Sequential(
             nn.Upsample(scale_factor=2),
             nn.Conv2d(base*4, base*2, 3, padding=1)
         )
-        self.decoder1 = ResUNetBlock2D(base*4, base*2)
+        self.decoder1 = _ResUNetBlock2D(base*4, base*2)
         self.output_c = nn.Conv2d(base*2, base, 1)
         self.output_f = nn.ReLU()
 
@@ -152,21 +156,21 @@ class ResUNet3D(nn.Module):
         super(ResUNet3D, self).__init__()
         base = config.base
         self.intput   = nn.Upsample(scale_factor=tuple(config.up_sample))
-        self.encoder1 = ResUNetBlock3D(1, base)
+        self.encoder1 = _ResUNetBlock3D(1, base)
         self.maxpool1 = nn.MaxPool3d(2)
-        self.encoder2 = ResUNetBlock3D(base*1, base*2)
+        self.encoder2 = _ResUNetBlock3D(base*1, base*2)
         self.maxpool2 = nn.MaxPool3d(2)
-        self.encoder3 = ResUNetBlock3D(base*2, base*4)
+        self.encoder3 = _ResUNetBlock3D(base*2, base*4)
         self.up_conv2  = nn.Sequential(
             nn.Upsample(scale_factor=2),
             nn.Conv3d(base*4, base*2, kernel_size=3, padding=1)
         )
-        self.decoder2 = ResUNetBlock3D(base*4, base*2)
+        self.decoder2 = _ResUNetBlock3D(base*4, base*2)
         self.up_conv1  = nn.Sequential(
             nn.Upsample(scale_factor=2),
             nn.Conv3d(base*2, base*1, kernel_size=3, padding=1)
         )
-        self.decoder1 = ResUNetBlock3D(base*2, base*1)
+        self.decoder1 = _ResUNetBlock3D(base*2, base*1)
         self.output_c = nn.Conv3d(base*1, 1, kernel_size=1)
         self.output_f = nn.ReLU()
 
@@ -184,104 +188,3 @@ class ResUNet3D(nn.Module):
         out = torch.cat((enc1, out), dim=1)
         out = self.decoder1(out)
         return self.output_f(self.output_c(out)+x).squeeze(1)
-
-
-class Criterion(nn.Module):
-    def __init__(self, config) -> None:
-        super().__init__()
-        # Gaussian kernel using help function gaussianKernel
-        self.kernel = self.gaussianKernel(
-            3, config.kernel_size, config.kernel_sigma)
-        # pad size, pad before convolve Gaussian kernel
-        self.pad = [config.kernel_size for _ in range(6)]  # [C H W]
-
-    def forward(self, predi: Tensor, label: Tensor) -> float:
-        return F.mse_loss(
-            self.gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
-            self.gaussianBlur3d(F.pad(label, self.pad), self.kernel),
-            reduction="sum"
-        )  # type: ignore
-
-    def to(self, device):
-        # Call the original 'to' method to move parameters and buffers
-        super(Criterion, self).to(device)
-        self.kernel = self.kernel.to(device)
-        return self
-
-    @staticmethod
-    def gaussianKernel(
-        dim: int, 
-        kernel_size: int = 7, kernel_sigma: float = 1.0
-    ) -> Tensor:
-        """
-        This function generates a Gaussian kernel with the given parameters. The
-        function will first build a 1D Gaussian kernel where the size and sigma
-        are controlled by `kernel_size` and `kernel_sigma`. Then, we extend it
-        to nd Gaussian kernel using the einsum function where nd is specified by
-        `dim`.
-
-        Args:
-            dim (int): The dimension of the kernel. For example, set dim=2 for a 
-                2D Gaussian kernel.
-            kernel_size (int): The size of the kernel, usually an odd number
-                like 3, 5, 7, etc. Default: 7.
-            kernel_sigma (float): The sigma of the Gaussian kernel. 
-                Default: 1.0.
-        
-        Returns:
-            kernel_nd (Tensor): A Gaussian kernel with shape 
-                (kernel_size,) * dim.
-        """
-        # build 1D Gaussian kernel
-        r = kernel_size // 2
-        coord = torch.linspace(-r, r, kernel_size)
-        kernel_1d = torch.exp((-(coord / kernel_sigma) ** 2 / 2))
-        kernel_1d /= kernel_1d.sum()  # Normalization
-
-        # build nd Gaussian kernel using einsum
-        equation = ','.join(f'{chr(97 + i)}' for i in range(dim))
-        operands = [kernel_1d for _ in range(dim)]
-        kernel_nd  = torch.einsum(equation, *operands)
-        kernel_nd /= kernel_nd.sum()  # Normalization
-
-        return kernel_nd
-
-    @staticmethod
-    def gaussianBlur3d(frame: Tensor, kernel: Tensor) -> Tensor:
-        """
-        This function convolve the input frame with a 3D Gaussian kernel using
-        F.conv3d. We accept input frame with shape [D H W], [B C H W], or 
-        [B C D H W] and will convolve last three dimension. If the shape is 
-        [B C H W], we treat the channel as the depth. The input kernel should 
-        shape like [D H W].
-
-        Args:
-            frame (Tensor): The frame to be convolved with the Gaussian kernel
-                with shape [D H W], [B C H W], or [B C D H W].
-            kernel (Tensor): The Gaussian kernel with shape [D H W].
-
-        Returns:
-            frame_blur (Tensor): The blurred frame with the same shape as the
-                input frame.
-
-        Raises:
-            ValueError: If the dim of the kernel is not 3.
-            ValueError: If the dim of the frame is not 3, 4 or 5.
-        """
-        if kernel.dim() != 3:
-            raise ValueError("kernel.dim() must be 3")
-        kernel = kernel.reshape(1, 1, *kernel.shape)  # [D H W] -> [1 1 D H W]
-
-        # set the shape of the frame when convolve with the kernel
-        if frame.dim() == 3:    # [D H W] -> [1 1 D H W]
-            shape = [1, 1, *frame.shape]
-        elif frame.dim() == 4:  # [B C H W] -> [B 1 C H W]
-            shape = [frame.shape[0], 1, *frame.shape[1:]]
-        elif frame.dim() == 5:  # [B C D H W]
-            shape = frame.shape
-        else:
-            raise ValueError("frame.dim() must be 3, 4 or 5")
-
-        return F.conv3d(
-                frame.reshape(*shape), kernel, padding="same"
-            ).reshape(*frame.shape)

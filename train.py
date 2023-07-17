@@ -7,7 +7,7 @@ import torch.utils.tensorboard.writer as writer
 import os
 import tqdm
 
-import config, data, model
+import config, data, model, losses
 
 
 torch.backends.cudnn.enabled = True     # type: ignore
@@ -34,8 +34,8 @@ class Train:
         # data
         self.trainloader, self.validloader = data.getDataLoader(config)
         # model
-        self.net       = model.ResUNet3D(config).to(self.device)
-        self.criterion = model.Criterion(config).to(self.device)
+        self.net     = model.ResUNet3D(config).to(self.device)
+        self.loss_fn = losses.GaussianBlurredMSELoss(config).to(self.device)
 
         # optimizer
         self.scaler    = amp.GradScaler()  # type: ignore
@@ -75,7 +75,7 @@ class Train:
             # forward and backward
             with amp.autocast(dtype=torch.float16):  # type: ignore
                 outputs = self.net(frames)
-                loss = self.criterion(outputs, labels) / self.accumu_steps
+                loss = self.loss_fn(outputs, labels) / self.accumu_steps
             self.scaler.scale(loss).backward()  # type: ignore
 
             # update model parameters
@@ -118,7 +118,7 @@ class Train:
             # forward
             outputs = self.net(frames)
             # loss
-            loss = self.criterion(outputs, labels) / self.accumu_steps
+            loss = self.loss_fn(outputs, labels) / self.accumu_steps
 
             # record: tensorboard
             valid_loss.append(loss.item() / len(outputs))
