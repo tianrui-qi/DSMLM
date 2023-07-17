@@ -123,30 +123,25 @@ class ResUNet2D(nn.Module):
             nn.Conv2d(in_feature*up_c*4, in_feature*up_c*2, 3, padding=1)
         )
         self.decoder1 = ResUNetBlock2D(in_feature*up_c*4, in_feature*up_c*2)
-        self.output   = nn.Sequential(
-            nn.Conv2d(in_feature * up_c * 2, in_feature * up_c, 1),
-            nn.ReLU()
-        )
+        self.output_c = nn.Conv2d(in_feature*up_c*2, in_feature*up_c, 1)
+        self.output_f = nn.ReLU()
 
     def forward(self, x: Tensor) -> Tensor:
-        enc1 = self.input(x.unsqueeze(1)).squeeze(1)
-        enc1 = self.encoder1(enc1)
+        x = self.input(x.unsqueeze(1)).squeeze(1)
+        enc1 = self.encoder1(x)
         dec1 = self.maxpool1(enc1)
         dec1 = self.encoder2(dec1)
         dec1 = self.up_conv1(dec1)
         dec1 = torch.cat((enc1, dec1), dim=1)
         dec1 = self.decoder1(dec1)
-        return self.output(dec1)
+        return self.output_f(self.output_c(dec1)+x)
 
 
 class ResUNet3D(nn.Module):
     def __init__(self, config) -> None:
         super(ResUNet3D, self).__init__()
-        self.intput = nn.Sequential(
-            nn.Upsample(scale_factor=tuple(config.up_sample)),
-            nn.Conv3d(1, 8, kernel_size=1)
-        )
-        self.encoder1 = ResUNetBlock3D(8, 16)
+        self.intput   = nn.Upsample(scale_factor=tuple(config.up_sample))
+        self.encoder1 = ResUNetBlock3D(1, 16)
         self.maxpool1 = nn.MaxPool3d(2)
         self.encoder2 = ResUNetBlock3D(16, 32)
         #self.maxpool2 = nn.MaxPool3d(2)
@@ -161,20 +156,18 @@ class ResUNet3D(nn.Module):
             nn.Conv3d(32, 16, kernel_size=3, padding=1)
         )
         self.decoder1 = ResUNetBlock3D(32, 16)
-        self.output   = nn.Sequential(
-            nn.Conv3d(16, 1, kernel_size=1),
-            nn.ReLU()
-        )
+        self.output_c = nn.Conv3d(16, 1, kernel_size=1)
+        self.output_f = nn.ReLU()
 
     def forward(self, x: Tensor) -> Tensor:
-        enc1 = self.intput(x)
-        enc1 = self.encoder1(enc1)
+        x = self.intput(x.unsqueeze(1))
+        enc1 = self.encoder1(x)
         dec1 = self.maxpool1(enc1)
         dec1 = self.encoder2(dec1)
         dec1 = self.up_conv1(dec1)
         dec1 = torch.cat((enc1, dec1), dim=1)
         dec1 = self.decoder1(dec1)
-        return self.output(dec1)
+        return self.output_f(self.output_c(dec1)+x).squeeze(1)
 
 
 class Criterion(nn.Module):

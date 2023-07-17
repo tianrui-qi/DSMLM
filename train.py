@@ -165,12 +165,14 @@ class Train:
     def load_ckpt(self) -> None:
         if self.ckpt_load_path == "": return
         ckpt = torch.load("{}.ckpt".format(self.ckpt_load_path))
+        
         self.epoch = ckpt['epoch']+1  # start train from next epoch index
         self.net.load_state_dict(ckpt['net'])
         self.scaler.load_state_dict(ckpt['scaler'])
-        if self.ckpt_load_lr:
-            self.optimizer.load_state_dict(ckpt['optimizer'])
-            self.scheduler.load_state_dict(ckpt['scheduler'])
+        
+        if not self.ckpt_load_lr: return
+        self.optimizer.load_state_dict(ckpt['optimizer'])
+        self.scheduler.load_state_dict(ckpt['scheduler'])
 
 
 if __name__ == "__main__":
