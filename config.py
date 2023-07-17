@@ -54,8 +54,8 @@ class Config:
         # =============================== loss =============================== #
 
         ## GaussianBlurL1Loss & GaussianBlurMSELoss
-        self.kernel_size : int   = 7    # kernel size of GaussianBlur
-        self.kernel_sigma: float = 1.0  # sigma of kernel
+        self.kernel_size : int   = 7
+        self.kernel_sigma: float = 1.0
         ## getLoss
         self.type_loss: str = "GaussianBlurMSELoss"
             # GaussianBlurL1Loss, GaussianBlurMSELoss
@@ -68,8 +68,8 @@ class Config:
         self.max_epoch   : int = 400
         self.accumu_steps: int = 50     # [100, 50, 25, 20, 10, 5, 4, 2]
         # learning rate
-        self.lr   : float = 1e-3        # initial learning rate (lr)
-        self.gamma: float = 0.96        # decay rate of lr
+        self.lr   : float = 1e-4        # initial learning rate (lr)
+        self.gamma: float = 0.95        # decay rate of lr
         # checkpoint
         self.ckpt_save_folder: str  = "ckpt"    # folder store ckpt every epoch
         self.ckpt_load_path  : str  = ""        # path without .ckpt
