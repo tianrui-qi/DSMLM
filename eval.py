@@ -30,7 +30,7 @@ class Eval:
         self.dataloader = data.getDataLoader(config)[0]
         self.dataset = self.dataloader.dataset  # to call static method
         # model
-        self.net = model.ResUNet2D(config).to(self.device)
+        self.net = model.getNet(config).to(self.device)
         self.net.load_state_dict(torch.load(
             "{}.ckpt".format(self.ckpt_load_path), 
             map_location=self.device)['net']

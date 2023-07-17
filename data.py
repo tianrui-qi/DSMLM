@@ -295,13 +295,13 @@ def getDataLoader(config) -> Tuple[DataLoader, ...]:
     """
     This function will return a tuple of dataloader for each dataset. Four paras
     in config will be used to create the dataloader, i.e., config.num, 
-    config.type, config.batch_size, and config.num_workers. All dataloader will
-    have the same batch_size and num_workers.
+    config.type_data, config.batch_size, and config.num_workers. All dataloader
+    will have the same batch_size and num_workers.
     
     For example:
         if the input config has
             config.num = [100, 200]
-            config.type = ["Sim", "Raw"]
+            config.type_data = ["Sim", "Raw"]
         the dataloader tuple return by this function will be
             dataloader = (
                 SimDataset with 100 data, 
@@ -312,28 +312,28 @@ def getDataLoader(config) -> Tuple[DataLoader, ...]:
         config (Config): The config class for this project.
             config.num (List[int]): A list of int, where each int is the number
                 of data in each dataset.
-            config.type (List[str]): A list of str, where each str is the type
-                of each dataset, i.e., "Sim" or "Raw".
+            config.type_data (List[str]): A list of str, where each str is the
+                type of each dataset, i.e., "Sim" or "Raw".
             config.batch_size (int): The batch size for each dataloader.
             config.num_workers (int): The number of workers for each dataloader.
     
     Returns:
         dataloader (Tuple[DataLoader]): A tuple of dataloader for each dataset.
-            Will have same length as config.num and config.type.
+            Will have same length as config.num and config.type_data.
     """
 
-    if len(config.num) != len(config.type): raise ValueError(
-        "The length of config.num and config.type should be the same."
+    if len(config.type_data) != len(config.num): raise ValueError(
+        "The length of config.num and config.type_data should be the same."
     )
 
     dataloader = []
     for d in range(len(config.num)):
-        if config.type[d] == "Sim":
+        if config.type_data[d] == "Sim":
             dataset = SimDataset(config, config.num[d])
-        elif config.type[d] == "Raw":
+        elif config.type_data[d] == "Raw":
             dataset = RawDataset(config, config.num[d])
         else:
-            raise ValueError("Only Raw and Sim dataset is supported.")
+            raise ValueError("Only Raw and Sim dataset aresupported.")
         dataloader.append(DataLoader(
             dataset,
             batch_size=config.batch_size, 

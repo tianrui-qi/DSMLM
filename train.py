@@ -39,7 +39,7 @@ class Train:
         # data
         self.trainloader, self.validloader = data.getDataLoader(config)
         # model
-        self.net     = model.ResUNet3D(config).to(self.device)
+        self.net     = model.getNet(config).to(self.device)
         self.loss_fn = losses.GaussianBlurredMSELoss(config).to(self.device)
 
         # optimizer

@@ -40,7 +40,7 @@ class Config:
 
         ## getDataLoader
         self.num : List[int] = [10000, 5000 ]
-        self.type: List[str] = ["Sim", "Raw"]
+        self.type_data: List[str] = ["Sim", "Raw"]
         self.batch_size : int = 2       # [1, 2, 4, 5, 10, 20, 25, 50]
         self.num_workers: int = 2
 
@@ -48,10 +48,12 @@ class Config:
 
         ## ResUNet3D
         self.base: int = 8  # base channel number of ResUNet3D
+        ## getNet
+        self.type_net: str = "ResUNet3D"
 
         # ============================== losses ============================== #
 
-        ## GaussianBlurredMSELoss
+        ## GaussianBlurredL1Loss & GaussianBlurredMSELoss
         self.kernel_size : int   = 7    # kernel size of GaussianBlur
         self.kernel_sigma: float = 1.0  # sigma of kernel
 
@@ -85,17 +87,17 @@ class ConfigTrain(Config):
 class ConfigEval(ConfigTrain):
     def __init__(self) -> None:
         super().__init__()
-        ## (class) Eval
+        ## Eval
         checkpoint = 1
         self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
         self.outputs_save_path = "data/outputs_{}".format(checkpoint)
         self.labels_save_path  = "data/labels_{}".format(checkpoint) 
-        ## (class) RawDataset
+        ## RawDataset
         self.h_range = [4, 7]
         self.w_range = [6, 9]
-        ## (def) getDataLoader
+        ## getDataLoader
         self.num  = [1000 * 16]
-        self.type = ["Raw"]
+        self.type_data = ["Raw"]
         self.batch_size  = 16
         self.num_workers = 8
 

@@ -4,7 +4,8 @@ from torch import Tensor
 
 
 __all__ = [
-    "ResUNet2D", "ResUNet3D"
+    "ResUNet2D", "ResUNet3D",
+    "getNet"
 ]
 
 
@@ -188,3 +189,12 @@ class ResUNet3D(nn.Module):
         out = torch.cat((enc1, out), dim=1)
         out = self.decoder1(out)
         return self.output_f(self.output_c(out)+x).squeeze(1)
+
+
+def getNet(config):
+    if config.type_net == "ResUNet2D":
+        return ResUNet2D(config)
+    elif config.type_net == "ResUNet3D":
+        return ResUNet3D(config)
+    else:
+        raise ValueError("Only ResUNet2D and ResUNet3D are supported.")
