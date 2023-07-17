@@ -96,7 +96,7 @@ class Train:
 
         # record: progress bar
         pbar = tqdm.tqdm(
-            total=len(self.validloader)/self.accumu_steps, 
+            total=int(len(self.validloader)/self.accumu_steps), 
             desc="valid_epoch", leave=False, unit="steps", smoothing=1.0
         )
         # record: tensorboard
