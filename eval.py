@@ -7,6 +7,11 @@ import tqdm
 import config, model, data
 
 
+__all__ = [
+    "Eval"
+]
+
+
 class Eval:
     def __init__(self, config) -> None:
         # train

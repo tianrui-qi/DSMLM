@@ -1,6 +1,13 @@
 from typing import List
 
 
+__all__ = [
+    "Config", 
+    "ConfigTrain", "ConfigEval", 
+    "getConfig"
+]
+
+
 class Config:
     def __init__(self) -> None:
         # dimensional config - MUST be same accross whole pipline
@@ -9,7 +16,7 @@ class Config:
 
         # =============================== data =============================== #
 
-        ## (class) SimDataset
+        ## SimDataset
         # config for adjust distribution of molecular
         self.mol_range: List[int] = [0, 128]    # min, max num of mol/frame
         self.std_range: List[List[float]] = [   # std range of each dimension
@@ -23,7 +30,7 @@ class Config:
         self.sensitivity: float = 5.88
         self.dark_noise : float = 2.29
 
-        ## (class) RawDataset
+        ## RawDataset
         # subframe index
         self.h_range: List[int] = [0, 9]
         self.w_range: List[int] = [0, 9]
@@ -31,7 +38,7 @@ class Config:
         self.frames_load_folder = "D:/frames"
         self.mlists_load_folder = "D:/mlists"
 
-        ## (def) getDataLoader
+        ## getDataLoader
         self.num : List[int] = [10000, 5000 ]
         self.type: List[str] = ["Sim", "Raw"]
         self.batch_size : int = 2       # [1, 2, 4, 5, 10, 20, 25, 50]
@@ -39,15 +46,18 @@ class Config:
 
         # =============================== model ============================== #
 
-        ## (class) ResUNet3D
-        self.base: int = 8              # base channel number of ResUNet3D
-        ## (class) Criterion
+        ## ResUNet3D
+        self.base: int = 8  # base channel number of ResUNet3D
+
+        # ============================== losses ============================== #
+
+        ## GaussianBlurredMSELoss
         self.kernel_size : int   = 7    # kernel size of GaussianBlur
         self.kernel_sigma: float = 1.0  # sigma of kernel
 
         # =============================== train ============================== #
 
-        ## (Class) Train
+        ## Train
         # train
         self.device: str = "cuda"
         self.max_epoch   : int = 400
@@ -62,7 +72,7 @@ class Config:
 
         # =============================== eval =============================== #
 
-        ## (class) Eval - also use some config of train and data
+        ## Eval - also use some config of train and data
         self.outputs_save_path: str = "data/outputs"    # path without .tif
         self.labels_save_path : str = "data/labels"     # path without .tif
 
