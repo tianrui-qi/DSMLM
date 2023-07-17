@@ -333,7 +333,7 @@ def getDataLoader(config) -> Tuple[DataLoader, ...]:
         elif config.type_data[d] == "Raw":
             dataset = RawDataset(config, config.num[d])
         else:
-            raise ValueError("Only Raw and Sim dataset aresupported.")
+            raise ValueError(f"Unsupported data: {config.type_data[d]}")
         dataloader.append(DataLoader(
             dataset,
             batch_size=config.batch_size, 

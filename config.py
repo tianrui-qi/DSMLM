@@ -49,9 +49,9 @@ class Config:
         ## ResUNet3D
         self.base: int = 8  # base channel number of ResUNet3D
         ## getModel
-        self.type_model: str = "ResUNet3D"
+        self.type_model: str = "ResUNet3D"  # ResUNet2D, ResUNet3D
 
-        # ============================== losses ============================== #
+        # =============================== loss =============================== #
 
         ## GaussianBlurredL1Loss & GaussianBlurredMSELoss
         self.kernel_size : int   = 7    # kernel size of GaussianBlur

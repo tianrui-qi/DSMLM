@@ -6,7 +6,8 @@ from torch import Tensor
 
 __all__ = [
     "gaussianKernel", "gaussianBlur3d",
-    "GaussianBlurredL1Loss", "GaussianBlurredMSELoss"
+    "GaussianBlurredL1Loss", "GaussianBlurredMSELoss",
+    "getLoss"
 ]
 
 
@@ -88,14 +89,22 @@ def gaussianBlur3d(frame: Tensor, kernel: Tensor) -> Tensor:
         ).reshape(*frame.shape)
 
 
-class GaussianBlurredL1Loss(nn.Module):
+class _GaussianBlurredLoss(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
         # Gaussian kernel using help function gaussianKernel
         self.kernel = gaussianKernel(3, config.kernel_size, config.kernel_sigma)
         # pad size, pad before convolve Gaussian kernel
         self.pad = [config.kernel_size for _ in range(6)]  # [C H W]
+    
+    def to(self, device):
+        # Call the original 'to' method to move parameters and buffers
+        super(_GaussianBlurredLoss, self).to(device)
+        self.kernel = self.kernel.to(device)
+        return self
 
+
+class GaussianBlurredL1Loss(_GaussianBlurredLoss):
     def forward(self, predi: Tensor, label: Tensor) -> float:
         return F.l1_loss(
             gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
@@ -103,21 +112,8 @@ class GaussianBlurredL1Loss(nn.Module):
             reduction="sum"
         )  # type: ignore
 
-    def to(self, device):
-        # Call the original 'to' method to move parameters and buffers
-        super(GaussianBlurredL1Loss, self).to(device)
-        self.kernel = self.kernel.to(device)
-        return self
 
-
-class GaussianBlurredMSELoss(nn.Module):
-    def __init__(self, config) -> None:
-        super().__init__()
-        # Gaussian kernel using help function gaussianKernel
-        self.kernel = gaussianKernel(3, config.kernel_size, config.kernel_sigma)
-        # pad size, pad before convolve Gaussian kernel
-        self.pad = [config.kernel_size for _ in range(6)]  # [C H W]
-
+class GaussianBlurredMSELoss(_GaussianBlurredLoss):
     def forward(self, predi: Tensor, label: Tensor) -> float:
         return F.mse_loss(
             gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
@@ -125,8 +121,11 @@ class GaussianBlurredMSELoss(nn.Module):
             reduction="sum"
         )  # type: ignore
 
-    def to(self, device):
-        # Call the original 'to' method to move parameters and buffers
-        super(GaussianBlurredMSELoss, self).to(device)
-        self.kernel = self.kernel.to(device)
-        return self
+
+def getLoss(config) -> nn.Module:
+    if config.type_loss == "GaussianBlurredL1Loss":
+        return GaussianBlurredL1Loss(config)
+    elif config.type_loss == "GaussianBlurredMSELoss":
+        return GaussianBlurredMSELoss(config)
+    else:
+        raise ValueError(f"Unsupported loss: {config.type_loss}")

@@ -7,7 +7,7 @@ import torch.utils.tensorboard.writer as writer
 import os
 import tqdm
 
-import config, data, model, losses
+import config, data, model, loss
 
 
 __all__ = [
@@ -40,8 +40,8 @@ class Train:
         self.trainloader, self.validloader = data.getDataLoader(config)
         # model
         self.model   = model.getModel(config).to(self.device)
-        # losses
-        self.loss_fn = losses.GaussianBlurredMSELoss(config).to(self.device)
+        # loss
+        self.loss = loss.GaussianBlurredMSELoss(config).to(self.device)
 
         # optimizer
         self.scaler    = amp.GradScaler()  # type: ignore
@@ -81,8 +81,8 @@ class Train:
             # forward and backward
             with amp.autocast(dtype=torch.float16):  # type: ignore
                 outputs = self.model(frames)
-                loss = self.loss_fn(outputs, labels) / self.accumu_steps
-            self.scaler.scale(loss).backward()  # type: ignore
+                loss_value = self.loss(outputs, labels) / self.accumu_steps
+            self.scaler.scale(loss_value).backward()  # type: ignore
 
             # update model parameters
             if (i+1) % self.accumu_steps != 0: continue
@@ -92,7 +92,7 @@ class Train:
 
             # record: tensorboard
             self.writer.add_scalars(
-                'Loss', {'train': loss.item() / len(outputs)}, 
+                'Loss', {'train': loss_value.item() / len(outputs)}, 
                 (self.epoch - 1) * len(self.trainloader) / self.accumu_steps + 
                 (i + 1) / self.accumu_steps
             )
@@ -124,10 +124,10 @@ class Train:
             # forward
             outputs = self.model(frames)
             # loss
-            loss = self.loss_fn(outputs, labels) / self.accumu_steps
+            loss_value = self.loss(outputs, labels) / self.accumu_steps
 
             # record: tensorboard
-            valid_loss.append(loss.item() / len(outputs))
+            valid_loss.append(loss_value.item() / len(outputs))
             valid_num.append(len(torch.nonzero(outputs)) / len(outputs))
             # record: progress bar
             if (i+1) % self.accumu_steps == 0: pbar.update()

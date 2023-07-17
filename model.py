@@ -191,10 +191,10 @@ class ResUNet3D(nn.Module):
         return self.output_f(self.output_c(out)+x).squeeze(1)
 
 
-def getModel(config):
+def getModel(config) -> nn.Module:
     if config.type_model == "ResUNet2D":
         return ResUNet2D(config)
     elif config.type_model == "ResUNet3D":
         return ResUNet3D(config)
     else:
-        raise ValueError("Only ResUNet2D and ResUNet3D are supported.")
+        raise ValueError(f"Unsupported model: {config.type_model}")
