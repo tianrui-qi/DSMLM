@@ -5,13 +5,13 @@ class Config:
     def __init__(self) -> None:
         # dimensional config - MUST be same accross whole pipline
         self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
-        self.up_sample: List[int] = [ 2,  4,  4]    # [C, H, W], by scale
+        self.up_sample: List[int] = [ 2,  2,  2]    # [C, H, W], by scale
 
         # =============================== data =============================== #
 
         ## (class) SimDataset
         # config for adjust distribution of molecular
-        self.mol_range: List[int] = [0, 128]     # min, max num of mol/frame
+        self.mol_range: List[int] = [0, 128]    # min, max num of mol/frame
         self.std_range: List[List[float]] = [   # std range of each dimension
             [2.0, 1.0, 1.0],  # FWHM [300 300 300], pixel size [65 130 130]
             [5.0, 2.0, 2.0],  # FWHM [800 600 600], pixel size [65 130 130]
@@ -34,8 +34,8 @@ class Config:
         ## (def) getDataLoader
         self.num : List[int] = [10000, 5000 ]
         self.type: List[str] = ["Sim", "Raw"]
-        self.batch_size : int = 1
-        self.num_workers: int = 1
+        self.batch_size : int = 2       # [1, 2, 4, 5, 10, 20, 25, 50]
+        self.num_workers: int = 2
 
         # =============================== model ============================== #
 
@@ -48,11 +48,11 @@ class Config:
         ## (Class) Train
         # train
         self.device: str = "cuda"
-        self.max_epoch   : int = 200
-        self.accumu_steps: int = 100    # unit: iteration
+        self.max_epoch   : int = 400
+        self.accumu_steps: int = 50     # [100, 50, 25, 20, 10, 5, 4, 2]
         # learning rate
-        self.lr   : float = 1e-4    # initial learning rate (lr)
-        self.gamma: float = 0.96    # decay rate of lr
+        self.lr   : float = 1e-3        # initial learning rate (lr)
+        self.gamma: float = 0.96        # decay rate of lr
         # checkpoint
         self.ckpt_save_folder: str  = "ckpt"    # folder store ckpt every epoch
         self.ckpt_load_path  : str  = ""        # path without .ckpt
@@ -61,8 +61,8 @@ class Config:
         # =============================== eval =============================== #
 
         ## (class) Eval - also use some config of train and data
-        self.outputs_save_path: str = "data/outputs"   # path without .tif
-        self.labels_save_path : str = "data/labels"    # path without .tif
+        self.outputs_save_path: str = "data/outputs"    # path without .tif
+        self.labels_save_path : str = "data/labels"     # path without .tif
 
 
 class ConfigTrain(Config):
