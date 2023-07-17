@@ -53,9 +53,12 @@ class Config:
 
         # =============================== loss =============================== #
 
-        ## GaussianBlurredL1Loss & GaussianBlurredMSELoss
+        ## GaussianBlurL1Loss & GaussianBlurMSELoss
         self.kernel_size : int   = 7    # kernel size of GaussianBlur
         self.kernel_sigma: float = 1.0  # sigma of kernel
+        ## getLoss
+        self.type_loss: str = "GaussianBlurMSELoss"
+            # GaussianBlurL1Loss, GaussianBlurMSELoss
 
         # =============================== train ============================== #
 

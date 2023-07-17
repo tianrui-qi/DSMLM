@@ -39,9 +39,9 @@ class Train:
         # data
         self.trainloader, self.validloader = data.getDataLoader(config)
         # model
-        self.model   = model.getModel(config).to(self.device)
+        self.model = model.getModel(config).to(self.device)
         # loss
-        self.loss = loss.GaussianBlurredMSELoss(config).to(self.device)
+        self.loss = loss.getLoss(config).to(self.device)
 
         # optimizer
         self.scaler    = amp.GradScaler()  # type: ignore

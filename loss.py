@@ -6,7 +6,7 @@ from torch import Tensor
 
 __all__ = [
     "gaussianKernel", "gaussianBlur3d",
-    "GaussianBlurredL1Loss", "GaussianBlurredMSELoss",
+    "GaussianBlurL1Loss", "GaussianBlurMSELoss",
     "getLoss"
 ]
 
@@ -89,7 +89,7 @@ def gaussianBlur3d(frame: Tensor, kernel: Tensor) -> Tensor:
         ).reshape(*frame.shape)
 
 
-class _GaussianBlurredLoss(nn.Module):
+class _GaussianBlurLoss(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
         # Gaussian kernel using help function gaussianKernel
@@ -99,12 +99,12 @@ class _GaussianBlurredLoss(nn.Module):
     
     def to(self, device):
         # Call the original 'to' method to move parameters and buffers
-        super(_GaussianBlurredLoss, self).to(device)
+        super(_GaussianBlurLoss, self).to(device)
         self.kernel = self.kernel.to(device)
         return self
 
 
-class GaussianBlurredL1Loss(_GaussianBlurredLoss):
+class GaussianBlurL1Loss(_GaussianBlurLoss):
     def forward(self, predi: Tensor, label: Tensor) -> float:
         return F.l1_loss(
             gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
@@ -113,7 +113,7 @@ class GaussianBlurredL1Loss(_GaussianBlurredLoss):
         )  # type: ignore
 
 
-class GaussianBlurredMSELoss(_GaussianBlurredLoss):
+class GaussianBlurMSELoss(_GaussianBlurLoss):
     def forward(self, predi: Tensor, label: Tensor) -> float:
         return F.mse_loss(
             gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
@@ -123,9 +123,9 @@ class GaussianBlurredMSELoss(_GaussianBlurredLoss):
 
 
 def getLoss(config) -> nn.Module:
-    if config.type_loss == "GaussianBlurredL1Loss":
-        return GaussianBlurredL1Loss(config)
-    elif config.type_loss == "GaussianBlurredMSELoss":
-        return GaussianBlurredMSELoss(config)
+    if config.type_loss == "GaussianBlurL1Loss":
+        return GaussianBlurL1Loss(config)
+    elif config.type_loss == "GaussianBlurMSELoss":
+        return GaussianBlurMSELoss(config)
     else:
         raise ValueError(f"Unsupported loss: {config.type_loss}")
