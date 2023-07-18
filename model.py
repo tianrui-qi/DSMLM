@@ -66,7 +66,7 @@ class _ResUNetBlock3D(nn.Module):
 class ResUNet2D(nn.Module):
     def __init__(self, config) -> None:
         super(ResUNet2D, self).__init__()
-        base = config.dim_frame[0] * config.up_sample[0]
+        base = config.base
         self.encoder1 = _ResUNetBlock2D(base*1, base*2)
         self.maxpool1 = nn.MaxPool2d(kernel_size=2)
         self.encoder2 = _ResUNetBlock2D(base*2, base*4)

@@ -5,8 +5,7 @@ from torch import Tensor
 
 
 def gaussianKernel(
-    dim: int, 
-    kernel_size: int = 7, kernel_sigma: float = 1.0
+    dim: int, kernel_size: int = 7, kernel_sigma: float = 1.0
 ) -> Tensor:
     """
     This function generates a Gaussian kernel with the given parameters. The
