@@ -3,50 +3,6 @@ import torch.nn as nn
 from torch import Tensor
 
 
-class _UNetBlock2D(nn.Module):
-    def __init__(self, in_channels, out_channels) -> None:
-        super(_UNetBlock2D, self).__init__()
-        # UNet Component
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels, in_channels, 3, padding=1, bias=False),
-            nn.BatchNorm2d(in_channels)
-        )
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels)
-        )
-        self.relu = nn.ReLU()
-
-    def forward(self, x: Tensor) -> Tensor:
-        out  = self.conv1(x)
-        out  = self.relu(out)
-        out  = self.conv2(out)
-        out  = self.relu(out)
-        return out
-
-
-class _UNetBlock3D(nn.Module):
-    def __init__(self, in_channels, out_channels) -> None:
-        super(_UNetBlock3D, self).__init__()
-        # UNet Component
-        self.conv1 = nn.Sequential(
-            nn.Conv3d(in_channels, in_channels, 3, padding=1, bias=False),
-            nn.BatchNorm3d(in_channels)
-        )
-        self.conv2 = nn.Sequential(
-            nn.Conv3d(in_channels, out_channels, 3, padding=1, bias=False),
-            nn.BatchNorm3d(out_channels)
-        )
-        self.relu = nn.ReLU()
-
-    def forward(self, x: Tensor) -> Tensor:
-        out  = self.conv1(x)
-        out  = self.relu(out)
-        out  = self.conv2(out)
-        out  = self.relu(out)
-        return out
-
-
 class _ResUNetBlock2D(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(_ResUNetBlock2D, self).__init__()
