@@ -4,13 +4,6 @@ import torch.nn.functional as F
 from torch import Tensor
 
 
-__all__ = [
-    "gaussianKernel", "gaussianBlur3d",
-    "L1Loss", "L2Loss",
-    "getLoss"
-]
-
-
 def gaussianKernel(
     dim: int, 
     kernel_size: int = 7, kernel_sigma: float = 1.0
@@ -120,9 +113,3 @@ class L2Loss(_GaussianBlurLoss):
             gaussianBlur3d(F.pad(label, self.pad), self.kernel),
             reduction="sum"
         )  # type: ignore
-
-
-def getLoss(config) -> nn.Module:
-    if config.type_loss == "L1Loss": return L1Loss(config)
-    if config.type_loss == "L2Loss": return L2Loss(config)
-    raise ValueError(f"Unsupported loss: {config.type_loss}")

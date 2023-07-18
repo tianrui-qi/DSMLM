@@ -7,11 +7,6 @@ import tqdm
 import config, model, data
 
 
-__all__ = [
-    "Eval"
-]
-
-
 class Eval:
     def __init__(self, config) -> None:
         # train
@@ -30,7 +25,7 @@ class Eval:
         self.dataloader = data.getDataLoader(config)[0]
         self.dataset = self.dataloader.dataset  # to call static method
         # model
-        self.model = model.getModel(config).to(self.device)
+        self.model = config.model(config).to(self.device)
         self.model.load_state_dict(torch.load(
             "{}.ckpt".format(self.ckpt_load_path), 
             map_location=self.device)['model']

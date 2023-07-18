@@ -11,12 +11,6 @@ import scipy.io
 from typing import Tuple
 
 
-__all__ = [
-    "SimDataset", "RawDataset", 
-    "getDataLoader"
-]
-
-
 class SimDataset(Dataset):
     def __init__(self, config, num: int) -> None:
         super(SimDataset, self).__init__()

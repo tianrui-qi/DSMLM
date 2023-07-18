@@ -1,5 +1,7 @@
 from typing import List
 
+import data, model, loss
+
 
 __all__ = [
     "Config", 
@@ -45,19 +47,17 @@ class Config:
         self.num_workers: int = 2
 
         # =============================== model ============================== #
-
+        self.model = model.ResUNet3D
+        
         ## ResUNet3D
         self.base: int = 8  # base channel number of ResUNet3D
-        ## getModel
-        self.type_model: str = "ResUNet3D"  # ResUNet2D, ResUNet3D
 
         # =============================== loss =============================== #
+        self.loss = loss.L2Loss
 
         ## L1Loss & L2Loss
         self.kernel_size : int   = 7
         self.kernel_sigma: float = 1.0
-        ## getLoss
-        self.type_loss: str = "L2Loss"  # L1Loss, L2Loss
 
         # =============================== train ============================== #
 

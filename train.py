@@ -10,11 +10,6 @@ import tqdm
 import config, data, model, loss
 
 
-__all__ = [
-    "Train"
-]
-
-
 torch.backends.cudnn.enabled = True     # type: ignore
 torch.backends.cudnn.benchmark = True   # type: ignore
 
@@ -39,9 +34,9 @@ class Train:
         # data
         self.trainloader, self.validloader = data.getDataLoader(config)
         # model
-        self.model = model.getModel(config).to(self.device)
+        self.model = config.model(config).to(self.device)
         # loss
-        self.loss = loss.getLoss(config).to(self.device)
+        self.loss = config.loss(config).to(self.device)
 
         # optimizer
         self.scaler    = amp.GradScaler()  # type: ignore

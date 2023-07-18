@@ -3,12 +3,6 @@ import torch.nn as nn
 from torch import Tensor
 
 
-__all__ = [
-    "ResUNet2D", "ResUNet3D",
-    "getModel"
-]
-
-
 class _UNetBlock2D(nn.Module):
     def __init__(self, in_channels, out_channels) -> None:
         super(_UNetBlock2D, self).__init__()
@@ -193,9 +187,3 @@ class ResUNet3D(nn.Module):
         x = torch.cat((enc1, x), dim=1)
         x = self.decoder1(x)
         return self.output(x).squeeze(1)
-
-
-def getModel(config) -> nn.Module:
-    if config.type_model == "ResUNet2D": return ResUNet2D(config)
-    if config.type_model == "ResUNet3D": return ResUNet3D(config)
-    raise ValueError(f"Unsupported model: {config.type_model}")
