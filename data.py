@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch.distributions.multivariate_normal import MultivariateNormal
@@ -20,6 +21,7 @@ class SimDataset(Dataset):
         self.dim_frame = Tensor(config.dim_frame).int()     # [D]
         self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
+        self.upsample  = nn.Upsample(scale_factor=tuple(config.up_sample))
 
         # config for adjust distribution of molecular
         self.mol_range = Tensor(config.mol_range).int()     # [2]
@@ -32,25 +34,16 @@ class SimDataset(Dataset):
         self.dark_noise  = config.dark_noise
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
-        """
-        This function will return a pair of frame and label where frame with a
-        shape of [*self.dim_frame] and label with a shape of [*self.dim_label],
-        i.e., frame is in low resolution, large pixel size, and label is in high
-        resolution, small pixel size. Both frame and label already normalized
-        to [0, 1] and in torch.float32. Since we generate data in real time, we
-        do not need to use index to get data from disk.
-
-        Args:
-            index (int): The index of the data. This argument is not used.
-        
-        Returns:
-            frame (Tensor): A Tensor with a shape of [*self.dim_frame].
-            label (Tensor): A Tensor with a shape of [*self.dim_label].
-        """
         mean_set, var_set, lum_set = self.generateParas()
+
         frame = self.generateFrame(mean_set, var_set, lum_set)
         frame = self.generateNoise(frame)
+        frame = self.upsample(
+            frame.unsqueeze(0).unsqueeze(0)
+        ).squeeze(0).squeeze(0)
+
         label = self.generateLabel(mean_set)
+
         return frame, label
 
     def __len__(self) -> int:
@@ -181,6 +174,7 @@ class RawDataset(Dataset):
         self.dim_frame = Tensor(config.dim_frame).int()     # [D]
         self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
+        self.upsample  = nn.Upsample(scale_factor=tuple(config.up_sample))
         
         # subframe index
         self.h_range = config.h_range
@@ -218,6 +212,9 @@ class RawDataset(Dataset):
             h * 52 : 64 + h * 52, 
             w * 52 : 64 + w * 52,
         ]
+        subframe = self.upsample(
+            subframe.unsqueeze(0).unsqueeze(0)
+        ).squeeze(0).squeeze(0)
 
         # mlist
         submlist = self.mlist  # type: ignore
