@@ -59,7 +59,7 @@ class Config:
         self.max_epoch   : int = 400
         self.accumu_steps: int = 50     # [100, 50, 25, 20, 10, 5, 4, 2]
         # learning rate
-        self.lr   : float = 1e-3        # initial learning rate (lr)
+        self.lr   : float = 1e-4        # initial learning rate (lr)
         self.gamma: float = 0.95        # decay rate of lr
         # checkpoint
         self.ckpt_save_folder: str  = "ckpt"    # folder store ckpt every epoch
