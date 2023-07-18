@@ -7,7 +7,7 @@ class Config:
     def __init__(self) -> None:
         # ============================== model =============================== #
 
-        self.base: int = 16  # base channel number
+        self.base: int = 16     # base channel number
 
         # =============================== loss =============================== #
 
@@ -50,7 +50,7 @@ class Config:
 
         # =========================== train, eval ============================ #
 
-        self.model = model.ResUNet3D
+        self.model = model.ResUNet3DL2
         self.loss  = loss.L2Loss
 
         ## Train

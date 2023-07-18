@@ -47,6 +47,12 @@ class Train:
         # record
         self.writer = writer.SummaryWriter()
 
+        # print model info
+        para_num = sum(
+            p.numel() for p in self.model.parameters() if p.requires_grad
+        )
+        print(f'The model has {para_num:,} trainable parameters')
+
     def train(self) -> None:
         self.load_ckpt()
         for self.epoch in tqdm.tqdm(
@@ -67,6 +73,9 @@ class Train:
             total=int(len(self.trainloader)/self.accumu_steps), 
             desc='train_epoch', leave=False, unit="steps", smoothing=1.0
         )
+        # record: tensorboard
+        train_loss = []
+        train_num  = []
 
         for i, (frames, labels) in enumerate(self.trainloader):
             # put frames and labels in GPU
@@ -79,6 +88,10 @@ class Train:
                 loss_value = self.loss(outputs, labels) / self.accumu_steps
             self.scaler.scale(loss_value).backward()  # type: ignore
 
+            # record: tensorboard
+            train_loss.append(loss_value.item() / len(outputs))
+            train_num.append(len(torch.nonzero(outputs)) / len(outputs))
+
             # update model parameters
             if (i+1) % self.accumu_steps != 0: continue
             self.scaler.step(self.optimizer)
@@ -87,15 +100,17 @@ class Train:
 
             # record: tensorboard
             self.writer.add_scalars(
-                'Loss', {'train': loss_value.item() / len(outputs)}, 
+                'Loss', {'train': torch.sum(torch.as_tensor(train_loss))}, 
                 (self.epoch - 1) * len(self.trainloader) / self.accumu_steps + 
                 (i + 1) / self.accumu_steps
-            )
+            )  # average loss of each frame
             self.writer.add_scalars(
-                'Num', {'train': len(torch.nonzero(outputs)) / len(outputs)}, 
+                'Num', {'train': torch.mean(torch.as_tensor(train_num))}, 
                 (self.epoch - 1) * len(self.trainloader) / self.accumu_steps + 
                 (i + 1) / self.accumu_steps
-            )
+            )  # average num of each frame
+            train_loss = []
+            train_num  = []
             # record: progress bar
             pbar.update()
 
@@ -119,7 +134,7 @@ class Train:
             # forward
             outputs = self.model(frames)
             # loss
-            loss_value = self.loss(outputs, labels) / self.accumu_steps
+            loss_value = self.loss(outputs, labels)
 
             # record: tensorboard
             valid_loss.append(loss_value.item() / len(outputs))

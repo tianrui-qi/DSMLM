@@ -63,9 +63,9 @@ class _ResUNetBlock3D(nn.Module):
         return out
 
 
-class ResUNet2D(nn.Module):
+class ResUNet2DL2(nn.Module):
     def __init__(self, config) -> None:
-        super(ResUNet2D, self).__init__()
+        super(ResUNet2DL2, self).__init__()
         base = config.base
         self.encoder1 = _ResUNetBlock2D(base*1, base*2)
         self.maxpool1 = nn.MaxPool2d(kernel_size=2)
@@ -102,9 +102,36 @@ class ResUNet2D(nn.Module):
         return self.output(x)
 
 
-class ResUNet3D(nn.Module):
+class ResUNet3DL1(nn.Module):
     def __init__(self, config) -> None:
-        super(ResUNet3D, self).__init__()
+        super(ResUNet3DL1, self).__init__()
+        base = config.base
+        self.encoder1 = _ResUNetBlock3D(1, base)
+        self.maxpool1 = nn.MaxPool3d(2)
+        self.encoder2 = _ResUNetBlock3D(base*1, base*2)
+        self.up_conv1  = nn.Sequential(
+            nn.Upsample(scale_factor=2),
+            nn.Conv3d(base*2, base*1, kernel_size=3, padding=1)
+        )
+        self.decoder1 = _ResUNetBlock3D(base*2, base*1)
+        self.output   = nn.Sequential(
+            nn.Conv3d(base*1, 1, kernel_size=1),
+            nn.ReLU()
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        enc1 = self.encoder1(x.unsqueeze(1))
+        x = self.maxpool1(enc1)
+        x = self.encoder2(x)
+        x = self.up_conv1(x)
+        x = torch.cat((enc1, x), dim=1)
+        x = self.decoder1(x)
+        return self.output(x).squeeze(1)
+
+
+class ResUNet3DL2(nn.Module):
+    def __init__(self, config) -> None:
+        super(ResUNet3DL2, self).__init__()
         base = config.base
         self.encoder1 = _ResUNetBlock3D(1, base)
         self.maxpool1 = nn.MaxPool3d(2)
@@ -132,6 +159,57 @@ class ResUNet3D(nn.Module):
         enc2 = self.encoder2(enc2)
         x = self.maxpool2(enc2)
         x = self.encoder3(x)
+        x = self.up_conv2(x)
+        x = torch.cat((enc2, x), dim=1)
+        x = self.decoder2(x)
+        x = self.up_conv1(x)
+        x = torch.cat((enc1, x), dim=1)
+        x = self.decoder1(x)
+        return self.output(x).squeeze(1)
+
+
+class ResUNet3DL3(nn.Module):
+    def __init__(self, config) -> None:
+        super(ResUNet3DL3, self).__init__()
+        base = config.base
+        self.encoder1 = _ResUNetBlock3D(1, base)
+        self.maxpool1 = nn.MaxPool3d(2)
+        self.encoder2 = _ResUNetBlock3D(base*1, base*2)
+        self.maxpool2 = nn.MaxPool3d(2)
+        self.encoder3 = _ResUNetBlock3D(base*2, base*4)
+        self.maxpool3 = nn.MaxPool3d(2)
+        self.encoder4 = _ResUNetBlock3D(base*4, base*8)
+        self.up_conv3  = nn.Sequential(
+            nn.Upsample(scale_factor=2),
+            nn.Conv3d(base*8, base*4, kernel_size=3, padding=1)
+        )
+        self.decoder3 = _ResUNetBlock3D(base*8, base*4)
+        self.up_conv2  = nn.Sequential(
+            nn.Upsample(scale_factor=2),
+            nn.Conv3d(base*4, base*2, kernel_size=3, padding=1)
+        )
+        self.decoder2 = _ResUNetBlock3D(base*4, base*2)
+        self.up_conv1  = nn.Sequential(
+            nn.Upsample(scale_factor=2),
+            nn.Conv3d(base*2, base*1, kernel_size=3, padding=1)
+        )
+        self.decoder1 = _ResUNetBlock3D(base*2, base*1)
+        self.output   = nn.Sequential(
+            nn.Conv3d(base*1, 1, kernel_size=1),
+            nn.ReLU()
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        enc1 = self.encoder1(x.unsqueeze(1))
+        enc2 = self.maxpool1(enc1)
+        enc2 = self.encoder2(enc2)
+        enc3 = self.maxpool2(enc2)
+        enc3 = self.encoder3(enc3)
+        x = self.maxpool3(enc3)
+        x = self.encoder4(x)
+        x = self.up_conv3(x)
+        x = torch.cat((enc3, x), dim=1)
+        x = self.decoder3(x)
         x = self.up_conv2(x)
         x = torch.cat((enc2, x), dim=1)
         x = self.decoder2(x)

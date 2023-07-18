@@ -32,7 +32,7 @@ class Eval:
         )
         self.model.half()
 
-        # print model parameters
+        # print model info
         para_num = sum(
             p.numel() for p in self.model.parameters() if p.requires_grad
         )
