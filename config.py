@@ -7,7 +7,9 @@ class Config:
     def __init__(self) -> None:
         # ============================== model =============================== #
 
-        self.base: int = 16     # base channel number
+        self.base: int = 128     # base channel number
+        self.residual  = True
+        self.attention = True
 
         # =============================== loss =============================== #
 
@@ -50,7 +52,7 @@ class Config:
 
         # =========================== train, eval ============================ #
 
-        self.model = model.ResUNet3DL2
+        self.model = model.ResAttUNet_2DL2
         self.loss  = loss.L2Loss
 
         ## Train
@@ -88,7 +90,7 @@ class ConfigEval(ConfigTrain):
         self.batch_size  = 8
         self.num_workers = 4
         ## Eval
-        checkpoint = 1
+        checkpoint = 6
         self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
         self.outputs_save_path = "data/outputs_{}".format(checkpoint)
         self.labels_save_path  = "data/labels_{}".format(checkpoint) 

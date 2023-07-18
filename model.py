@@ -3,89 +3,182 @@ import torch.nn as nn
 from torch import Tensor
 
 
-class _ResUNetBlock2D(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(_ResUNetBlock2D, self).__init__()
+class _UNetBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, dim):
+        super(_UNetBlock, self).__init__()
+        if   dim == 2: Conv, BatchNorm = nn.Conv2d, nn.BatchNorm2d
+        elif dim == 3: Conv, BatchNorm = nn.Conv3d, nn.BatchNorm3d
+        else: raise ValueError("dim must be 2 or 3")
+
         # UNet Component
         self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels, in_channels, 3, padding=1, bias=False),
-            nn.BatchNorm2d(in_channels)
+            Conv(in_channels, in_channels, 3, padding=1, bias=False),
+            BatchNorm(in_channels)
         )
         self.conv2 = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels)
+            Conv(in_channels, out_channels, 3, padding=1, bias=False),
+            BatchNorm(out_channels)
+        )
+        self.relu = nn.ReLU()
+
+    def forward(self, x: Tensor) -> Tensor:
+        x  = self.conv1(x)
+        x  = self.relu(x)
+        x  = self.conv2(x)
+        x  = self.relu(x)
+        return x
+
+
+class _ResUNetBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, dim):
+        super(_ResUNetBlock, self).__init__()
+        if   dim == 2: Conv, BatchNorm = nn.Conv2d, nn.BatchNorm2d
+        elif dim == 3: Conv, BatchNorm = nn.Conv3d, nn.BatchNorm3d
+        else: raise ValueError("dim must be 2 or 3")
+
+        # UNet Component
+        self.conv1 = nn.Sequential(
+            Conv(in_channels, in_channels, 3, padding=1, bias=False),
+            BatchNorm(in_channels)
+        )
+        self.conv2 = nn.Sequential(
+            Conv(in_channels, out_channels, 3, padding=1, bias=False),
+            BatchNorm(out_channels)
         )
         self.relu = nn.ReLU()
         # Residual Component
         self.skip = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False),
-            nn.BatchNorm2d(out_channels),
+            Conv(in_channels, out_channels, kernel_size=1, bias=False),
+            BatchNorm(out_channels),
         )
         if in_channels == out_channels: self.skip = nn.Identity()
 
     def forward(self, x: Tensor) -> Tensor:
         residual = x
-        out  = self.conv1(x)
-        out  = self.relu(out)
-        out  = self.conv2(out)
-        out += self.skip(residual)
-        out  = self.relu(out)
-        return out
+        x  = self.conv1(x)
+        x  = self.relu(x)
+        x  = self.conv2(x)
+        x += self.skip(residual)
+        x  = self.relu(x)
+        return x
 
 
-class _ResUNetBlock3D(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(_ResUNetBlock3D, self).__init__()
-        # UNet Component
-        self.conv1 = nn.Sequential(
-            nn.Conv3d(in_channels, in_channels, 3, padding=1, bias=False),
-            nn.BatchNorm3d(in_channels)
-        )
-        self.conv2 = nn.Sequential(
-            nn.Conv3d(in_channels, out_channels, 3, padding=1, bias=False),
-            nn.BatchNorm3d(out_channels)
-        )
-        self.relu = nn.ReLU()
-        # Residual Component
-        self.skip = nn.Sequential(
-            nn.Conv3d(in_channels, out_channels, kernel_size=1, bias=False),
-            nn.BatchNorm3d(out_channels),
-        )
-        if in_channels == out_channels: self.skip = nn.Identity()
+class _UpConv(nn.Module):
+    def __init__(self, in_channels, out_channels, dim):
+        super(_UpConv, self).__init__()
+        if   dim == 2: Conv, BatchNorm = nn.Conv2d, nn.BatchNorm2d
+        elif dim == 3: Conv, BatchNorm = nn.Conv3d, nn.BatchNorm3d
+        else: raise ValueError("dim must be 2 or 3")
 
-    def forward(self, x: Tensor) -> Tensor:
-        residual = x
-        out  = self.conv1(x)
-        out  = self.relu(out)
-        out  = self.conv2(out)
-        out += self.skip(residual)
-        out  = self.relu(out)
-        return out
-
-
-class ResUNet2DL2(nn.Module):
-    def __init__(self, config) -> None:
-        super(ResUNet2DL2, self).__init__()
-        base = config.base
-        self.encoder1 = _ResUNetBlock2D(base*1, base*2)
-        self.maxpool1 = nn.MaxPool2d(kernel_size=2)
-        self.encoder2 = _ResUNetBlock2D(base*2, base*4)
-        self.maxpool2 = nn.MaxPool2d(2)
-        self.encoder3 = _ResUNetBlock2D(base*4, base*8)
-        self.up_conv2 = nn.Sequential(
+        self.upconv = nn.Sequential(
             nn.Upsample(scale_factor=2),
-            nn.Conv2d(base*8, base*4, 3, padding=1)
-        )
-        self.decoder2 = _ResUNetBlock2D(base*8, base*4)
-        self.up_conv1 = nn.Sequential(
-            nn.Upsample(scale_factor=2),
-            nn.Conv2d(base*4, base*2, 3, padding=1)
-        )
-        self.decoder1 = _ResUNetBlock2D(base*4, base*2)
-        self.output   = nn.Sequential(
-            nn.Conv2d(base*2, base, 1),
+            Conv(in_channels, out_channels, 3, padding=1, bias=False),
+            BatchNorm(out_channels),
             nn.ReLU()
         )
+
+    def forward(self, x):
+        return self.upconv(x)
+
+
+class _AttentionBlock(nn.Module):
+    def __init__(self, in_channels, n_coefficients, dim):
+        super(_AttentionBlock, self).__init__()
+        if   dim == 2: Conv, BatchNorm = nn.Conv2d, nn.BatchNorm2d
+        elif dim == 3: Conv, BatchNorm = nn.Conv3d, nn.BatchNorm3d
+        else: raise ValueError("dim must be 2 or 3")
+
+        self.w_decod = nn.Sequential(
+            Conv(in_channels, n_coefficients, 1, bias=False),
+            BatchNorm(n_coefficients)
+        )
+        self.w_encod = nn.Sequential(
+            Conv(in_channels, n_coefficients, 1, bias=False),
+            BatchNorm(n_coefficients)
+        )
+        self.relu = nn.ReLU()
+        self.psi = nn.Sequential(
+            Conv(n_coefficients, 1, 1, bias=False),
+            BatchNorm(1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, encod, decod):
+        psi = self.w_encod(encod) + self.w_decod(decod)
+        psi = self.relu(psi)
+        psi = self.psi(psi)
+        return encod * psi
+
+
+class _OutConv(nn.Module):
+    def __init__(self, in_channels, out_channels, dim):
+        super(_OutConv, self).__init__()
+        if   dim == 2: Conv = nn.Conv2d
+        elif dim == 3: Conv = nn.Conv3d
+        else: raise ValueError("dim must be 2 or 3")
+
+        self.outconv   = nn.Sequential(
+            Conv(in_channels, out_channels, 1),
+            nn.ReLU()
+        )
+
+    def forward(self, x):
+        return self.outconv(x)
+
+
+class ResAttUNet_2DL1(nn.Module):
+    def __init__(self, config) -> None:
+        super(ResAttUNet_2DL1, self).__init__()
+        base = config.base
+        self.residual  = config.residual
+        self.attention = config.attention
+
+        if self.residual: CoderBlock = _ResUNetBlock
+        else:             CoderBlock = _UNetBlock
+
+        dim  = 2
+        self.encoder1 = CoderBlock(base*1, base*2, dim)
+        self.maxpool1 = nn.MaxPool2d(2)
+        self.encoder2 = CoderBlock(base*2, base*4, dim)
+        self.upconv1  = _UpConv(base*4, base*2, dim)
+        if self.attention: self.att1 = _AttentionBlock(base*2, base, dim)
+        self.decoder1 = CoderBlock(base*4, base*2, dim)
+        self.outconv  = _OutConv(base*2, base, dim)
+
+    def forward(self, x: Tensor) -> Tensor:
+        enc1 = self.encoder1(x)
+        x = self.maxpool1(enc1)
+        x = self.encoder2(x)
+        x = self.upconv1(x)
+        if self.attention: enc1 = self.att1(enc1, x)
+        x = torch.cat((enc1, x), dim=1)
+        x = self.decoder1(x)
+        return self.outconv(x)
+
+
+class ResAttUNet_2DL2(nn.Module):
+    def __init__(self, config) -> None:
+        super(ResAttUNet_2DL2, self).__init__()
+        base = config.base
+        self.residual  = config.residual
+        self.attention = config.attention
+
+        if self.residual: CoderBlock = _ResUNetBlock
+        else:             CoderBlock = _UNetBlock
+
+        dim  = 2
+        self.encoder1 = CoderBlock(base*1, base*2, dim)
+        self.maxpool1 = nn.MaxPool2d(2)
+        self.encoder2 = CoderBlock(base*2, base*4, dim)
+        self.maxpool2 = nn.MaxPool2d(2)
+        self.encoder3 = CoderBlock(base*4, base*8, dim)
+        self.upconv2  = _UpConv(base*8, base*4, dim)
+        if self.attention: self.att2 = _AttentionBlock(base*4, base*2, dim)
+        self.decoder2 = CoderBlock(base*8, base*4, dim)
+        self.upconv1  = _UpConv(base*4, base*2, dim)
+        if self.attention: self.att1 = _AttentionBlock(base*2, base*1, dim)
+        self.decoder1 = CoderBlock(base*4, base*2, dim)
+        self.outconv  = _OutConv(base*2, base, dim)
 
     def forward(self, x: Tensor) -> Tensor:
         enc1 = self.encoder1(x)
@@ -93,65 +186,54 @@ class ResUNet2DL2(nn.Module):
         enc2 = self.encoder2(enc2)
         x = self.maxpool2(enc2)
         x = self.encoder3(x)
-        x = self.up_conv2(x)
+        x = self.upconv2(x)
+        if self.attention: enc2 = self.att2(enc2, x)
         x = torch.cat((enc2, x), dim=1)
         x = self.decoder2(x)
-        x = self.up_conv1(x)
+        x = self.upconv1(x)
+        if self.attention: enc1 = self.att1(enc1, x)
         x = torch.cat((enc1, x), dim=1)
         x = self.decoder1(x)
-        return self.output(x)
+        return self.outconv(x)
 
 
-class ResUNet3DL1(nn.Module):
+class ResUNet_3DL1(nn.Module):
     def __init__(self, config) -> None:
-        super(ResUNet3DL1, self).__init__()
+        super(ResUNet_3DL1, self).__init__()
         base = config.base
-        self.encoder1 = _ResUNetBlock3D(1, base)
+        dim  = 3
+        self.encoder1 = _ResUNetBlock(1, base, dim)
         self.maxpool1 = nn.MaxPool3d(2)
-        self.encoder2 = _ResUNetBlock3D(base*1, base*2)
-        self.up_conv1  = nn.Sequential(
-            nn.Upsample(scale_factor=2),
-            nn.Conv3d(base*2, base*1, kernel_size=3, padding=1)
-        )
-        self.decoder1 = _ResUNetBlock3D(base*2, base*1)
-        self.output   = nn.Sequential(
-            nn.Conv3d(base*1, 1, kernel_size=1),
-            nn.ReLU()
-        )
+        self.encoder2 = _ResUNetBlock(base*1, base*2, dim)
+        self.upconv1  = _UpConv(base*2, base*1, dim)
+        self.decoder1 = _ResUNetBlock(base*2, base*1, dim)
+        self.outconv  = _OutConv(base*1, 1, dim)
 
     def forward(self, x: Tensor) -> Tensor:
         enc1 = self.encoder1(x.unsqueeze(1))
         x = self.maxpool1(enc1)
         x = self.encoder2(x)
-        x = self.up_conv1(x)
+        x = self.upconv1(x)
         x = torch.cat((enc1, x), dim=1)
         x = self.decoder1(x)
-        return self.output(x).squeeze(1)
+        return self.outconv(x).squeeze(1)
 
 
-class ResUNet3DL2(nn.Module):
+class ResUNet_3DL2(nn.Module):
     def __init__(self, config) -> None:
-        super(ResUNet3DL2, self).__init__()
+        super(ResUNet_3DL2, self).__init__()
         base = config.base
-        self.encoder1 = _ResUNetBlock3D(1, base)
+        dim = 3
+        self.encoder1 = _ResUNetBlock(1, base, dim)
         self.maxpool1 = nn.MaxPool3d(2)
-        self.encoder2 = _ResUNetBlock3D(base*1, base*2)
+        self.encoder2 = _ResUNetBlock(base*1, base*2, dim)
         self.maxpool2 = nn.MaxPool3d(2)
-        self.encoder3 = _ResUNetBlock3D(base*2, base*4)
-        self.up_conv2  = nn.Sequential(
-            nn.Upsample(scale_factor=2),
-            nn.Conv3d(base*4, base*2, kernel_size=3, padding=1)
-        )
-        self.decoder2 = _ResUNetBlock3D(base*4, base*2)
-        self.up_conv1  = nn.Sequential(
-            nn.Upsample(scale_factor=2),
-            nn.Conv3d(base*2, base*1, kernel_size=3, padding=1)
-        )
-        self.decoder1 = _ResUNetBlock3D(base*2, base*1)
-        self.output   = nn.Sequential(
-            nn.Conv3d(base*1, 1, kernel_size=1),
-            nn.ReLU()
-        )
+        self.encoder3 = _ResUNetBlock(base*2, base*4, dim)
+        self.upconv2  = _UpConv(base*4, base*2, dim)
+        self.decoder2 = _ResUNetBlock(base*4, base*2, dim)
+        self.upconv1  = _UpConv(base*2, base*1, dim)
+        self.decoder1 = _ResUNetBlock(base*2, base*1, dim)
+        self.outconv  = _OutConv(base*1, 1, dim)
 
     def forward(self, x: Tensor) -> Tensor:
         enc1 = self.encoder1(x.unsqueeze(1))
@@ -159,61 +241,10 @@ class ResUNet3DL2(nn.Module):
         enc2 = self.encoder2(enc2)
         x = self.maxpool2(enc2)
         x = self.encoder3(x)
-        x = self.up_conv2(x)
+        x = self.upconv2(x)
         x = torch.cat((enc2, x), dim=1)
         x = self.decoder2(x)
-        x = self.up_conv1(x)
+        x = self.upconv1(x)
         x = torch.cat((enc1, x), dim=1)
         x = self.decoder1(x)
-        return self.output(x).squeeze(1)
-
-
-class ResUNet3DL3(nn.Module):
-    def __init__(self, config) -> None:
-        super(ResUNet3DL3, self).__init__()
-        base = config.base
-        self.encoder1 = _ResUNetBlock3D(1, base)
-        self.maxpool1 = nn.MaxPool3d(2)
-        self.encoder2 = _ResUNetBlock3D(base*1, base*2)
-        self.maxpool2 = nn.MaxPool3d(2)
-        self.encoder3 = _ResUNetBlock3D(base*2, base*4)
-        self.maxpool3 = nn.MaxPool3d(2)
-        self.encoder4 = _ResUNetBlock3D(base*4, base*8)
-        self.up_conv3  = nn.Sequential(
-            nn.Upsample(scale_factor=2),
-            nn.Conv3d(base*8, base*4, kernel_size=3, padding=1)
-        )
-        self.decoder3 = _ResUNetBlock3D(base*8, base*4)
-        self.up_conv2  = nn.Sequential(
-            nn.Upsample(scale_factor=2),
-            nn.Conv3d(base*4, base*2, kernel_size=3, padding=1)
-        )
-        self.decoder2 = _ResUNetBlock3D(base*4, base*2)
-        self.up_conv1  = nn.Sequential(
-            nn.Upsample(scale_factor=2),
-            nn.Conv3d(base*2, base*1, kernel_size=3, padding=1)
-        )
-        self.decoder1 = _ResUNetBlock3D(base*2, base*1)
-        self.output   = nn.Sequential(
-            nn.Conv3d(base*1, 1, kernel_size=1),
-            nn.ReLU()
-        )
-
-    def forward(self, x: Tensor) -> Tensor:
-        enc1 = self.encoder1(x.unsqueeze(1))
-        enc2 = self.maxpool1(enc1)
-        enc2 = self.encoder2(enc2)
-        enc3 = self.maxpool2(enc2)
-        enc3 = self.encoder3(enc3)
-        x = self.maxpool3(enc3)
-        x = self.encoder4(x)
-        x = self.up_conv3(x)
-        x = torch.cat((enc3, x), dim=1)
-        x = self.decoder3(x)
-        x = self.up_conv2(x)
-        x = torch.cat((enc2, x), dim=1)
-        x = self.decoder2(x)
-        x = self.up_conv1(x)
-        x = torch.cat((enc1, x), dim=1)
-        x = self.decoder1(x)
-        return self.output(x).squeeze(1)
+        return self.outconv(x).squeeze(1)
