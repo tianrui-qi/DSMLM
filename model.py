@@ -133,23 +133,25 @@ class ResUNet2D(nn.Module):
             nn.Conv2d(base*4, base*2, 3, padding=1)
         )
         self.decoder1 = _ResUNetBlock2D(base*4, base*2)
-        self.output_c = nn.Conv2d(base*2, base, 1)
-        self.output_f = nn.ReLU()
+        self.output   = nn.Sequential(
+            nn.Conv2d(base*2, base, 1),
+            nn.ReLU()
+        )
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.input(x.unsqueeze(1)).squeeze(1)
         enc1 = self.encoder1(x)
         enc2 = self.maxpool1(enc1)
         enc2 = self.encoder2(enc2)
-        out = self.maxpool2(enc2)
-        out = self.encoder3(out)
-        out = self.up_conv2(out)
-        out = torch.cat((enc2, out), dim=1)
-        out = self.decoder2(out)
-        out = self.up_conv1(out)
-        out = torch.cat((enc1, out), dim=1)
-        out = self.decoder1(out)
-        return self.output_f(self.output_c(out)+x)
+        x = self.maxpool2(enc2)
+        x = self.encoder3(x)
+        x = self.up_conv2(x)
+        x = torch.cat((enc2, x), dim=1)
+        x = self.decoder2(x)
+        x = self.up_conv1(x)
+        x = torch.cat((enc1, x), dim=1)
+        x = self.decoder1(x)
+        return self.output(x)
 
 
 class ResUNet3D(nn.Module):
@@ -172,29 +174,28 @@ class ResUNet3D(nn.Module):
             nn.Conv3d(base*2, base*1, kernel_size=3, padding=1)
         )
         self.decoder1 = _ResUNetBlock3D(base*2, base*1)
-        self.output_c = nn.Conv3d(base*1, 1, kernel_size=1)
-        self.output_f = nn.ReLU()
+        self.output   = nn.Sequential(
+            nn.Conv3d(base*1, 1, kernel_size=1),
+            nn.ReLU()
+        )
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.intput(x.unsqueeze(1))
         enc1 = self.encoder1(x)
         enc2 = self.maxpool1(enc1)
         enc2 = self.encoder2(enc2)
-        out = self.maxpool2(enc2)
-        out = self.encoder3(out)
-        out = self.up_conv2(out)
-        out = torch.cat((enc2, out), dim=1)
-        out = self.decoder2(out)
-        out = self.up_conv1(out)
-        out = torch.cat((enc1, out), dim=1)
-        out = self.decoder1(out)
-        return self.output_f(self.output_c(out)+x).squeeze(1)
+        x = self.maxpool2(enc2)
+        x = self.encoder3(x)
+        x = self.up_conv2(x)
+        x = torch.cat((enc2, x), dim=1)
+        x = self.decoder2(x)
+        x = self.up_conv1(x)
+        x = torch.cat((enc1, x), dim=1)
+        x = self.decoder1(x)
+        return self.output(x).squeeze(1)
 
 
 def getModel(config) -> nn.Module:
-    if config.type_model == "ResUNet2D":
-        return ResUNet2D(config)
-    elif config.type_model == "ResUNet3D":
-        return ResUNet3D(config)
-    else:
-        raise ValueError(f"Unsupported model: {config.type_model}")
+    if config.type_model == "ResUNet2D": return ResUNet2D(config)
+    if config.type_model == "ResUNet3D": return ResUNet3D(config)
+    raise ValueError(f"Unsupported model: {config.type_model}")
