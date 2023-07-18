@@ -4,7 +4,7 @@ import os
 import tifffile
 import tqdm
 
-import config, model, data
+import config, data
 
 
 class Eval:

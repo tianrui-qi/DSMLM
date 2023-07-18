@@ -1,22 +1,23 @@
 from typing import List
-
-import data, model, loss
-
-
-__all__ = [
-    "Config", 
-    "ConfigTrain", "ConfigEval", 
-    "getConfig"
-]
+import model, loss
 
 
 class Config:
     def __init__(self) -> None:
+        # ============================== model =============================== #
+
+        self.base: int = 16  # base channel number
+
+        # =============================== loss =============================== #
+
+        self.kernel_size : int   = 7
+        self.kernel_sigma: float = 1.0
+
+        # =============================== data =============================== #
+
         # dimensional config - MUST be same accross whole pipline
         self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
         self.up_sample: List[int] = [ 2,  2,  2]    # [C, H, W], by scale
-
-        # =============================== data =============================== #
 
         ## SimDataset
         # config for adjust distribution of molecular
@@ -46,20 +47,10 @@ class Config:
         self.batch_size : int = 2       # [1, 2, 4, 5, 10, 20, 25, 50]
         self.num_workers: int = 2
 
-        # =============================== model ============================== #
+        # =========================== train, eval ============================ #
+
         self.model = model.ResUNet3D
-        
-        ## ResUNet3D
-        self.base: int = 8  # base channel number of ResUNet3D
-
-        # =============================== loss =============================== #
-        self.loss = loss.L2Loss
-
-        ## L1Loss & L2Loss
-        self.kernel_size : int   = 7
-        self.kernel_sigma: float = 1.0
-
-        # =============================== train ============================== #
+        self.loss  = loss.L2Loss    # L1Loss, L2Loss
 
         ## Train
         # train
@@ -67,14 +58,12 @@ class Config:
         self.max_epoch   : int = 400
         self.accumu_steps: int = 50     # [100, 50, 25, 20, 10, 5, 4, 2]
         # learning rate
-        self.lr   : float = 1e-4        # initial learning rate (lr)
+        self.lr   : float = 1e-3        # initial learning rate (lr)
         self.gamma: float = 0.95        # decay rate of lr
         # checkpoint
         self.ckpt_save_folder: str  = "ckpt"    # folder store ckpt every epoch
         self.ckpt_load_path  : str  = ""        # path without .ckpt
         self.ckpt_load_lr    : bool = False     # load lr from ckpt
-
-        # =============================== eval =============================== #
 
         ## Eval - also use some config of train and data
         self.outputs_save_path: str = "data/outputs"    # path without .tif
@@ -89,11 +78,6 @@ class ConfigTrain(Config):
 class ConfigEval(ConfigTrain):
     def __init__(self) -> None:
         super().__init__()
-        ## Eval
-        checkpoint = 1
-        self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
-        self.outputs_save_path = "data/outputs_{}".format(checkpoint)
-        self.labels_save_path  = "data/labels_{}".format(checkpoint) 
         ## RawDataset
         self.h_range = [4, 7]
         self.w_range = [6, 9]
@@ -102,6 +86,11 @@ class ConfigEval(ConfigTrain):
         self.type_data = ["Raw"]
         self.batch_size  = 16
         self.num_workers = 8
+        ## Eval
+        checkpoint = 1
+        self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
+        self.outputs_save_path = "data/outputs_{}".format(checkpoint)
+        self.labels_save_path  = "data/labels_{}".format(checkpoint) 
 
 
 def getConfig(mode: str) -> Config:

@@ -7,7 +7,7 @@ import torch.utils.tensorboard.writer as writer
 import os
 import tqdm
 
-import config, data, model, loss
+import config, data
 
 
 torch.backends.cudnn.enabled = True     # type: ignore
