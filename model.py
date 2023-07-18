@@ -67,7 +67,6 @@ class ResUNet2D(nn.Module):
     def __init__(self, config) -> None:
         super(ResUNet2D, self).__init__()
         base = config.dim_frame[0] * config.up_sample[0]
-        self.input    = nn.Upsample(scale_factor=tuple(config.up_sample))
         self.encoder1 = _ResUNetBlock2D(base*1, base*2)
         self.maxpool1 = nn.MaxPool2d(kernel_size=2)
         self.encoder2 = _ResUNetBlock2D(base*2, base*4)
@@ -89,7 +88,6 @@ class ResUNet2D(nn.Module):
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        x = self.input(x.unsqueeze(1)).squeeze(1)
         enc1 = self.encoder1(x)
         enc2 = self.maxpool1(enc1)
         enc2 = self.encoder2(enc2)
@@ -108,7 +106,6 @@ class ResUNet3D(nn.Module):
     def __init__(self, config) -> None:
         super(ResUNet3D, self).__init__()
         base = config.base
-        self.intput   = nn.Upsample(scale_factor=tuple(config.up_sample))
         self.encoder1 = _ResUNetBlock3D(1, base)
         self.maxpool1 = nn.MaxPool3d(2)
         self.encoder2 = _ResUNetBlock3D(base*1, base*2)
@@ -130,8 +127,7 @@ class ResUNet3D(nn.Module):
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        x = self.intput(x.unsqueeze(1))
-        enc1 = self.encoder1(x)
+        enc1 = self.encoder1(x.unsqueeze(1))
         enc2 = self.maxpool1(enc1)
         enc2 = self.encoder2(enc2)
         x = self.maxpool2(enc2)
