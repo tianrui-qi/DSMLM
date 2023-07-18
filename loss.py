@@ -6,7 +6,7 @@ from torch import Tensor
 
 __all__ = [
     "gaussianKernel", "gaussianBlur3d",
-    "GaussianBlurL1Loss", "GaussianBlurMSELoss",
+    "L1Loss", "L2Loss",
     "getLoss"
 ]
 
@@ -113,7 +113,7 @@ class L1Loss(_GaussianBlurLoss):
         )  # type: ignore
 
 
-class MSELoss(_GaussianBlurLoss):
+class L2Loss(_GaussianBlurLoss):
     def forward(self, predi: Tensor, label: Tensor) -> float:
         return F.mse_loss(
             gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
@@ -123,6 +123,6 @@ class MSELoss(_GaussianBlurLoss):
 
 
 def getLoss(config) -> nn.Module:
-    if config.type_loss == "L1Loss" : return L1Loss(config)
-    if config.type_loss == "MSELoss": return MSELoss(config)
+    if config.type_loss == "L1Loss": return L1Loss(config)
+    if config.type_loss == "L2Loss": return L2Loss(config)
     raise ValueError(f"Unsupported loss: {config.type_loss}")
