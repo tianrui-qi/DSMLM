@@ -53,11 +53,11 @@ class Config:
 
         # =============================== loss =============================== #
 
-        ## GaussianBlurL1Loss & GaussianBlurMSELoss
+        ## L1Loss & L2Loss
         self.kernel_size : int   = 7
         self.kernel_sigma: float = 1.0
         ## getLoss
-        self.type_loss: str = "MSELoss"  # L1Loss, MSELoss
+        self.type_loss: str = "L2Loss"  # L1Loss, L2Loss
 
         # =============================== train ============================== #
 
