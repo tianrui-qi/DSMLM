@@ -76,9 +76,6 @@ class Eval:
 
             pbar.update()  # update progress bar
 
-        outputs_cmb /= torch.max(outputs_cmb)  # type: ignore
-        labels_cmb /= torch.max(labels_cmb)  # type: ignore
-
         # save
         if not os.path.exists(os.path.dirname(self.outputs_save_path)):
             os.makedirs(os.path.dirname(self.outputs_save_path))
@@ -86,11 +83,11 @@ class Eval:
             os.makedirs(os.path.dirname(self.labels_save_path))
         tifffile.imsave(
             "{}.tif".format(self.outputs_save_path),
-            (outputs_cmb.cpu().detach() * 255).to(torch.uint8).numpy()
+            outputs_cmb.cpu().detach().numpy()  # type: ignore
         )
         tifffile.imsave(
             "{}.tif".format(self.labels_save_path), 
-            (labels_cmb * 255).to(torch.uint8).numpy()
+            labels_cmb.numpy()  # type: ignore
         )
 
 

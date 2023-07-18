@@ -51,7 +51,7 @@ class Config:
         # =========================== train, eval ============================ #
 
         self.model = model.ResUNet3D
-        self.loss  = loss.L2Loss    # L1Loss, L2Loss
+        self.loss  = loss.L2Loss
 
         ## Train
         # train
@@ -60,7 +60,7 @@ class Config:
         self.accumu_steps: int = 50     # [100, 50, 25, 20, 10, 5, 4, 2]
         # learning rate
         self.lr   : float = 1e-4        # initial learning rate (lr)
-        self.gamma: float = 0.95        # decay rate of lr
+        self.gamma: float = 0.96        # decay rate of lr
         # checkpoint
         self.ckpt_save_folder: str  = "ckpt"    # folder store ckpt every epoch
         self.ckpt_load_path  : str  = ""        # path without .ckpt
@@ -85,8 +85,8 @@ class ConfigEval(ConfigTrain):
         ## getDataLoader
         self.num  = [1000 * 16]
         self.type_data = ["Raw"]
-        self.batch_size  = 16
-        self.num_workers = 8
+        self.batch_size  = 8
+        self.num_workers = 4
         ## Eval
         checkpoint = 1
         self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
