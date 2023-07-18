@@ -104,7 +104,7 @@ class _GaussianBlurLoss(nn.Module):
         return self
 
 
-class GaussianBlurL1Loss(_GaussianBlurLoss):
+class L1Loss(_GaussianBlurLoss):
     def forward(self, predi: Tensor, label: Tensor) -> float:
         return F.l1_loss(
             gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
@@ -113,7 +113,7 @@ class GaussianBlurL1Loss(_GaussianBlurLoss):
         )  # type: ignore
 
 
-class GaussianBlurMSELoss(_GaussianBlurLoss):
+class MSELoss(_GaussianBlurLoss):
     def forward(self, predi: Tensor, label: Tensor) -> float:
         return F.mse_loss(
             gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
@@ -123,9 +123,6 @@ class GaussianBlurMSELoss(_GaussianBlurLoss):
 
 
 def getLoss(config) -> nn.Module:
-    if config.type_loss == "GaussianBlurL1Loss":
-        return GaussianBlurL1Loss(config)
-    elif config.type_loss == "GaussianBlurMSELoss":
-        return GaussianBlurMSELoss(config)
-    else:
-        raise ValueError(f"Unsupported loss: {config.type_loss}")
+    if config.type_loss == "L1Loss" : return L1Loss(config)
+    if config.type_loss == "MSELoss": return MSELoss(config)
+    raise ValueError(f"Unsupported loss: {config.type_loss}")

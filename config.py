@@ -12,7 +12,7 @@ class Config:
     def __init__(self) -> None:
         # dimensional config - MUST be same accross whole pipline
         self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
-        self.up_sample: List[int] = [ 2,  4,  4]    # [C, H, W], by scale
+        self.up_sample: List[int] = [ 2,  2,  2]    # [C, H, W], by scale
 
         # =============================== data =============================== #
 
@@ -57,8 +57,7 @@ class Config:
         self.kernel_size : int   = 7
         self.kernel_sigma: float = 1.0
         ## getLoss
-        self.type_loss: str = "GaussianBlurMSELoss"
-            # GaussianBlurL1Loss, GaussianBlurMSELoss
+        self.type_loss: str = "MSELoss"  # L1Loss, MSELoss
 
         # =============================== train ============================== #
 
