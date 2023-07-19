@@ -1,20 +1,25 @@
 from typing import List
 
 
-class Config:
+class ConfigModel:
     def __init__(self) -> None:
-        # ============================== model =============================== #
-
-        self.dim  : int = 2
-        self.feats: List[int] = [160, 256, 512]
+        self.dim  : int = 3
+        self.feats: List[int] = [1, 32, 64]
         self.residual : bool = True
-        self.attention: bool = True
+        self.attention: bool = True 
 
-        # =============================== loss =============================== #
 
-        self.loss: str = "l1"  # l1, l2
+class ConfigLoss:
+    def __init__(self) -> None:
+        self.type: str = "l2"  # l1, l2
         self.kernel_size : int   = 7
         self.kernel_sigma: float = 1.0
+
+
+class Config:
+    def __init__(self) -> None:
+        self.config_model = ConfigModel()
+        self.config_loss  = ConfigLoss()
 
         # =============================== data =============================== #
 
