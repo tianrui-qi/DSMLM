@@ -1,20 +1,18 @@
 from typing import List
 
-import model, loss
-
 
 class Config:
     def __init__(self) -> None:
         # ============================== model =============================== #
 
-        self.dim  : int = 3
-        self.feats: List[int] = [1, 32, 64]
-        #self.feats: List[int] = [128, 256, 512]
+        self.dim  : int = 2
+        self.feats: List[int] = [160, 256, 512]
         self.residual : bool = True
         self.attention: bool = True
 
         # =============================== loss =============================== #
 
+        self.loss: str = "l1"  # l1, l2
         self.kernel_size : int   = 7
         self.kernel_sigma: float = 1.0
 
@@ -49,19 +47,16 @@ class Config:
         ## getDataLoader
         self.num : List[int] = [10000, 5000 ]
         self.type_data: List[str] = ["Sim", "Raw"]
-        self.batch_size : int = 2       # [1, 2, 4, 5, 10, 20, 25, 50]
-        self.num_workers: int = 2
+        self.batch_size : int = 1       # [1, 2, 4, 5, 10, 20, 25, 50]
+        self.num_workers: int = 1
 
         # =========================== train, eval ============================ #
-
-        self.model = model.ResAttUNet_L1
-        self.loss  = loss.L2Loss
 
         ## Train
         # train
         self.device: str = "cuda"
         self.max_epoch   : int = 400
-        self.accumu_steps: int = 25     # [100, 50, 25, 20, 10, 5, 4, 2]
+        self.accumu_steps: int = 50     # [100, 50, 25, 20, 10, 5, 4, 2]
         # learning rate
         self.lr   : float = 1e-3        # initial learning rate (lr)
         self.gamma: float = 0.96        # decay rate of lr

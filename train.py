@@ -7,7 +7,7 @@ import torch.utils.tensorboard.writer as writer
 import os
 import tqdm
 
-import config, data
+import config, model, loss, data
 
 
 torch.backends.cudnn.enabled = True     # type: ignore
@@ -31,12 +31,12 @@ class Train:
         # index
         self.epoch = 1  # epoch index may update in load_ckpt()
 
+        # model
+        self.model = model.ResAttUNet(config).to(self.device)
+        # loss
+        self.loss = loss.GaussianBlurLoss(config).to(self.device)
         # data
         self.trainloader, self.validloader = data.getDataLoader(config)
-        # model
-        self.model = config.model(config).to(self.device)
-        # loss
-        self.loss = config.loss(config).to(self.device)
 
         # optimizer
         self.scaler    = amp.GradScaler()  # type: ignore

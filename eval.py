@@ -4,7 +4,7 @@ import os
 import tifffile
 import tqdm
 
-import config, data
+import config, model, data
 
 
 class Eval:
@@ -21,16 +21,16 @@ class Eval:
         self.num_sub = num_sub_h * num_sub_w
         self.batch_size = config.batch_size
 
-        # data
-        self.dataloader = data.getDataLoader(config)[0]
-        self.dataset = self.dataloader.dataset  # to call static method
         # model
-        self.model = config.model(config).to(self.device)
+        self.model = model.ResAttUNet(config).to(self.device)
         self.model.load_state_dict(torch.load(
             "{}.ckpt".format(self.ckpt_load_path), 
             map_location=self.device)['model']
         )
         self.model.half()
+        # data
+        self.dataloader = data.getDataLoader(config)[0]
+        self.dataset = self.dataloader.dataset  # to call static method
 
         # print model info
         para_num = sum(

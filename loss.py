@@ -81,32 +81,34 @@ def gaussianBlur3d(frame: Tensor, kernel: Tensor) -> Tensor:
         ).reshape(*frame.shape)
 
 
-class _GaussianBlurLoss(nn.Module):
+class GaussianBlurLoss(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
+        self.loss = config.loss
         # Gaussian kernel using help function gaussianKernel
         self.kernel = gaussianKernel(3, config.kernel_size, config.kernel_sigma)
         # pad size, pad before convolve Gaussian kernel
         self.pad = [config.kernel_size for _ in range(6)]  # [C H W]
     
+    def forward(self, predi: Tensor, label: Tensor) -> float:
+        if self.loss == "l1": return self.l1Loss(predi, label)
+        if self.loss == "l2": return self.l2Loss(predi, label)
+        raise ValueError("loss must be 'l1' or 'l2'")
+
     def to(self, device):
         # Call the original 'to' method to move parameters and buffers
-        super(_GaussianBlurLoss, self).to(device)
+        super(GaussianBlurLoss, self).to(device)
         self.kernel = self.kernel.to(device)
         return self
 
-
-class L1Loss(_GaussianBlurLoss):
-    def forward(self, predi: Tensor, label: Tensor) -> float:
+    def l1Loss(self, predi: Tensor, label: Tensor) -> float:
         return F.l1_loss(
             gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
             gaussianBlur3d(F.pad(label, self.pad), self.kernel),
             reduction="sum"
         )  # type: ignore
 
-
-class L2Loss(_GaussianBlurLoss):
-    def forward(self, predi: Tensor, label: Tensor) -> float:
+    def l2Loss(self, predi: Tensor, label: Tensor) -> float:
         return F.mse_loss(
             gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
             gaussianBlur3d(F.pad(label, self.pad), self.kernel),

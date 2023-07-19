@@ -124,9 +124,9 @@ class _OutConv(nn.Module):
         return self.outconv(x)
 
 
-class ResAttUNet_L1(nn.Module):
+class ResAttUNet(nn.Module):
     def __init__(self, config) -> None:
-        super(ResAttUNet_L1, self).__init__()
+        super(ResAttUNet, self).__init__()
         self.dim   = config.dim
         self.feats = config.feats
         self.residual  = config.residual
@@ -139,77 +139,47 @@ class ResAttUNet_L1(nn.Module):
         elif self.dim == 3: MaxPool = nn.MaxPool3d
         else: raise ValueError("dim must be 2 or 3")
 
-        self.encoder1 = DualConv(self.feats[0], self.feats[1], self.dim)
-        self.maxpool1 = MaxPool(2)
-        self.encoder2 = DualConv(self.feats[1], self.feats[2], self.dim)
-        self.upconv1  = _UpConv(self.feats[2], self.feats[1], self.dim)
-        if self.attention:
-            self.att1 = _AttBlock(self.feats[1], self.feats[1]//2, self.dim)
-        self.decoder1 = DualConv(self.feats[2], self.feats[1], self.dim)
-        self.outconv  = _OutConv(self.feats[1], self.feats[0], self.dim)
+        # encoder
+        self.encoder = nn.ModuleList([
+            DualConv(self.feats[i], self.feats[i+1], self.dim) 
+            for i in range(len(self.feats)-1)
+        ])
+        self.maxpool = nn.ModuleList([
+            MaxPool(2) 
+            for _ in range(len(self.feats)-2)
+        ])
+        # decoder
+        self.upconv = nn.ModuleList([
+            _UpConv(self.feats[i+1], self.feats[i], self.dim)
+            for i in range(1, len(self.feats)-1)
+        ])
+        if self.attention: self.att = nn.ModuleList([
+            _AttBlock(self.feats[i], self.feats[i]//2, self.dim)
+            for i in range(1, len(self.feats)-1)
+        ])
+        self.decoder = nn.ModuleList([
+            DualConv(self.feats[i+1], self.feats[i], self.dim)
+            for i in range(1, len(self.feats)-1)
+        ])
+        # output
+        self.outconv = _OutConv(self.feats[1], self.feats[0], self.dim)
 
     def forward(self, x: Tensor) -> Tensor:
         if self.dim == 3: x = x.unsqueeze(1)
-
-        enc1 = self.encoder1(x)
-        x = self.maxpool1(enc1)
-        x = self.encoder2(x)
-        x = self.upconv1(x)
-        if self.attention: enc1 = self.att1(enc1, x)
-        x = torch.cat((enc1, x), dim=1)
-        x = self.decoder1(x)
-        x = self.outconv(x)
-
-        if self.dim == 3: x = x.squeeze(1)
-        return x
-
-
-class ResAttUNet_L2(nn.Module):
-    def __init__(self, config) -> None:
-        super(ResAttUNet_L2, self).__init__()
-        self.dim   = config.dim
-        self.feats = config.feats
-        self.residual  = config.residual
-        self.attention = config.attention
-
-        if self.residual: DualConv = _ResDualConv
-        else:             DualConv = _DualConv
-
-        if   self.dim == 2: MaxPool = nn.MaxPool2d
-        elif self.dim == 3: MaxPool = nn.MaxPool3d
-        else: raise ValueError("dim must be 2 or 3")
-
-        self.encoder1 = DualConv(self.feats[0], self.feats[1], self.dim)
-        self.maxpool1 = MaxPool(2)
-        self.encoder2 = DualConv(self.feats[1], self.feats[2], self.dim)
-        self.maxpool2 = MaxPool(2)
-        self.encoder3 = DualConv(self.feats[2], self.feats[3], self.dim)
-        self.upconv2  = _UpConv(self.feats[3], self.feats[2], self.dim)
-        if self.attention: 
-            self.att2 = _AttBlock(self.feats[2], self.feats[2]//2, self.dim)
-        self.decoder2 = DualConv(self.feats[3], self.feats[2], self.dim)
-        self.upconv1  = _UpConv(self.feats[2], self.feats[1], self.dim)
-        if self.attention: 
-            self.att1 = _AttBlock(self.feats[1], self.feats[1]//2, self.dim)
-        self.decoder1 = DualConv(self.feats[2], self.feats[1], self.dim)
-        self.outconv  = _OutConv(self.feats[1], self.feats[0], self.dim)
-
-    def forward(self, x: Tensor) -> Tensor:
-        if self.dim == 3: x = x.unsqueeze(1)
-
-        enc1 = self.encoder1(x)
-        enc2 = self.maxpool1(enc1)
-        enc2 = self.encoder2(enc2)
-        x = self.maxpool2(enc2)
-        x = self.encoder3(x)
-        x = self.upconv2(x)
-        if self.attention: enc2 = self.att2(enc2, x)
-        x = torch.cat((enc2, x), dim=1)
-        x = self.decoder2(x)
-        x = self.upconv1(x)
-        if self.attention: enc1 = self.att1(enc1, x)
-        x = torch.cat((enc1, x), dim=1)
-        x = self.decoder1(x)
+        # encoder
+        enc = [self.encoder[0](x)]
+        for i in range(1, len(self.feats)-1):
+            if i != len(self.feats)-2: 
+                enc.append(self.encoder[i](self.maxpool[i-1](enc[i-1])))
+            else:
+                x = self.encoder[i](self.maxpool[i-1](enc[i-1]))
+        # decoder
+        for i in range(1, len(self.feats)-1):
+            x = self.upconv[-i](x)
+            if self.attention: enc[-i] = self.att[-i](enc[-i], x)
+            x = torch.cat((enc[-i], x), dim=1)
+            x = self.decoder[-i](x)
+        # output
         x = self.outconv(x)
 
         if self.dim == 3: x = x.squeeze(1)
