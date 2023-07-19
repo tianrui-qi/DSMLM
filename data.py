@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch.distributions.multivariate_normal import MultivariateNormal
@@ -21,7 +20,6 @@ class SimDataset(Dataset):
         self.dim_frame = Tensor(config.dim_frame).int()     # [D]
         self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
-        self.upsample  = nn.Upsample(scale_factor=tuple(config.up_sample))
 
         # config for adjust distribution of molecular
         self.mol_range = Tensor(config.mol_range).int()     # [2]
@@ -38,8 +36,9 @@ class SimDataset(Dataset):
 
         frame = self.generateFrame(mean_set, var_set, lum_set)
         frame = self.generateNoise(frame)
-        frame = self.upsample(
-            frame.unsqueeze(0).unsqueeze(0)
+        frame = F.interpolate(
+            frame.unsqueeze(0).unsqueeze(0),
+            scale_factor=self.up_sample.tolist()
         ).squeeze(0).squeeze(0)
 
         label = self.generateLabel(mean_set)
@@ -174,8 +173,7 @@ class RawDataset(Dataset):
         self.dim_frame = Tensor(config.dim_frame).int()     # [D]
         self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
-        self.upsample  = nn.Upsample(scale_factor=tuple(config.up_sample))
-        
+
         # subframe index
         self.h_range = config.h_range
         self.w_range = config.w_range
@@ -208,21 +206,22 @@ class RawDataset(Dataset):
 
         # frame
         subframe = self.frame[  # type: ignore
-            0      : 64, 
-            h * 52 : 64 + h * 52, 
-            w * 52 : 64 + w * 52,
+            :, 
+            h * 32 : 40 + h * 32, 
+            w * 32 : 40 + w * 32,
         ]
-        subframe = self.upsample(
-            subframe.unsqueeze(0).unsqueeze(0)
+        subframe = F.interpolate(
+            subframe.unsqueeze(0).unsqueeze(0), 
+            scale_factor=self.up_sample.tolist()
         ).squeeze(0).squeeze(0)
 
         # mlist
         submlist = self.mlist  # type: ignore
-        submlist = submlist[submlist[:, 1] >= h * 52]  # type: ignore
-        submlist = submlist[submlist[:, 1] <= h * 52 + 63]
-        submlist = submlist[submlist[:, 2] >= w * 52]
-        submlist = submlist[submlist[:, 2] <= w * 52 + 63]
-        submlist = submlist - Tensor([0, h*52, w*52])
+        submlist = submlist[submlist[:, 1] >= h * 32]  # type: ignore
+        submlist = submlist[submlist[:, 1] <= h * 32 + 39]
+        submlist = submlist[submlist[:, 2] >= w * 32]
+        submlist = submlist[submlist[:, 2] <= w * 32 + 39]
+        submlist = submlist - Tensor([0, h*32, w*32])
         submlist = (submlist + 0.5) * self.up_sample - 0.5
         submlist = torch.round(submlist).int()
 
@@ -245,86 +244,59 @@ class RawDataset(Dataset):
             os.path.join(self.frames_load_folder, self.frames_list[index])
         ))
         self.frame = (self.frame / torch.max(self.frame)).float()
-        self.frame = F.pad(self.frame, (10, 10, 10, 10))
-        
+        self.frame = F.interpolate(
+            self.frame.unsqueeze(0).unsqueeze(0), 
+            size = (32, 512, 512)
+        ).squeeze(0).squeeze(0)
+        self.frame = F.pad(self.frame, (4, 4, 4, 4, 4, 4))
+
         # mlist
         _, self.mlist = scipy.io.loadmat( # type: ignore
             os.path.join(self.mlists_load_folder, self.mlists_list[index])
         ).popitem()
         self.mlist = torch.from_numpy(self.mlist).float()
         self.mlist = self.mlist[:, [2, 0, 1]] - 1  # (H W D) -> (D H W)
-        self.mlist[:, 1:] += 10  # match the coordinate of frame after padding
+        self.mlist[:, 0] = (self.mlist[:, 0] + 0.5) / 2 - 0.5
+        self.mlist += 4  # match the coordinate of frame after padding
 
     def combineFrame(self, subframes: Tensor) -> Tensor:
         shape = self.up_sample * \
-            Tensor([64, 52 * self.num_sub_h, 52 * self.num_sub_w]).int()
+            Tensor([32, 32 * self.num_sub_h, 32 * self.num_sub_w]).int()
         frame = torch.zeros(
-            shape.tolist(), dtype=subframes.dtype, device=subframes.device)
-        
+            shape.tolist(), dtype=subframes.dtype, device=subframes.device
+        )
+
         for sub_index in range(self.num_sub):
             h = sub_index // self.num_sub_w
             w = sub_index %  self.num_sub_w
 
             frame[
                 :,
-                h * 52 * self.up_sample[1] : (h+1) * 52 * self.up_sample[1], 
-                w * 52 * self.up_sample[2] : (w+1) * 52 * self.up_sample[2],
+                h * 32 * self.up_sample[1] : (h+1) * 32 * self.up_sample[1], 
+                w * 32 * self.up_sample[2] : (w+1) * 32 * self.up_sample[2],
             ] = subframes[
-                sub_index, :,
-                6 * self.up_sample[1] : -6 * self.up_sample[1],
-                6 * self.up_sample[2] : -6 * self.up_sample[2],
+                sub_index,
+                4 * self.up_sample[0] : -4 * self.up_sample[0],
+                4 * self.up_sample[1] : -4 * self.up_sample[1],
+                4 * self.up_sample[2] : -4 * self.up_sample[2],
             ]
 
-        return frame[
-            :,
-            4 * self.up_sample[1] : -4 * self.up_sample[1],
-            4 * self.up_sample[2] : -4 * self.up_sample[2],
-        ]
+        return frame
 
 
 def getDataLoader(config) -> Tuple[DataLoader, ...]:
-    """
-    This function will return a tuple of dataloader for each dataset. Four paras
-    in config will be used to create the dataloader, i.e., config.num, 
-    config.type_data, config.batch_size, and config.num_workers. All dataloader
-    will have the same batch_size and num_workers.
-    
-    For example:
-        if the input config has
-            config.num = [100, 200]
-            config.type_data = ["Sim", "Raw"]
-        the dataloader tuple return by this function will be
-            dataloader = (
-                SimDataset with 100 data, 
-                RawDataset with 200 data
-            )
-
-    Args:
-        config (Config): The config class for this project.
-            config.num (List[int]): A list of int, where each int is the number
-                of data in each dataset.
-            config.type_data (List[str]): A list of str, where each str is the
-                type of each dataset, i.e., "Sim" or "Raw".
-            config.batch_size (int): The batch size for each dataloader.
-            config.num_workers (int): The number of workers for each dataloader.
-    
-    Returns:
-        dataloader (Tuple[DataLoader]): A tuple of dataloader for each dataset.
-            Will have same length as config.num and config.type_data.
-    """
-
-    if len(config.type_data) != len(config.num): raise ValueError(
-        "The length of config.num and config.type_data should be the same."
+    if len(config.type) != len(config.num): raise ValueError(
+        "The length of config.num and config.type should be the same."
     )
 
     dataloader = []
     for d in range(len(config.num)):
-        if config.type_data[d] == "Sim":
+        if config.type[d] == "Sim":
             dataset = SimDataset(config, config.num[d])
-        elif config.type_data[d] == "Raw":
+        elif config.type[d] == "Raw":
             dataset = RawDataset(config, config.num[d])
         else:
-            raise ValueError(f"Unsupported data: {config.type_data[d]}")
+            raise ValueError(f"Unsupported data: {config.type[d]}")
         dataloader.append(DataLoader(
             dataset,
             batch_size=config.batch_size, 
