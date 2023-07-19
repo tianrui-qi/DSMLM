@@ -343,7 +343,7 @@ if __name__ == "__main__":
     from config import Config
 
     # create dir to store test frame
-    if not os.path.exists("data"): os.makedirs("data")
+    if not os.path.exists("data/test"): os.makedirs("data/test")
 
     # test using default config
     config = Config()
@@ -351,11 +351,11 @@ if __name__ == "__main__":
     # test the RawDataset
     dataset = RawDataset(config, 1)
     frame, label = dataset[0]
-    imsave('data/RawFrame.tif', (frame * 255).to(torch.uint8).numpy())
-    imsave('data/RawLabel.tif', (label * 255).to(torch.uint8).numpy())
+    imsave('data/test/RawFrame.tif', (frame * 255).to(torch.uint8).numpy())
+    imsave('data/test/RawLabel.tif', (label * 255).to(torch.uint8).numpy())
 
     # test the SimDataset
     dataset = SimDataset(config, 1)
     frame, label = dataset[0]
-    imsave('data/SimFrame.tif', (frame * 255).to(torch.uint8).numpy())
-    imsave('data/SimLabel.tif', (label * 255).to(torch.uint8).numpy())
+    imsave('data/test/SimFrame.tif', (frame * 255).to(torch.uint8).numpy())
+    imsave('data/test/SimLabel.tif', (label * 255).to(torch.uint8).numpy())

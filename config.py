@@ -7,9 +7,11 @@ class Config:
     def __init__(self) -> None:
         # ============================== model =============================== #
 
-        self.base: int = 128     # base channel number
-        self.residual  = True
-        self.attention = True
+        self.dim  : int = 3
+        self.feats: List[int] = [1, 32, 64]
+        #self.feats: List[int] = [128, 256, 512]
+        self.residual : bool = True
+        self.attention: bool = True
 
         # =============================== loss =============================== #
 
@@ -19,8 +21,8 @@ class Config:
         # =============================== data =============================== #
 
         # dimensional config - MUST be same accross whole pipline
-        self.dim_frame: List[int] = [64, 64, 64]    # [C, H, W], by pixel
-        self.up_sample: List[int] = [ 2,  2,  2]    # [C, H, W], by scale
+        self.dim_frame: List[int] = [40, 40, 40]    # [C, H, W], by pixel
+        self.up_sample: List[int] = [ 4,  4,  4]    # [C, H, W], by scale
 
         ## SimDataset
         # config for adjust distribution of molecular
@@ -52,16 +54,16 @@ class Config:
 
         # =========================== train, eval ============================ #
 
-        self.model = model.ResAttUNet_2DL2
+        self.model = model.ResAttUNet_L1
         self.loss  = loss.L2Loss
 
         ## Train
         # train
         self.device: str = "cuda"
         self.max_epoch   : int = 400
-        self.accumu_steps: int = 50     # [100, 50, 25, 20, 10, 5, 4, 2]
+        self.accumu_steps: int = 25     # [100, 50, 25, 20, 10, 5, 4, 2]
         # learning rate
-        self.lr   : float = 1e-4        # initial learning rate (lr)
+        self.lr   : float = 1e-3        # initial learning rate (lr)
         self.gamma: float = 0.96        # decay rate of lr
         # checkpoint
         self.ckpt_save_folder: str  = "ckpt"    # folder store ckpt every epoch
@@ -85,7 +87,7 @@ class ConfigEval(ConfigTrain):
         self.h_range = [4, 7]
         self.w_range = [6, 9]
         ## getDataLoader
-        self.num  = [1000 * 16]
+        self.num  = [5000 * 16]
         self.type_data = ["Raw"]
         self.batch_size  = 8
         self.num_workers = 4
