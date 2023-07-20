@@ -1,26 +1,21 @@
 from typing import List
 
 
-class ConfigModel:
-    def __init__(self) -> None:
-        self.dim  : int = 2
-        self.feats: List[int] = [80, 1280, 2560]
-        self.use_res : bool = True
-        self.use_cbam: bool = True
-        self.use_att : bool = True 
-
-
-class ConfigLoss:
-    def __init__(self) -> None:
-        self.type: str = "l2"  # l1, l2
-        self.kernel_size : int   = 7
-        self.kernel_sigma: float = 1.0
-
-
 class Config:
     def __init__(self) -> None:
-        self.config_model = ConfigModel()
-        self.config_loss  = ConfigLoss()
+        # =============================== model ============================== #
+
+        self.dim  : int = 2
+        self.feats: List[int] = [80, 160, 320]
+        self.use_res : bool = False
+        self.use_cbam: bool = False
+        self.use_att : bool = False 
+
+        # =============================== loss =============================== #
+
+        self.type_loss   : str   = "l2"     # l1, l2
+        self.kernel_size : int   = 7
+        self.kernel_sigma: float = 1.0
 
         # =============================== data =============================== #
 
@@ -30,7 +25,7 @@ class Config:
 
         ## SimDataset
         # config for adjust distribution of molecular
-        self.mol_range: List[int] = [0, 96]    # min, max num of mol/frame
+        self.mol_range: List[int] = [0, 128]    # min, max num of mol/frame
         self.std_range: List[List[float]] = [   # std range of each dimension
             [1.0, 1.0, 1.0],  # FWHM [300 300 300], pixel size [130 130 130]
             [2.5, 2.0, 2.0],  # FWHM [800 600 600], pixel size [130 130 130]
@@ -51,10 +46,10 @@ class Config:
         self.mlists_load_folder = "D:/mlists"
 
         ## getDataLoader
-        self.num : List[int] = [7680 , 2560 ]
-        self.type: List[str] = ["Sim", "Raw"]
-        self.batch_size : int = 2
-        self.num_workers: int = 2
+        self.num: List[int] = [7680, 2560]
+        self.type_data: List[str] = ["Sim", "Raw"]
+        self.batch_size : int = 4
+        self.num_workers: int = 4
 
         # =========================== train, eval ============================ #
 
@@ -64,7 +59,7 @@ class Config:
         self.max_epoch   : int = 400
         self.accumu_steps: int = 16
         # learning rate
-        self.lr   : float = 1e-4    # initial learning rate (lr)
+        self.lr   : float = 1e-3    # initial learning rate (lr)
         self.gamma: float = 0.96    # decay rate of lr
         # checkpoint
         self.ckpt_save_folder: str  = "ckpt"    # folder store ckpt every epoch
@@ -84,16 +79,15 @@ class ConfigTrain(Config):
 class ConfigEval(ConfigTrain):
     def __init__(self) -> None:
         super().__init__()
-        ## RawDataset
-        self.h_range = [0, 15]
-        self.w_range = [8, 13]
-        ## getDataLoader
-        self.num  = [25 * 96]
-        self.type = ["Raw"]
-        self.batch_size  = 4
+        # data
+        self.h_range = [ 9, 12]
+        self.w_range = [11, 14]
+        self.num = [100 * 16]
+        self.type_data = ["Raw"]
+        self.batch_size  = 8
         self.num_workers = 2
-        ## Eval
-        checkpoint = 1
+        # eval
+        checkpoint = 28
         self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
         self.outputs_save_path = "data/outputs_{}".format(checkpoint)
         self.labels_save_path  = "data/labels_{}".format(checkpoint) 

@@ -32,9 +32,9 @@ class Train:
         self.epoch = 1  # epoch index may update in load_ckpt()
 
         # model
-        self.model = model.ResAttUNet(config.config_model).to(self.device)
+        self.model = model.ResAttUNet(config).to(self.device)
         # loss
-        self.loss = loss.GaussianBlurLoss(config.config_loss).to(self.device)
+        self.loss = loss.GaussianBlurLoss(config).to(self.device)
         # data
         self.trainloader, self.validloader = data.getDataLoader(config)
 

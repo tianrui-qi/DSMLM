@@ -5,7 +5,7 @@ from torch import Tensor
 
 class _DualConv(nn.Module):
     def __init__(
-        self, dim: int, in_c: int, out_c: int,use_res: bool = True
+        self, dim: int, in_c: int, out_c: int, use_res: bool = True
     ) -> None:
         super(_DualConv, self).__init__()
         self.use_res = use_res
@@ -143,11 +143,11 @@ class _AttGate(nn.Module):
             nn.Sigmoid()
         )
 
-    def forward(self, encod: Tensor, decod: Tensor) -> Tensor:
-        psi = self.w_encod(encod) + self.w_decod(decod)
+    def forward(self, x: Tensor, decod: Tensor) -> Tensor:
+        psi = self.w_encod(x) + self.w_decod(decod)
         psi = self.relu(psi)
         psi = self.psi(psi)
-        return encod * psi
+        return x * psi
 
 
 class _OutConv(nn.Module):

@@ -22,7 +22,7 @@ class Eval:
         self.batch_size = config.batch_size
 
         # model
-        self.model = model.ResAttUNet(config.config_model).to(self.device)
+        self.model = model.ResAttUNet(config).to(self.device)
         self.model.load_state_dict(torch.load(
             "{}.ckpt".format(self.ckpt_load_path), 
             map_location=self.device)['model']

@@ -285,18 +285,18 @@ class RawDataset(Dataset):
 
 
 def getDataLoader(config) -> Tuple[DataLoader, ...]:
-    if len(config.type) != len(config.num): raise ValueError(
-        "The length of config.num and config.type should be the same."
+    if len(config.type_data) != len(config.num): raise ValueError(
+        "The length of config.num and config.type_data should be the same."
     )
 
     dataloader = []
     for d in range(len(config.num)):
-        if config.type[d] == "Sim":
+        if config.type_data[d] == "Sim":
             dataset = SimDataset(config, config.num[d])
-        elif config.type[d] == "Raw":
+        elif config.type_data[d] == "Raw":
             dataset = RawDataset(config, config.num[d])
         else:
-            raise ValueError(f"Unsupported data: {config.type[d]}")
+            raise ValueError(f"Unsupported data: {config.type_data[d]}")
         dataloader.append(DataLoader(
             dataset,
             batch_size=config.batch_size, 

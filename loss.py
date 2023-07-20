@@ -84,15 +84,15 @@ def gaussianBlur3d(frame: Tensor, kernel: Tensor) -> Tensor:
 class GaussianBlurLoss(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
-        self.type = config.type
+        self.type_loss = config.type_loss
         # Gaussian kernel using help function gaussianKernel
         self.kernel = gaussianKernel(3, config.kernel_size, config.kernel_sigma)
         # pad size, pad before convolve Gaussian kernel
         self.pad = [config.kernel_size for _ in range(6)]  # [C H W]
     
     def forward(self, predi: Tensor, label: Tensor) -> float:
-        if self.type == "l1": return self.l1Loss(predi, label)
-        if self.type == "l2": return self.l2Loss(predi, label)
+        if self.type_loss == "l1": return self.l1Loss(predi, label)
+        if self.type_loss == "l2": return self.l2Loss(predi, label)
         raise ValueError("loss must be 'l1' or 'l2'")
 
     def to(self, device):
