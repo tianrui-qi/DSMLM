@@ -329,5 +329,6 @@ if __name__ == "__main__":
     # test the SimDataset
     dataset = SimDataset(config, 1)
     frame, label = dataset[0]
+    print("Number of molecular:", len(torch.nonzero(label)))
     imsave('data/test/SimFrame.tif', (frame * 255).to(torch.uint8).numpy())
     imsave('data/test/SimLabel.tif', (label * 255).to(torch.uint8).numpy())
