@@ -7,8 +7,8 @@ class Config:
 
         self.dim  : int = 2
         self.feats: List[int] = [160, 320, 640]
-        self.use_res : bool = False
-        self.use_cbam: bool = False
+        self.use_res : bool = True
+        self.use_cbam: bool = True
 
         # =============================== loss =============================== #
 
@@ -24,7 +24,7 @@ class Config:
 
         ## SimDataset
         # config for adjust distribution of molecular
-        self.mol_range: List[int] = [0, 96]    # min, max num of mol/frame
+        self.mol_range: List[int] = [0, 128]    # min, max num of mol/frame
         self.std_range: List[List[float]] = [   # std range of each dimension
             [1.0, 1.0, 1.0],  # FWHM [300 300 300], pixel size [130 130 130]
             [2.5, 2.0, 2.0],  # FWHM [800 600 600], pixel size [130 130 130]
@@ -56,10 +56,10 @@ class Config:
         # train
         self.device: str = "cuda"
         self.max_epoch   : int = 400
-        self.accumu_steps: int = 50
+        self.accumu_steps: int = 5
         # learning rate
-        self.lr   : float = 1e-3    # initial learning rate (lr)
-        self.gamma: float = 0.96    # decay rate of lr
+        self.lr   : float = 1e-4    # initial learning rate (lr)
+        self.gamma: float = 0.95    # decay rate of lr
         # checkpoint
         self.ckpt_save_folder: str  = "ckpt"    # folder store ckpt every epoch
         self.ckpt_load_path  : str  = ""        # path without .ckpt
@@ -86,7 +86,7 @@ class ConfigEval(ConfigTrain):
         self.batch_size  = 8
         self.num_workers = 2
         # eval
-        checkpoint = 1
+        checkpoint = 5
         self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
         self.outputs_save_path = "data/outputs_{}".format(checkpoint)
         self.labels_save_path  = "data/labels_{}".format(checkpoint) 
