@@ -54,18 +54,18 @@ class Train:
         print(f'The model has {para_num:,} trainable parameters')
 
     def train(self) -> None:
-        self.load_ckpt()
+        self._load_ckpt()
         for self.epoch in tqdm.tqdm(
             range(self.epoch, self.max_epoch+1), 
             total=self.max_epoch, desc=self.ckpt_save_folder, smoothing=0.0,
             unit="epoch", initial=self.epoch
         ):
-            self.train_epoch()
-            self.valid_epoch()
-            self.update_lr()
-            self.save_ckpt()
+            self._train_epoch()
+            self._valid_epoch()
+            self._update_lr()
+            self._save_ckpt()
 
-    def train_epoch(self) -> None:
+    def _train_epoch(self) -> None:
         self.model.train()
 
         # record: progress bar
@@ -115,7 +115,7 @@ class Train:
             pbar.update()
 
     @torch.no_grad()
-    def valid_epoch(self) -> None:
+    def _valid_epoch(self) -> None:
         self.model.eval()
 
         # record: progress bar
@@ -153,7 +153,7 @@ class Train:
         )
 
     @torch.no_grad()
-    def update_lr(self) -> None:
+    def _update_lr(self) -> None:
         # update learning rate
         if self.scheduler.get_last_lr()[0] > 1e-8: self.scheduler.step()
 
@@ -164,7 +164,7 @@ class Train:
         )
 
     @torch.no_grad()
-    def save_ckpt(self) -> None:
+    def _save_ckpt(self) -> None:
         # file path checking
         if not os.path.exists(self.ckpt_save_folder): 
             os.makedirs(self.ckpt_save_folder)
@@ -178,7 +178,7 @@ class Train:
             }, "{}/{}.ckpt".format(self.ckpt_save_folder, self.epoch))
 
     @torch.no_grad()
-    def load_ckpt(self) -> None:
+    def _load_ckpt(self) -> None:
         if self.ckpt_load_path == "": return
         ckpt = torch.load("{}.ckpt".format(self.ckpt_load_path))
         

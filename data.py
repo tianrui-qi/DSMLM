@@ -32,16 +32,16 @@ class SimDataset(Dataset):
         self.dark_noise  = config.dark_noise
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
-        mean_set, var_set, lum_set = self.generateParas()
+        mean_set, var_set, lum_set = self._generateParas()
 
-        frame = self.generateFrame(mean_set, var_set, lum_set)
-        frame = self.generateNoise(frame)
+        frame = self._generateFrame(mean_set, var_set, lum_set)
+        frame = self._generateNoise(frame)
         frame = F.interpolate(
             frame.unsqueeze(0).unsqueeze(0),
             scale_factor=self.up_sample.tolist()
         ).squeeze(0).squeeze(0)
 
-        label = self.generateLabel(mean_set)
+        label = self._generateLabel(mean_set)
 
         return frame, label
 
@@ -52,7 +52,7 @@ class SimDataset(Dataset):
         """
         return self.num
 
-    def generateParas(self) -> Tuple[Tensor, Tensor, Tensor]:
+    def _generateParas(self) -> Tuple[Tensor, Tensor, Tensor]:
         D = len(self.dim_frame)
         N = torch.randint(
             self.mol_range[0], self.mol_range[1] + 1, (1,))  # type: ignore
@@ -70,7 +70,7 @@ class SimDataset(Dataset):
 
         return mean_set, var_set, lum_set
 
-    def generateFrame(self, mean_set, var_set, lum_set) -> Tensor:
+    def _generateFrame(self, mean_set, var_set, lum_set) -> Tensor:
         D = len(self.dim_frame)  # number of dimension, i.e., 2D/3D frame
         N = len(mean_set)        # number of molecular in this frame
 
@@ -104,7 +104,7 @@ class SimDataset(Dataset):
 
         return torch.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
-    def generateNoise(self, frame: Tensor) -> Tensor:
+    def _generateNoise(self, frame: Tensor) -> Tensor:
         """
         This function will add camer noise to the input frame. 
         
@@ -137,7 +137,7 @@ class SimDataset(Dataset):
 
         return torch.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
-    def generateLabel(self, mean_set: Tensor) -> Tensor:
+    def _generateLabel(self, mean_set: Tensor) -> Tensor:
         """
         This function will generate the label that convert the [N, D] mean_set
         representing the molecular list to [*self.dim_label] tensor where the
