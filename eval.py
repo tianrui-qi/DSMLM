@@ -7,19 +7,16 @@ import tqdm
 import config, model, data
 
 
+torch.backends.cudnn.enabled = True     # type: ignore
+torch.backends.cudnn.benchmark = True   # type: ignore
+
+
 class Eval:
     def __init__(self, config) -> None:
-        # train
         self.device = config.device
         self.ckpt_load_path = config.ckpt_load_path
-        # eval
         self.outputs_save_path = config.outputs_save_path
         self.labels_save_path = config.labels_save_path
-        # data
-        num_sub_h = config.h_range[1] - config.h_range[0] + 1
-        num_sub_w = config.w_range[1] - config.w_range[0] + 1
-        self.num_sub = num_sub_h * num_sub_w
-        self.batch_size = config.batch_size
 
         # model
         self.model = model.ResAttUNet(config).to(self.device)
@@ -31,6 +28,15 @@ class Eval:
         # data
         self.dataloader = data.getDataLoader(config)[0]
         self.dataset = self.dataloader.dataset  # to call static method
+
+        # data index
+        self.num_sub = self.dataset.num_sub  # type: ignore
+        self.batch_size = self.dataloader.batch_size
+        if self.num_sub % self.batch_size != 0:
+            raise ValueError(
+                "num_sub must be divisible by batch_size, but got {} and {}"
+                .format(self.num_sub, self.batch_size)
+            )
 
         # print model info
         para_num = sum(
@@ -44,16 +50,24 @@ class Eval:
 
         # record: progress bar
         pbar = tqdm.tqdm(
-            total=len(self.dataloader)*self.batch_size/self.num_sub, 
+            total=int(
+                len(self.dataloader)*self.batch_size/self.num_sub # type: ignore
+            ),
             desc=self.ckpt_load_path, unit="frame"
         )
+
+        # create folder
+        if not os.path.exists(os.path.dirname(self.outputs_save_path)):
+            os.makedirs(os.path.dirname(self.outputs_save_path))
+        if not os.path.exists(os.path.dirname(self.labels_save_path)):
+            os.makedirs(os.path.dirname(self.labels_save_path))
 
         outputs_cat = None  # output after concatenation
         outputs_cmb = None  # output after combination
         labels_cat  = None  # label after concatenation
         labels_cmb  = None  # label after combination
 
-        for _, (frames, labels) in enumerate(self.dataloader):
+        for i, (frames, labels) in enumerate(self.dataloader):
             # store subframes to a [self.num_sub, *output.shape] tensor
             outputs = self.model(frames.half().to(self.device))
             if outputs_cat == None: outputs_cat = outputs
@@ -74,13 +88,22 @@ class Eval:
             outputs_cat = None
             labels_cat = None
 
+            # save after combine 1000 frame
+            current_frame = (i+1)/(self.num_sub/self.batch_size)
+            if current_frame % 1000 == 0:
+                current_frame = int(current_frame)
+                tifffile.imsave(
+                    "{}_{}.tif".format(self.outputs_save_path, current_frame),
+                    outputs_cmb.cpu().detach().numpy()
+                )
+                tifffile.imsave(
+                    "{}_{}.tif".format(self.labels_save_path, current_frame), 
+                    labels_cmb.numpy()
+                )
+
             pbar.update()  # update progress bar
 
         # save
-        if not os.path.exists(os.path.dirname(self.outputs_save_path)):
-            os.makedirs(os.path.dirname(self.outputs_save_path))
-        if not os.path.exists(os.path.dirname(self.labels_save_path)):
-            os.makedirs(os.path.dirname(self.labels_save_path))
         tifffile.imsave(
             "{}.tif".format(self.outputs_save_path),
             outputs_cmb.cpu().detach().numpy()  # type: ignore

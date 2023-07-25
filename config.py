@@ -7,8 +7,8 @@ class Config:
 
         self.dim  : int = 2
         self.feats: List[int] = [160, 320, 640]
-        self.use_res : bool = True
-        self.use_cbam: bool = True
+        self.use_res : bool = False
+        self.use_cbam: bool = False
 
         # =============================== loss =============================== #
 
@@ -55,7 +55,7 @@ class Config:
         ## Train
         # train
         self.device: str = "cuda"
-        self.max_epoch   : int = 400
+        self.max_epoch   : int = 200
         self.accumu_steps: int = 5
         # learning rate
         self.lr   : float = 1e-4    # initial learning rate (lr)
@@ -65,17 +65,22 @@ class Config:
         self.ckpt_load_path  : str  = ""        # path without .ckpt
         self.ckpt_load_lr    : bool = False     # load lr from ckpt
 
-        ## Eval - also use some config of train and data
+        ## Eval - also use some config of train
         self.outputs_save_path: str = "data/outputs"    # path without .tif
         self.labels_save_path : str = "data/labels"     # path without .tif
 
 
-class ConfigTrain(Config):
+class ConfigTrain_1(Config):
     def __init__(self) -> None:
         super().__init__()
+        self.dim = 2
+        self.feats = [160, 320, 640]
+        self.use_res  = True
+        self.use_cbam = True
+        self.ckpt_save_folder = "ckpt/1"
 
 
-class ConfigEval(ConfigTrain):
+class ConfigEval_1(ConfigTrain_1):
     def __init__(self) -> None:
         super().__init__()
         # data
@@ -86,15 +91,68 @@ class ConfigEval(ConfigTrain):
         self.batch_size  = 8
         self.num_workers = 2
         # eval
-        checkpoint = 5
+        checkpoint = 0
         self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
-        self.outputs_save_path = "data/outputs_{}".format(checkpoint)
-        self.labels_save_path  = "data/labels_{}".format(checkpoint) 
+        self.outputs_save_path = "data/1/outputs_{}".format(checkpoint)
+        self.labels_save_path  = "data/1/labels_{}".format(checkpoint) 
+
+
+class ConfigTrain_2(Config):
+    def __init__(self) -> None:
+        super().__init__()
+        self.dim = 3
+        self.feats = [1, 32, 64]
+        self.ckpt_save_folder = "ckpt/2"
+        self.batch_size = 1
+        self.num_workers = 1
+        self.accumu_steps = 10
+
+
+class ConfigEval_2(ConfigTrain_2):
+    def __init__(self) -> None:
+        super().__init__()
+        # data
+        self.h_range = [ 9, 12]
+        self.w_range = [11, 14]
+        self.num = [1000 * 16]
+        self.type_data = ["Raw"]
+        self.batch_size  = 4
+        self.num_workers = 2
+        # eval
+        checkpoint = 8
+        self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
+        self.outputs_save_path = "data/2/outputs_{}".format(checkpoint)
+        self.labels_save_path  = "data/2/labels_{}".format(checkpoint) 
+
+
+class ConfigTrain_3(ConfigTrain_2):
+    def __init__(self) -> None:
+        super().__init__()
+        self.ckpt_save_folder = "ckpt/3"
+        self.ckpt_load_path = "ckpt/2/8"
+        self.lr = 1e-5
+
+
+class ConfigEval_3(ConfigTrain_3):
+    def __init__(self) -> None:
+        super().__init__()
+        # data
+        self.h_range = [ 9, 12]
+        self.w_range = [11, 14]
+        self.num = [45000 * 16]
+        self.type_data = ["Raw"]
+        self.batch_size  = 4
+        self.num_workers = 2
+        # eval
+        checkpoint = 140
+        self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
+        self.outputs_save_path = "data/3/outputs_{}".format(checkpoint)
+        self.labels_save_path  = "data/3/labels_{}".format(checkpoint) 
 
 
 def getConfig(mode: str) -> Config:
     if mode == "train":
-        return ConfigTrain()
+        return ConfigTrain_3()
     if mode == "eval":
-        return ConfigEval()
+        return ConfigEval_3()
     raise ValueError("mode must be 'train' or 'eval'")

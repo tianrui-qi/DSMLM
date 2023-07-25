@@ -238,7 +238,7 @@ class RawDataset(Dataset):
         """
         return self.num
 
-    def readNext(self, index) -> None:
+    def readNext(self, index: int, pad: int = 4) -> None:
         # frame
         self.frame = torch.from_numpy(tifffile.imread(
             os.path.join(self.frames_load_folder, self.frames_list[index])
@@ -248,7 +248,7 @@ class RawDataset(Dataset):
             self.frame.unsqueeze(0).unsqueeze(0), 
             size = (32, 512, 512)
         ).squeeze(0).squeeze(0)
-        self.frame = F.pad(self.frame, (4, 4, 4, 4, 4, 4))
+        self.frame = F.pad(self.frame, (pad, pad, pad, pad, pad, pad))
 
         # mlist
         _, self.mlist = scipy.io.loadmat( # type: ignore
@@ -257,9 +257,9 @@ class RawDataset(Dataset):
         self.mlist = torch.from_numpy(self.mlist).float()
         self.mlist = self.mlist[:, [2, 0, 1]] - 1  # (H W D) -> (D H W)
         self.mlist[:, 0] = (self.mlist[:, 0] + 0.5) / 2 - 0.5
-        self.mlist += 4  # match the coordinate of frame after padding
+        self.mlist += pad   # match the coordinate of frame after padding
 
-    def combineFrame(self, subframes: Tensor) -> Tensor:
+    def combineFrame(self, subframes: Tensor, pad: int = 4) -> Tensor:
         shape = self.up_sample * \
             Tensor([32, 32 * self.num_sub_h, 32 * self.num_sub_w]).int()
         frame = torch.zeros(
@@ -276,9 +276,9 @@ class RawDataset(Dataset):
                 w * 32 * self.up_sample[2] : (w+1) * 32 * self.up_sample[2],
             ] = subframes[
                 sub_index,
-                4 * self.up_sample[0] : -4 * self.up_sample[0],
-                4 * self.up_sample[1] : -4 * self.up_sample[1],
-                4 * self.up_sample[2] : -4 * self.up_sample[2],
+                pad * self.up_sample[0] : -pad * self.up_sample[0],
+                pad * self.up_sample[1] : -pad * self.up_sample[1],
+                pad * self.up_sample[2] : -pad * self.up_sample[2],
             ]
 
         return frame
@@ -321,14 +321,21 @@ if __name__ == "__main__":
     config = Config()
 
     # test the RawDataset
-    dataset = RawDataset(config, 1)
+    dataset = RawDataset(config, 5000)
     frame, label = dataset[0]
-    imsave('data/test/RawFrame.tif', (frame * 255).to(torch.uint8).numpy())
-    imsave('data/test/RawLabel.tif', (label * 255).to(torch.uint8).numpy())
+    imsave('data/test/RawFrame.tif', frame.numpy())
+    imsave('data/test/RawLabel.tif', label.numpy())
+
+    # density of RawDataset
+    num = 0
+    for i in range(5000):
+        frame, label = dataset[i]
+        num += len(torch.nonzero(label))
+    print("density of RawDataset:", num / 5000)
 
     # test the SimDataset
     dataset = SimDataset(config, 1)
     frame, label = dataset[0]
     print("Number of molecular:", len(torch.nonzero(label)))
-    imsave('data/test/SimFrame.tif', (frame * 255).to(torch.uint8).numpy())
-    imsave('data/test/SimLabel.tif', (label * 255).to(torch.uint8).numpy())
+    imsave('data/test/SimFrame.tif', frame.numpy())
+    imsave('data/test/SimLabel.tif', label.numpy())
