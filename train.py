@@ -1,4 +1,5 @@
 import torch
+import torch.backends.cudnn
 import torch.cuda.amp as amp
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
@@ -10,8 +11,8 @@ import tqdm
 import config, model, loss, data
 
 
-torch.backends.cudnn.enabled = True     # type: ignore
-torch.backends.cudnn.benchmark = True   # type: ignore
+torch.backends.cudnn.enabled = True
+torch.backends.cudnn.benchmark = True
 
 
 class Train:

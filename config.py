@@ -5,8 +5,8 @@ class Config:
     def __init__(self) -> None:
         # =============================== model ============================== #
 
-        self.dim  : int = 2
-        self.feats: List[int] = [160, 320, 640]
+        self.dim  : int = 3
+        self.feats: List[int] = [1, 32, 64]
         self.use_res : bool = False
         self.use_cbam: bool = False
 
@@ -47,8 +47,8 @@ class Config:
         ## getDataLoader
         self.num: List[int] = [10000, 5000]
         self.type_data: List[str] = ["Sim", "Raw"]
-        self.batch_size : int = 2
-        self.num_workers: int = 2
+        self.batch_size : int = 1
+        self.num_workers: int = 1
 
         # =========================== train, eval ============================ #
 
@@ -56,7 +56,7 @@ class Config:
         # train
         self.device: str = "cuda"
         self.max_epoch   : int = 200
-        self.accumu_steps: int = 5
+        self.accumu_steps: int = 10
         # learning rate
         self.lr   : float = 1e-4    # initial learning rate (lr)
         self.gamma: float = 0.95    # decay rate of lr
@@ -70,42 +70,30 @@ class Config:
         self.labels_save_path : str = "data/labels"     # path without .tif
 
 
-class ConfigTrain_1(Config):
-    def __init__(self) -> None:
-        super().__init__()
-        self.dim = 2
-        self.feats = [160, 320, 640]
-        self.use_res  = True
-        self.use_cbam = True
-        self.ckpt_save_folder = "ckpt/1"
+"""
+For 2 and 3, we use the 3D UNet without residual and CBAM and the upsample rate
+is [4, 4, 4], i.e., the pixel size is 32.5 nm in XYZ. 
 
+For 2, we train the model using learning rate 1e-4 but the result goes to all
+dark where the turning point is after 8 epoch. So we load the ckpt 8 and retrain
+the 3D UNet with lr at 1e-5.
 
-class ConfigEval_1(ConfigTrain_1):
-    def __init__(self) -> None:
-        super().__init__()
-        # data
-        self.h_range = [ 9, 12]
-        self.w_range = [11, 14]
-        self.num = [1000 * 16]
-        self.type_data = ["Raw"]
-        self.batch_size  = 8
-        self.num_workers = 2
-        # eval
-        checkpoint = 0
-        self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
-        self.outputs_save_path = "data/1/outputs_{}".format(checkpoint)
-        self.labels_save_path  = "data/1/labels_{}".format(checkpoint) 
+The result all match the ground truth except there are checkboard artifacts.
+They appear in every direction and happean in period of 9 pixels, i.e., 1 pixel
+light, 7 pixels dark, 1 pixel light. After check the raw data we use to predict,
+these checkbox already exist in the raw data (low resolution) where the period
+is 1. These checkbox is very dark but follow the Gaussian distribution, i.e., 
+a very small Gaussian point with std around 1.7. So we can not solve this
+problem by simply limit the std or lum of our simulation in some range. 
+
+The training speed is 1.33s/steps where the steps size is 10 frames.
+"""
 
 
 class ConfigTrain_2(Config):
     def __init__(self) -> None:
         super().__init__()
-        self.dim = 3
-        self.feats = [1, 32, 64]
         self.ckpt_save_folder = "ckpt/2"
-        self.batch_size = 1
-        self.num_workers = 1
-        self.accumu_steps = 10
 
 
 class ConfigEval_2(ConfigTrain_2):
@@ -139,7 +127,7 @@ class ConfigEval_3(ConfigTrain_3):
         # data
         self.h_range = [ 9, 12]
         self.w_range = [11, 14]
-        self.num = [45000 * 16]
+        self.num = [1 * 16]
         self.type_data = ["Raw"]
         self.batch_size  = 4
         self.num_workers = 2
@@ -150,9 +138,46 @@ class ConfigEval_3(ConfigTrain_3):
         self.labels_save_path  = "data/3/labels_{}".format(checkpoint) 
 
 
+"""
+Then we move on to [4, 8, 8] upsampling where the final pixel size is 16.25 nm
+for XY and 32.5 nm for Z. After some test, we find that the model can train on
+4080 when features number decrease to [1, 16, 32], which is 1/2 of the features
+number we use in 2&3. 
+
+The model has 70,353 trainable parameters. It takes 13.9/16.0 GB dedicated and
+0.7/31.9 GB shared memory. The training speed is 3.35s/steps where the steps 
+size is 10 frames, 250% slower than 2&3.
+"""
+
+
+class ConfigTrain_4(Config):
+    def __init__(self) -> None:
+        super().__init__()
+        self.feats = [1, 16, 32]
+        self.up_sample = [4, 8, 8]
+        self.ckpt_save_folder = "ckpt/4"
+
+
+class ConfigEval_4(ConfigTrain_4):
+    def __init__(self) -> None:
+        super().__init__()
+        # data
+        self.h_range = [ 9, 12]
+        self.w_range = [11, 14]
+        self.num = [1000 * 16]
+        self.type_data = ["Raw"]
+        self.batch_size  = 4
+        self.num_workers = 2
+        # eval
+        checkpoint = 8
+        self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
+        self.outputs_save_path = "data/4/outputs_{}".format(checkpoint)
+        self.labels_save_path  = "data/4/labels_{}".format(checkpoint) 
+
+
 def getConfig(mode: str) -> Config:
     if mode == "train":
-        return ConfigTrain_3()
+        return ConfigTrain_4()
     if mode == "eval":
-        return ConfigEval_3()
+        return ConfigEval_4()
     raise ValueError("mode must be 'train' or 'eval'")

@@ -201,7 +201,7 @@ class RawDataset(Dataset):
 
         # load new frame and mlist if frame index is different
         if frame_index != self.current_frame_index: 
-            self.readNext(frame_index)
+            self._readNext(frame_index)
             self.current_frame_index = frame_index
 
         # frame
@@ -238,7 +238,7 @@ class RawDataset(Dataset):
         """
         return self.num
 
-    def readNext(self, index: int, pad: int = 4) -> None:
+    def _readNext(self, index: int, pad: int = 4) -> None:
         # frame
         self.frame = torch.from_numpy(tifffile.imread(
             os.path.join(self.frames_load_folder, self.frames_list[index])

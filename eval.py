@@ -1,4 +1,5 @@
 import torch
+import torch.backends.cudnn
 
 import os
 import tifffile
@@ -7,8 +8,8 @@ import tqdm
 import config, model, data
 
 
-torch.backends.cudnn.enabled = True     # type: ignore
-torch.backends.cudnn.benchmark = True   # type: ignore
+torch.backends.cudnn.enabled = True
+torch.backends.cudnn.benchmark = True
 
 
 class Eval:
@@ -89,9 +90,8 @@ class Eval:
             labels_cat = None
 
             # save after combine 1000 frame
-            current_frame = (i+1)/(self.num_sub/self.batch_size)
+            current_frame = int((i+1)/(self.num_sub/self.batch_size))
             if current_frame % 1000 == 0:
-                current_frame = int(current_frame)
                 tifffile.imsave(
                     "{}_{}.tif".format(self.outputs_save_path, current_frame),
                     outputs_cmb.cpu().detach().numpy()
