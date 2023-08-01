@@ -73,10 +73,10 @@ class Config:
 """
 [4, 4, 4] [1, 32, 64]
 
-For 2 and 3, we use the 3D UNet without residual and CBAM and the upsample rate
+For 1&2, we use the 3D UNet without residual and CBAM and the upsample rate
 is [4, 4, 4], i.e., the pixel size is 32.5 nm in XYZ. 
 
-For 2, we train the model using learning rate 1e-4 but the result goes to all
+For 1, we train the model using learning rate 1e-4 but the result goes to all
 dark where the turning point is after 8 epoch. So we load the ckpt 8 and retrain
 the 3D UNet with lr at 1e-5.
 
@@ -88,17 +88,19 @@ is 1. These checkbox is very dark but follow the Gaussian distribution, i.e.,
 a very small Gaussian point with std around 1.7. So we can not solve this
 problem by simply limit the std or lum of our simulation in some range. 
 
-The training speed is 1.33s/steps where the steps size is 10 frames.
+Trainable parameters: 279,969           Training   speed: 1.33s/steps
+Dedicated GPU memory:   . /16.0 GB      Validation speed:     s/steps
+Shared    GPU memory:   . /31.9 GB      Evaluation speed:     s/steps
 """
 
 
-class ConfigTrain_2(Config):
+class ConfigTrain_1(Config):
     def __init__(self) -> None:
         super().__init__()
-        self.ckpt_save_folder = "ckpt/2"
+        self.ckpt_save_folder = "ckpt/1"
 
 
-class ConfigEval_2(ConfigTrain_2):
+class ConfigEval_1(ConfigTrain_1):
     def __init__(self) -> None:
         super().__init__()
         # data
@@ -111,19 +113,19 @@ class ConfigEval_2(ConfigTrain_2):
         # eval
         checkpoint = 8
         self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
-        self.outputs_save_path = "data/2/outputs_{}".format(checkpoint)
-        self.labels_save_path  = "data/2/labels_{}".format(checkpoint) 
+        self.outputs_save_path = "data/1/outputs_{}".format(checkpoint)
+        self.labels_save_path  = "data/1/labels_{}".format(checkpoint) 
 
 
-class ConfigTrain_3(ConfigTrain_2):
+class ConfigTrain_2(ConfigTrain_1):
     def __init__(self) -> None:
         super().__init__()
         self.lr = 1e-5
-        self.ckpt_save_folder = "ckpt/3"
-        self.ckpt_load_path = "ckpt/2/8"
+        self.ckpt_save_folder = "ckpt/2"
+        self.ckpt_load_path = "ckpt/1/8"
 
 
-class ConfigEval_3(ConfigTrain_3):
+class ConfigEval_2(ConfigTrain_2):
     def __init__(self) -> None:
         super().__init__()
         # data
@@ -136,89 +138,39 @@ class ConfigEval_3(ConfigTrain_3):
         # eval
         checkpoint = 140
         self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
-        self.outputs_save_path = "data/3/outputs_{}".format(checkpoint)
-        self.labels_save_path  = "data/3/labels_{}".format(checkpoint) 
+        self.outputs_save_path = "data/2/outputs_{}".format(checkpoint)
+        self.labels_save_path  = "data/2/labels_{}".format(checkpoint) 
 
 
 """
-[4, 8, 8] [1, 16, 32]
+[4, 4, 4] [1, 16, 32]
 
-Then we move on to [4, 8, 8] upsampling where the final pixel size is 16.25 nm
-for XY and 32.5 nm for Z. After some test, we find that the model can train on
-4080 when features number decrease to [1, 16, 32], which is 1/2 of the features
-number we use in 2&3. However, in 4&5 with lr 1e-4 and 5e-5, the model can not
-converge correctly. Thus, we back to [4, 4, 4] upsampling with features 
-[1, 16, 32] to see how the model perform. 
+Before move to [4, 8, 8] upsampling rate, we want to try the 3D UNet with less
+number of features, i.e., 25% of 1&2 used, on [4, 4, 4] so that the [4, 8, 8]
+network can fit in the GPU memory. 
 
-Trainable parameters: 70,353            Training   speed: 3.35s/steps
-Dedicated GPU memory: 13.9/16.0 GB      Validation speed:
-Shared    GPU memory:  0.7/31.9 GB      Evaluation speed: 1.6s/frame
-
-The training speed 250% slower than 2&3. The bottle neck of evalution is cpu 
-since when we increase the batch size and number workers from 1 to 2, the speed 
-increase from 3.2s/frame to 1.6s/frame.
+Trainable parameters: 70,353            Training   speed: 0.82s/steps
+Dedicated GPU memory:  6.5/16.0 GB      Validation speed: 0.49s/steps
+Shared    GPU memory:  0.4/31.9 GB      Evaluation speed: 0.28s/steps
 """
+
+
+class ConfigTrain_3(Config):
+    def __init__(self) -> None:
+        super().__init__()
+        self.feats = [1, 16, 32]
+        self.ckpt_save_folder = "ckpt/3"
 
 
 class ConfigTrain_4(Config):
     def __init__(self) -> None:
         super().__init__()
         self.feats = [1, 16, 32]
-        self.up_sample = [4, 8, 8]
+        self.lr = 5e-5
         self.ckpt_save_folder = "ckpt/4"
 
 
 class ConfigEval_4(ConfigTrain_4):
-    def __init__(self) -> None:
-        super().__init__()
-        # data
-        self.h_range = [ 9, 12]
-        self.w_range = [11, 14]
-        self.num = [1000 * 16]
-        self.type_data = ["Raw"]
-        self.batch_size  = 2
-        self.num_workers = 2
-        # eval
-        checkpoint = 16
-        self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
-        self.outputs_save_path = "data/4/outputs_{}".format(checkpoint)
-        self.labels_save_path  = "data/4/labels_{}".format(checkpoint) 
-
-
-class ConfigTrain_5(ConfigTrain_4):
-    def __init__(self) -> None:
-        super().__init__()
-        self.lr = 5e-5
-        self.ckpt_save_folder = "ckpt/5"
-
-
-"""
-[4, 4, 4] [1, 16, 32]
-
-Trainable parameters: 70,353            Training   speed: 1.22steps/s
-Dedicated GPU memory: 6.5/16.0 GB       Validation speed: 2.05steps/s
-Shared    GPU memory: 0.4/31.9 GB       Evaluation speed: 3.70steps/s
-"""
-
-
-class ConfigTrain_6(Config):
-    def __init__(self) -> None:
-        super().__init__()
-        self.feats = [1, 16, 32]
-        self.ckpt_save_folder = "ckpt/6"
-
-
-class ConfigTrain_7(Config):
-    def __init__(self) -> None:
-        super().__init__()
-        self.feats = [1, 16, 32]
-        self.lr = 5e-5
-        self.ckpt_save_folder = "ckpt/7"
-        self.ckpt_load_path = "ckpt/7/79"
-        self.ckpt_load_lr = True
-
-
-class ConfigEval_7(ConfigTrain_7):
     def __init__(self) -> None:
         super().__init__()
         # data
@@ -231,13 +183,52 @@ class ConfigEval_7(ConfigTrain_7):
         # eval
         checkpoint = 140
         self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
-        self.outputs_save_path = "data/7/outputs_{}".format(checkpoint)
-        self.labels_save_path  = "data/7/labels_{}".format(checkpoint) 
+        self.outputs_save_path = "data/4/outputs_{}".format(checkpoint)
+        self.labels_save_path  = "data/4/labels_{}".format(checkpoint) 
+
+
+"""
+[4, 4, 4] [1, 16, 32]
+
+One of the possible solution to solve the checkbox problem is to continue to
+train the 3D UNet with the raw data. Since there are huge number of checkbox,
+the training process will forcus on the checkbox problem first.
+
+Trainable parameters: 70,353            Training   speed: 0.82s/steps
+Dedicated GPU memory:  6.5/16.0 GB      Validation speed: 0.49s/steps
+Shared    GPU memory:  0.4/31.9 GB      Evaluation speed: 0.28s/steps
+"""
+
+
+class ConfigTrain_5(ConfigTrain_4):
+    def __init__(self) -> None:
+        super().__init__()
+        self.type_data = ["Raw", "Raw"]
+        self.ckpt_save_folder = "ckpt/5"
+        self.ckpt_load_path = "ckpt/4/140"
+        self.ckpt_load_lr = True
+
+
+class ConfigEval_5(ConfigTrain_5):
+    def __init__(self) -> None:
+        super().__init__()
+        # data
+        self.h_range = [ 9, 12]
+        self.w_range = [11, 14]
+        self.num = [45000 * 16]
+        self.type_data = ["Raw"]
+        self.batch_size  = 8
+        self.num_workers = 4
+        # eval
+        checkpoint = 140
+        self.ckpt_load_path = "{}/{}".format(self.ckpt_save_folder, checkpoint)
+        self.outputs_save_path = "data/5/outputs_{}".format(checkpoint)
+        self.labels_save_path  = "data/5/labels_{}".format(checkpoint) 
 
 
 def getConfig(mode: str) -> Config:
     if mode == "train":
-        return ConfigTrain_7()
+        return ConfigTrain_5()
     if mode == "eval":
-        return ConfigEval_7()
+        return ConfigEval_5()
     raise ValueError("mode must be 'train' or 'eval'")
