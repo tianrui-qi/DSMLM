@@ -193,5 +193,7 @@ class Train:
 
 
 if __name__ == "__main__":
-    trainer = Train(config.getConfig("train"))
+    cfg = config.getConfig()
+    cfg.train()
+    trainer = Train(cfg)
     trainer.train()

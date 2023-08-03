@@ -115,5 +115,7 @@ class Eval:
 
 
 if __name__ == "__main__":
-    trainer = Eval(config.getConfig("eval"))
-    trainer.eval()
+    cfg = config.getConfig()
+    cfg.eval()
+    evaluator = Eval(cfg)
+    evaluator.eval()

@@ -25,17 +25,12 @@ class SimDataset(Dataset):
         self.mol_range = Tensor(config.mol_range).int()     # [2]
         self.std_range = Tensor(config.std_range)           # [2, D]
         self.lum_range = Tensor(config.lum_range)           # [2]
-        # config for reducing resolution and adding noise
-        self.bitdepth    = config.bitdepth
-        self.qe          = config.qe
-        self.sensitivity = config.sensitivity
-        self.dark_noise  = config.dark_noise
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
         mean_set, var_set, lum_set = self._generateParas()
 
         frame = self._generateFrame(mean_set, var_set, lum_set)
-        frame = self._generateNoise(frame)
+        frame = self.addCameraNoise(frame)
         frame = F.interpolate(
             frame.unsqueeze(0).unsqueeze(0),
             scale_factor=self.up_sample.tolist()
@@ -104,39 +99,6 @@ class SimDataset(Dataset):
 
         return torch.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
-    def _generateNoise(self, frame: Tensor) -> Tensor:
-        """
-        This function will add camer noise to the input frame. 
-        
-        We add three type of noise in our camera noise. First we convert the
-        gray frame to photons to add shot noise. Then convert to electons to 
-        add dark noise. Finally, we round the frame which simulate the loss of 
-        information due to limit bitdepth when store data.
-
-        Args:
-            frame (Tensor): [*self.dim_frame] tensor representing the frame
-                we will add noise.
-
-        Return:
-            noise (Tensor): [*self.dim_frame] tensor representing the frame
-                after we add noise.
-        """
-
-        frame *= 2**self.bitdepth - 1   # clean    -> gray
-        frame /= self.sensitivity       # gray     -> electons
-        frame /= self.qe                # electons -> photons
-        # shot noise / poisson noise
-        frame  = torch.poisson(frame)
-        frame *= self.qe                # photons  -> electons
-        # dark noise / gaussian noise
-        frame += torch.normal(0.0, self.dark_noise, size=frame.shape)
-        frame *= self.sensitivity       # electons -> gray
-        # reducing resolution casue by limit bitdepth when store data
-        frame  = torch.round(frame)
-        frame /= 2**self.bitdepth - 1  # gray     -> noised
-
-        return torch.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
-
     def _generateLabel(self, mean_set: Tensor) -> Tensor:
         """
         This function will generate the label that convert the [N, D] mean_set
@@ -162,6 +124,27 @@ class SimDataset(Dataset):
         label[tuple(torch.round(mean_set).T.int())] = 1
         
         return torch.clip(label, 0, 1)  # prevent lum exceeding 1 or below 0
+
+    @staticmethod
+    def addCameraNoise(
+        frame: Tensor,
+        bitdepth: int = 16, qe: float = 0.82,
+        sensitivity: float = 5.88, dark_noise: float = 2.29
+    ) -> Tensor:
+        frame *= 2**bitdepth - 1    # clean    -> gray
+        frame /= sensitivity        # gray     -> electons
+        frame /= qe                 # electons -> photons
+        # shot noise / poisson noise
+        frame  = torch.poisson(frame)
+        frame *= qe                 # photons  -> electons
+        # dark noise / gaussian noise
+        frame += torch.normal(0.0, dark_noise, size=frame.shape)
+        frame *= sensitivity        # electons -> gray
+        # reducing resolution casue by limit bitdepth when store data
+        frame  = torch.round(frame)
+        frame /= 2**bitdepth - 1    # gray     -> noised
+
+        return torch.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
 
 class RawDataset(Dataset):
