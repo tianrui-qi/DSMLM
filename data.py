@@ -157,6 +157,9 @@ class RawDataset(Dataset):
         self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
 
+        # read option
+        self.threshold = config.threshold
+
         # subframe index
         self.h_range = config.h_range
         self.w_range = config.w_range
@@ -232,6 +235,7 @@ class RawDataset(Dataset):
             size = (32, 512, 512)
         ).squeeze(0).squeeze(0)
         self.frame = F.pad(self.frame, (pad, pad, pad, pad, pad, pad))
+        self.frame[self.frame < self.threshold] = 0
 
         # mlist
         _, self.mlist = scipy.io.loadmat( # type: ignore
@@ -302,6 +306,7 @@ if __name__ == "__main__":
 
     # test using default config
     config = Config()
+    config.train()
 
     # test the RawDataset
     dataset = RawDataset(config, 5000)
