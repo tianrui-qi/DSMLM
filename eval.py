@@ -16,8 +16,7 @@ class Eval:
     def __init__(self, config) -> None:
         self.device = config.device
         self.ckpt_load_path = config.ckpt_load_path
-        self.outputs_save_path = config.outputs_save_path
-        self.labels_save_path = config.labels_save_path
+        self.data_save_folder = config.data_save_folder
 
         # model
         self.model = model.ResAttUNet(config).to(self.device)
@@ -54,14 +53,12 @@ class Eval:
             total=int(
                 len(self.dataloader)*self.batch_size/self.num_sub # type: ignore
             ),
-            desc=self.ckpt_load_path, unit="frame"
+            desc=self.data_save_folder, unit="frame"
         )
 
         # create folder
-        if not os.path.exists(os.path.dirname(self.outputs_save_path)):
-            os.makedirs(os.path.dirname(self.outputs_save_path))
-        if not os.path.exists(os.path.dirname(self.labels_save_path)):
-            os.makedirs(os.path.dirname(self.labels_save_path))
+        if not os.path.exists(self.data_save_folder):
+            os.makedirs(self.data_save_folder)
 
         outputs_cat = None  # output after concatenation
         outputs_cmb = None  # output after combination
@@ -89,33 +86,26 @@ class Eval:
             outputs_cat = None
             labels_cat = None
 
-            # save after combine 1000 frame
+            # save after combine 1, 2, 4, 8, 16... frame
             current_frame = int((i+1)/(self.num_sub/self.batch_size))
-            if current_frame % 1000 == 0:
-                tifffile.imsave(
-                    "{}_{}.tif".format(self.outputs_save_path, current_frame),
-                    outputs_cmb.cpu().detach().numpy()
+            if current_frame & (current_frame - 1) == 0 \
+            or i == len(self.dataloader) - 1:
+                tifffile.imwrite(
+                    "{}/outputs_{}.tif".format(
+                        self.data_save_folder, current_frame
+                    ), outputs_cmb.float().cpu().detach().numpy()
                 )
-                tifffile.imsave(
-                    "{}_{}.tif".format(self.labels_save_path, current_frame), 
-                    labels_cmb.numpy()
+                tifffile.imwrite(
+                    "{}/labels_{}.tif".format(
+                        self.data_save_folder, current_frame
+                    ), labels_cmb.numpy()
                 )
 
             pbar.update()  # update progress bar
 
-        # save
-        tifffile.imsave(
-            "{}.tif".format(self.outputs_save_path),
-            outputs_cmb.cpu().detach().numpy()  # type: ignore
-        )
-        tifffile.imsave(
-            "{}.tif".format(self.labels_save_path), 
-            labels_cmb.numpy()  # type: ignore
-        )
-
 
 if __name__ == "__main__":
-    cfg = config.getConfig()
-    cfg.eval()
-    evaluator = Eval(cfg)
-    evaluator.eval()
+    for cfg in config.getConfig():
+        cfg.eval()
+        evaluator = Eval(cfg)
+        evaluator.eval()

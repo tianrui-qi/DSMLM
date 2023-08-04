@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 
 class Config:
@@ -57,22 +57,25 @@ class Config:
         self.lr   : float = 1e-4    # initial learning rate (lr)
         self.gamma: float = 0.95    # decay rate of lr
         # checkpoint
-        self.ckpt_save_folder: str  = "ckpt"    # folder store ckpt every epoch
+        self.ckpt_save_folder: str  = "ckpt/default"
         self.ckpt_load_path  : str  = ""        # path without .ckpt
         self.ckpt_load_lr    : bool = False     # load lr from ckpt
 
     def eval(self) -> None:
+        ## RawDataset
+        self.h_range = [ 9, 12]
+        self.w_range = [11, 14]
+
         ## getDataLoader
-        self.num: List[int] = [45000 * 256]
+        self.num: List[int] = [45000 * 16]
         self.type_data: List[str] = ["Raw"]
         self.batch_size : int = 8
         self.num_workers: int = 4
 
         ## Eval - also use some config of train
         self.device: str = "cuda"
-        self.ckpt_load_path  : str  = ""        # path without .ckpt
-        self.outputs_save_path: str = "data/outputs"    # path without .tif
-        self.labels_save_path : str = "data/labels"     # path without .tif
+        self.ckpt_load_path  : str = ""         # path without .ckpt
+        self.data_save_folder: str = "data/default"
 
 
 """
@@ -100,7 +103,7 @@ Evaluation speed:     s/steps
 """
 
 
-class Config_1(Config):
+class Config_01(Config):
     def __init__(self) -> None:
         super().__init__()
         self.feats = [1, 32, 64]
@@ -108,27 +111,21 @@ class Config_1(Config):
     def train(self) -> None:
         super().train()
         ## Train
-        self.ckpt_save_folder = "ckpt/1"
+        self.ckpt_save_folder = "ckpt/01"
 
     def eval(self) -> None:
         super().eval()
-        ## RawDataset
-        self.h_range = [ 9, 12]
-        self.w_range = [11, 14]
-        
         ## getDataLoader
         self.num = [1000 * 16]
         self.batch_size  = 4
         self.num_workers = 2
 
         ## Eval
-        checkpoint = 8
-        self.ckpt_load_path    = "ckpt/1/{}".format(checkpoint)
-        self.outputs_save_path = "data/1/outputs_{}".format(checkpoint)
-        self.labels_save_path  = "data/1/labels_{}".format(checkpoint) 
+        self.ckpt_load_path   = "ckpt/01/8"
+        self.data_save_folder = "data/01"
 
 
-class Config_2(Config):
+class Config_02(Config):
     def __init__(self) -> None:
         super().__init__()
         self.feats = [1, 32, 64]
@@ -137,25 +134,18 @@ class Config_2(Config):
         super().train()
         ## Train
         self.lr = 1e-5
-        self.ckpt_save_folder = "ckpt/2"
-        self.ckpt_load_path   = "ckpt/1/8"
+        self.ckpt_save_folder = "ckpt/02"
+        self.ckpt_load_path   = "ckpt/01/8"
 
     def eval(self) -> None:
         super().eval()
-        ## RawDataset
-        self.h_range = [ 9, 12]
-        self.w_range = [11, 14]
-
         ## getDataLoader
-        self.num = [45000 * 16]
         self.batch_size  = 4
         self.num_workers = 2
         
         ## Eval
-        checkpoint = 140
-        self.ckpt_load_path    = "ckpt/2/{}".format(checkpoint)
-        self.outputs_save_path = "data/2/outputs_{}".format(checkpoint)
-        self.labels_save_path  = "data/2/labels_{}".format(checkpoint) 
+        self.ckpt_load_path   = "ckpt/02/140"
+        self.data_save_folder = "data/02"
 
 
 """
@@ -180,36 +170,27 @@ Evaluation speed: 0.28s/steps
 """
 
 
-class Config_3(Config):
+class Config_03(Config):
     def train(self) -> None:
         super().train()
         ## Train
-        self.ckpt_save_folder = "ckpt/3"
+        self.ckpt_save_folder = "ckpt/03"
 
     def eval(self) -> None: raise NotImplementedError
 
 
-class Config_4(Config):
+class Config_04(Config):
     def train(self) -> None:
         super().train()
         ## Train
         self.lr = 5e-5
-        self.ckpt_save_folder = "ckpt/4"
+        self.ckpt_save_folder = "ckpt/04"
 
     def eval(self) -> None:
         super().eval()
-        ## RawDataset
-        self.h_range = [ 9, 12]
-        self.w_range = [11, 14]
-
-        ## getDataLoader
-        self.num = [45000 * 16]
-
         ## Eval
-        checkpoint = 140
-        self.ckpt_load_path    = "ckpt/4/{}".format(checkpoint)
-        self.outputs_save_path = "data/4/outputs_{}".format(checkpoint)
-        self.labels_save_path  = "data/4/labels_{}".format(checkpoint) 
+        self.ckpt_load_path   = "ckpt/04/140"
+        self.data_save_folder = "data/04"
 
 
 """
@@ -231,51 +212,90 @@ Evaluation speed: 0.28s/steps
 """
 
 
-class Config_5(Config):
+class Config_05(Config):
     def train(self) -> None:
         super().train()
         ## getDataLoader
         self.type_data = ["Raw", "Raw"]
 
         ## Train
-        self.ckpt_save_folder = "ckpt/5"
-        self.ckpt_load_path = "ckpt/4/140"
-        self.ckpt_load_lr = True
+        self.ckpt_save_folder = "ckpt/05"
+        self.ckpt_load_path   = "ckpt/04/140"
+        self.ckpt_load_lr     = True
 
     def eval(self) -> None:
         super().eval()
-        ## RawDataset
-        self.h_range = [ 9, 12]
-        self.w_range = [11, 14]
-
-        ## getDataLoader
-        self.num = [45000 * 16]
-
         ## Eval
-        checkpoint = 150
-        self.ckpt_load_path    = "ckpt/5/{}".format(checkpoint)
-        self.outputs_save_path = "data/5/outputs_{}".format(checkpoint)
-        self.labels_save_path  = "data/5/labels_{}".format(checkpoint) 
+        self.ckpt_load_path   = "ckpt/05/150"
+        self.data_save_folder = "data/05"
 
 
-class Config_6(Config):
+class _Config_threshold(Config):
     def train(self) -> None: raise NotImplementedError
 
     def eval(self) -> None:
         super().eval()
-        ## RawDataset
+        self.ckpt_load_path   = "ckpt/04/140"
+
+
+class Config_06(_Config_threshold):
+    def eval(self) -> None:
+        super().eval()
         self.threshold = 0.005
-        self.h_range = [ 9, 12]
-        self.w_range = [11, 14]
-
-        ## getDataLoader
-        self.num = [45000 * 16]
-
-        ## Eval
-        checkpoint = 140
-        self.ckpt_load_path    = "ckpt/4/{}".format(checkpoint)
-        self.outputs_save_path = "data/6/outputs_{}".format(checkpoint)
-        self.labels_save_path  = "data/6/labels_{}".format(checkpoint) 
+        self.data_save_folder = "data/06"
 
 
-def getConfig() -> Config: return Config_6()
+class Config_07(_Config_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.010
+        self.data_save_folder = "data/07"
+
+
+class Config_08(_Config_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.015
+        self.data_save_folder = "data/08"
+
+
+class Config_09(_Config_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.020
+        self.data_save_folder = "data/09"
+
+
+class Config_10(_Config_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.025
+        self.data_save_folder = "data/10"
+
+
+class Config_11(_Config_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.030
+        self.data_save_folder = "data/11"
+
+
+class Config_12(_Config_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.035
+        self.data_save_folder = "data/12"
+
+
+class Config_13(_Config_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.040
+        self.data_save_folder = "data/13"
+
+
+def getConfig() -> Tuple[Config, ...]:
+    return (
+        Config_06(), Config_07(), Config_08(), Config_09(), 
+        Config_10(), Config_11(), Config_12(), Config_13()
+    )
