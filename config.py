@@ -103,7 +103,7 @@ Evaluation speed:     s/steps
 """
 
 
-class Config_01(Config):
+class d_01(Config):
     def __init__(self) -> None:
         super().__init__()
         self.feats = [1, 32, 64]
@@ -111,7 +111,7 @@ class Config_01(Config):
     def train(self) -> None:
         super().train()
         ## Train
-        self.ckpt_save_folder = "ckpt/01"
+        self.ckpt_save_folder = "ckpt/d-chessboard/01"
 
     def eval(self) -> None:
         super().eval()
@@ -121,11 +121,11 @@ class Config_01(Config):
         self.num_workers = 2
 
         ## Eval
-        self.ckpt_load_path   = "ckpt/01/8"
-        self.data_save_folder = "data/01"
+        self.ckpt_load_path   = "ckpt/d-chessboard/01/8"
+        self.data_save_folder = "data/d-chessboard/01"
 
 
-class Config_02(Config):
+class d_02(Config):
     def __init__(self) -> None:
         super().__init__()
         self.feats = [1, 32, 64]
@@ -134,8 +134,8 @@ class Config_02(Config):
         super().train()
         ## Train
         self.lr = 1e-5
-        self.ckpt_save_folder = "ckpt/02"
-        self.ckpt_load_path   = "ckpt/01/8"
+        self.ckpt_save_folder = "ckpt/d-chessboard/02"
+        self.ckpt_load_path   = "ckpt/d-chessboard/01/8"
 
     def eval(self) -> None:
         super().eval()
@@ -144,8 +144,8 @@ class Config_02(Config):
         self.num_workers = 2
         
         ## Eval
-        self.ckpt_load_path   = "ckpt/02/140"
-        self.data_save_folder = "data/02"
+        self.ckpt_load_path   = "ckpt/d-chessboard/02/140"
+        self.data_save_folder = "data/d-chessboard/02"
 
 
 """
@@ -170,27 +170,27 @@ Evaluation speed: 0.28s/steps
 """
 
 
-class Config_03(Config):
+class d_03(Config):
     def train(self) -> None:
         super().train()
         ## Train
-        self.ckpt_save_folder = "ckpt/03"
+        self.ckpt_save_folder = "ckpt/d-chessboard/03"
 
     def eval(self) -> None: raise NotImplementedError
 
 
-class Config_04(Config):
+class d_04(Config):
     def train(self) -> None:
         super().train()
         ## Train
         self.lr = 5e-5
-        self.ckpt_save_folder = "ckpt/04"
+        self.ckpt_save_folder = "ckpt/d-chessboard/04"
 
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path   = "ckpt/04/140"
-        self.data_save_folder = "data/04"
+        self.ckpt_load_path   = "ckpt/d-chessboard/04/140"
+        self.data_save_folder = "data/d-chessboard/04"
 
 
 """
@@ -212,90 +212,172 @@ Evaluation speed: 0.28s/steps
 """
 
 
-class Config_05(Config):
+class d_05(Config):
     def train(self) -> None:
         super().train()
         ## getDataLoader
         self.type_data = ["Raw", "Raw"]
 
         ## Train
-        self.ckpt_save_folder = "ckpt/05"
-        self.ckpt_load_path   = "ckpt/04/140"
+        self.ckpt_save_folder = "ckpt/d-chessboard/05"
+        self.ckpt_load_path   = "ckpt/d-chessboard/04/140"
         self.ckpt_load_lr     = True
 
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path   = "ckpt/05/150"
-        self.data_save_folder = "data/05"
+        self.ckpt_load_path   = "ckpt/d-chessboard/05/150"
+        self.data_save_folder = "data/d-chessboard/05"
 
 
-class _Config_threshold(Config):
+class _threshold(Config):
     def train(self) -> None: raise NotImplementedError
 
     def eval(self) -> None:
         super().eval()
-        self.ckpt_load_path   = "ckpt/04/140"
+        self.ckpt_load_path   = "ckpt/d-chessboard/04/140"
 
 
-class Config_06(_Config_threshold):
+class d_t_005(_threshold):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.005
-        self.data_save_folder = "data/06"
+        self.data_save_folder = "data/d-chessboard/threshold/005"
 
 
-class Config_07(_Config_threshold):
+class d_t_010(_threshold):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.010
-        self.data_save_folder = "data/07"
+        self.data_save_folder = "data/d-chessboard/threshold/010"
 
 
-class Config_08(_Config_threshold):
+class d_t_015(_threshold):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.015
-        self.data_save_folder = "data/08"
+        self.data_save_folder = "data/d-chessboard/threshold/015"
 
 
-class Config_09(_Config_threshold):
+class d_t_020(_threshold):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.020
-        self.data_save_folder = "data/09"
+        self.data_save_folder = "data/d-chessboard/threshold/020"
 
 
-class Config_10(_Config_threshold):
+class d_t_025(_threshold):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.025
-        self.data_save_folder = "data/10"
+        self.data_save_folder = "data/d-chessboard/threshold/025"
 
 
-class Config_11(_Config_threshold):
+class d_t_030(_threshold):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.030
-        self.data_save_folder = "data/11"
+        self.data_save_folder = "data/d-chessboard/threshold/030"
 
 
-class Config_12(_Config_threshold):
+class d_t_035(_threshold):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.035
-        self.data_save_folder = "data/12"
+        self.data_save_folder = "data/d-chessboard/threshold/035"
 
 
-class Config_13(_Config_threshold):
+class d_t_040(_threshold):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.040
-        self.data_save_folder = "data/13"
+        self.data_save_folder = "data/d-chessboard/threshold/040"
 
 
-def getConfig() -> Tuple[Config, ...]:
-    return (
-        Config_06(), Config_07(), Config_08(), Config_09(), 
-        Config_10(), Config_11(), Config_12(), Config_13()
-    )
+class d_t_045(_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.045
+        self.data_save_folder = "data/d-chessboard/threshold/045"
+
+
+class d_t_050(_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.050
+        self.data_save_folder = "data/d-chessboard/threshold/050"
+
+
+class d_t_055(_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.055
+        self.data_save_folder = "data/d-chessboard/threshold/055"
+
+
+class d_t_060(_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.060
+        self.data_save_folder = "data/d-chessboard/threshold/060"
+
+
+class d_t_065(_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.065
+        self.data_save_folder = "data/d-chessboard/threshold/065"
+
+
+class d_t_070(_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.070
+        self.data_save_folder = "data/d-chessboard/threshold/070"
+
+
+class d_t_075(_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.075
+        self.data_save_folder = "data/d-chessboard/threshold/075"
+
+
+class d_t_080(_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.080
+        self.data_save_folder = "data/d-chessboard/threshold/080"
+
+
+class d_t_085(_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.085
+        self.data_save_folder = "data/d-chessboard/threshold/085"
+
+
+class d_t_090(_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.090
+        self.data_save_folder = "data/d-chessboard/threshold/090"
+
+
+class d_t_095(_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.095
+        self.data_save_folder = "data/d-chessboard/threshold/095"
+
+
+class d_t_100(_threshold):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.100
+        self.data_save_folder = "data/d-chessboard/threshold/100"
+
+
+def getConfig() -> Tuple[Config, ...]: return (
+    d_t_085(), d_t_090(), d_t_095(), d_t_100(),
+)
