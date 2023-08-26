@@ -224,18 +224,19 @@ class RawDataset(Dataset):
         """
         return self.num
 
-    def _readNext(self, index: int, pad: int = 4) -> None:
+    def _readNext(self, index: int, max: float = 6.5, pad: int = 4) -> None:
         # frame
         self.frame = torch.from_numpy(tifffile.imread(
             os.path.join(self.frames_load_folder, self.frames_list[index])
         ))
-        self.frame = (self.frame / torch.max(self.frame)).float()
+        self.frame = (self.frame / max).float()
         self.frame = F.interpolate(
             self.frame.unsqueeze(0).unsqueeze(0), 
             size = (32, 512, 512)
         ).squeeze(0).squeeze(0)
         self.frame = F.pad(self.frame, (pad, pad, pad, pad, pad, pad))
         self.frame[self.frame < self.threshold] = 0
+        self.frame = torch.clip(self.frame, 0, 1)
 
         # mlist
         _, self.mlist = scipy.io.loadmat( # type: ignore

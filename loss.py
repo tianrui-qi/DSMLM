@@ -16,8 +16,18 @@ class GaussianBlurLoss(nn.Module):
         self.pad = [config.kernel_size for _ in range(6)]  # [C H W]
     
     def forward(self, predi: Tensor, label: Tensor) -> float:
-        if self.type_loss == "l1": return self._l1Loss(predi, label)
-        if self.type_loss == "l2": return self._l2Loss(predi, label)
+        if self.type_loss == "l1": 
+            return F.l1_loss(
+                self.gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
+                self.gaussianBlur3d(F.pad(label, self.pad), self.kernel),
+                reduction="sum"
+            )  # type: ignore
+        if self.type_loss == "l2": 
+            return F.mse_loss(
+                self.gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
+                self.gaussianBlur3d(F.pad(label, self.pad), self.kernel),
+                reduction="sum"
+            )  # type: ignore
         raise ValueError("loss must be 'l1' or 'l2'")
 
     def to(self, device):
@@ -26,20 +36,6 @@ class GaussianBlurLoss(nn.Module):
         self.kernel = self.kernel.to(device)
         return self
 
-    def _l1Loss(self, predi: Tensor, label: Tensor) -> float:
-        return F.l1_loss(
-            self.gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
-            self.gaussianBlur3d(F.pad(label, self.pad), self.kernel),
-            reduction="sum"
-        )  # type: ignore
-
-    def _l2Loss(self, predi: Tensor, label: Tensor) -> float:
-        return F.mse_loss(
-            self.gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
-            self.gaussianBlur3d(F.pad(label, self.pad), self.kernel),
-            reduction="sum"
-        )  # type: ignore
-    
     @staticmethod
     def gaussianKernel(
         dim: int, kernel_size: int = 7, kernel_sigma: float = 1.0

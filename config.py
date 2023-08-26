@@ -99,7 +99,7 @@ problem by simply limit the std or lum of our simulation in some range.
 Trainable parameters: 279,969
 Training   speed: 1.33s/steps
 Validation speed:     s/steps
-Evaluation speed:     s/steps
+Evaluation speed:     s/frames
 """
 
 
@@ -166,7 +166,7 @@ become more serious.
 Trainable parameters: 70,353
 Training   speed: 0.82s/steps
 Validation speed: 0.49s/steps
-Evaluation speed: 0.28s/steps
+Evaluation speed: 0.28s/frames
 """
 
 
@@ -196,7 +196,7 @@ class d_04(Config):
 """
 [4, 4, 4] [1, 16, 32]
 
-For checkbox problem, we may have two possible solution:
+For checkbox problem, we may have two possible solutions:
 
 In 5, we continue to train the 3D UNet with the raw data. Since there are huge 
 number of checkbox, the training process will forcus on the checkbox problem
@@ -208,7 +208,7 @@ point.
 Trainable parameters: 70,353
 Training   speed: 0.82s/steps
 Validation speed: 0.49s/steps
-Evaluation speed: 0.28s/steps
+Evaluation speed: 0.28s/frames
 """
 
 
@@ -238,11 +238,11 @@ class _threshold(Config):
         self.ckpt_load_path   = "ckpt/d-chessboard/04/140"
 
 
-class d_t_005(_threshold):
+class d_t_000(_threshold):
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.005
-        self.data_save_folder = "data/d-chessboard/threshold/005"
+        self.threshold = 0.000
+        self.data_save_folder = "data/d-chessboard/threshold/000"
 
 
 class d_t_010(_threshold):
@@ -252,25 +252,11 @@ class d_t_010(_threshold):
         self.data_save_folder = "data/d-chessboard/threshold/010"
 
 
-class d_t_015(_threshold):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.015
-        self.data_save_folder = "data/d-chessboard/threshold/015"
-
-
 class d_t_020(_threshold):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.020
         self.data_save_folder = "data/d-chessboard/threshold/020"
-
-
-class d_t_025(_threshold):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.025
-        self.data_save_folder = "data/d-chessboard/threshold/025"
 
 
 class d_t_030(_threshold):
@@ -280,25 +266,11 @@ class d_t_030(_threshold):
         self.data_save_folder = "data/d-chessboard/threshold/030"
 
 
-class d_t_035(_threshold):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.035
-        self.data_save_folder = "data/d-chessboard/threshold/035"
-
-
 class d_t_040(_threshold):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.040
         self.data_save_folder = "data/d-chessboard/threshold/040"
-
-
-class d_t_045(_threshold):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.045
-        self.data_save_folder = "data/d-chessboard/threshold/045"
 
 
 class d_t_050(_threshold):
@@ -308,25 +280,11 @@ class d_t_050(_threshold):
         self.data_save_folder = "data/d-chessboard/threshold/050"
 
 
-class d_t_055(_threshold):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.055
-        self.data_save_folder = "data/d-chessboard/threshold/055"
-
-
 class d_t_060(_threshold):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.060
         self.data_save_folder = "data/d-chessboard/threshold/060"
-
-
-class d_t_065(_threshold):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.065
-        self.data_save_folder = "data/d-chessboard/threshold/065"
 
 
 class d_t_070(_threshold):
@@ -336,13 +294,6 @@ class d_t_070(_threshold):
         self.data_save_folder = "data/d-chessboard/threshold/070"
 
 
-class d_t_075(_threshold):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.075
-        self.data_save_folder = "data/d-chessboard/threshold/075"
-
-
 class d_t_080(_threshold):
     def eval(self) -> None:
         super().eval()
@@ -350,25 +301,11 @@ class d_t_080(_threshold):
         self.data_save_folder = "data/d-chessboard/threshold/080"
 
 
-class d_t_085(_threshold):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.085
-        self.data_save_folder = "data/d-chessboard/threshold/085"
-
-
 class d_t_090(_threshold):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.090
         self.data_save_folder = "data/d-chessboard/threshold/090"
-
-
-class d_t_095(_threshold):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.095
-        self.data_save_folder = "data/d-chessboard/threshold/095"
 
 
 class d_t_100(_threshold):
@@ -379,5 +316,7 @@ class d_t_100(_threshold):
 
 
 def getConfig() -> Tuple[Config, ...]: return (
-    d_t_085(), d_t_090(), d_t_095(), d_t_100(),
+    d_t_000(),
+    d_t_010(), d_t_020(), d_t_030(), d_t_040(), d_t_050(),
+    d_t_060(), d_t_070(), d_t_080(), d_t_090(), d_t_100(),
 )
