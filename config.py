@@ -352,8 +352,97 @@ class d_06_100(d_06):
         self.data_save_folder = "data/d-chessboard/06/100"
 
 
+"""
+"""
+
+
+class d_07(Config):
+    def train(self) -> None: raise NotImplementedError
+
+    def eval(self) -> None:
+        super().eval()
+        self.ckpt_load_path = "ckpt/d-chessboard/04/60"
+
+
+class d_07_000(d_07):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.000
+        self.data_save_folder = "data/d-chessboard/07/000"
+
+
+class d_07_010(d_07):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.010
+        self.data_save_folder = "data/d-chessboard/07/010"
+
+
+class d_07_020(d_07):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.020
+        self.data_save_folder = "data/d-chessboard/07/020"
+
+
+class d_07_030(d_07):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.030
+        self.data_save_folder = "data/d-chessboard/07/030"
+
+
+class d_07_040(d_07):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.040
+        self.data_save_folder = "data/d-chessboard/07/040"
+
+
+class d_07_050(d_07):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.050
+        self.data_save_folder = "data/d-chessboard/07/050"
+
+
+class d_07_060(d_07):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.060
+        self.data_save_folder = "data/d-chessboard/07/060"
+
+
+class d_07_070(d_07):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.070
+        self.data_save_folder = "data/d-chessboard/07/070"
+
+
+class d_07_080(d_07):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.080
+        self.data_save_folder = "data/d-chessboard/07/080"
+
+
+class d_07_090(d_07):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.090
+        self.data_save_folder = "data/d-chessboard/07/090"
+
+
+class d_07_100(d_07):
+    def eval(self) -> None:
+        super().eval()
+        self.threshold = 0.100
+        self.data_save_folder = "data/d-chessboard/07/100"
+
+
 def getConfig() -> Tuple[Config, ...]: return (
-    d_06_000(),
-    d_06_010(), d_06_020(), d_06_030(), d_06_040(), d_06_050(),
-    d_06_060(), d_06_070(), d_06_080(), d_06_090(), d_06_100(),
+    d_07_000(),
+    d_07_010(), d_07_020(), d_07_030(), d_07_040(), d_07_050(),
+    d_07_060(), d_07_070(), d_07_080(), d_07_090(), d_07_100(),
 )
