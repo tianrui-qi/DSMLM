@@ -230,93 +230,130 @@ class d_05(Config):
         self.data_save_folder = "data/d-chessboard/05"
 
 
-class _threshold(Config):
+"""
+[4, 4, 4] [1, 16, 32]
+
+Another possible solution is to add some threshold such that if the pixel value
+is less than the threhold, we set it as 0.
+
+In 06 old, we test threshold from 0.0 to 0.1 where the step size is 0.005. 
+1.  When the threshold is 0.04, the checkbox in the background, i.e.,
+    these checkbox without tube structure will be removed. However, the checkbox
+    that combine / mix with the structure still exits. 
+2.  As threshold increase, these is a new checkbox appear where the size is 5.
+    These checkbox all on the right up side of the tube structure and seem like
+    some kind of shift of the tube structures. 
+We gauss reason that cause the size 5 checkbox is not same as the size of 9.
+Thus, now we have two problem need to solve, and for each checkbox, we have some 
+preliminary solution:
+9.  For different layer, the luminance of the checkbox may be different. Thus,
+    when threshold is 0.04, these checkbox that are very dark been removed where
+    these checkbox mix with the tube structure is very bright and need more
+    threshold. However, either dark or bright checkbox follow same proportion: 
+    they all apppear in same proportion of the whole brightness. Thus, we need
+    set different threshold for different layer pixel based on their whole
+    brightness.
+5.  The gauss reason for size 5 checkbox is that for two nearby pixel, after 
+    scale up by four, the network give two prediction to each pixel where the
+    distance will be 5. This may cause by overfitting and we may try some
+    different checkpoint to see how will the result change. 
+
+Before further investigation, we change the normolization of the raw data from 
+each frame's max value to a fixed value 6.5. We get this value by calculate
+average maximum value of all frames. Then, we test the new normalization logic
+in 06 where threshold change from 0.0 to 0.1 with step size 0.01. Two problem 
+discrible above still exist. We will use this new normalization logic in future
+test.
+"""
+
+
+class d_06(Config):
     def train(self) -> None: raise NotImplementedError
 
     def eval(self) -> None:
         super().eval()
-        self.ckpt_load_path   = "ckpt/d-chessboard/04/140"
+        self.ckpt_load_path = "ckpt/d-chessboard/04/140"
 
 
-class d_t_000(_threshold):
+class d_06_000(d_06):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.000
-        self.data_save_folder = "data/d-chessboard/threshold/000"
+        self.data_save_folder = "data/d-chessboard/06/000"
 
 
-class d_t_010(_threshold):
+class d_06_010(d_06):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.010
-        self.data_save_folder = "data/d-chessboard/threshold/010"
+        self.data_save_folder = "data/d-chessboard/06/010"
 
 
-class d_t_020(_threshold):
+class d_06_020(d_06):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.020
-        self.data_save_folder = "data/d-chessboard/threshold/020"
+        self.data_save_folder = "data/d-chessboard/06/020"
 
 
-class d_t_030(_threshold):
+class d_06_030(d_06):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.030
-        self.data_save_folder = "data/d-chessboard/threshold/030"
+        self.data_save_folder = "data/d-chessboard/06/030"
 
 
-class d_t_040(_threshold):
+class d_06_040(d_06):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.040
-        self.data_save_folder = "data/d-chessboard/threshold/040"
+        self.data_save_folder = "data/d-chessboard/06/040"
 
 
-class d_t_050(_threshold):
+class d_06_050(d_06):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.050
-        self.data_save_folder = "data/d-chessboard/threshold/050"
+        self.data_save_folder = "data/d-chessboard/06/050"
 
 
-class d_t_060(_threshold):
+class d_06_060(d_06):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.060
-        self.data_save_folder = "data/d-chessboard/threshold/060"
+        self.data_save_folder = "data/d-chessboard/06/060"
 
 
-class d_t_070(_threshold):
+class d_06_070(d_06):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.070
-        self.data_save_folder = "data/d-chessboard/threshold/070"
+        self.data_save_folder = "data/d-chessboard/06/070"
 
 
-class d_t_080(_threshold):
+class d_06_080(d_06):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.080
-        self.data_save_folder = "data/d-chessboard/threshold/080"
+        self.data_save_folder = "data/d-chessboard/06/080"
 
 
-class d_t_090(_threshold):
+class d_06_090(d_06):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.090
-        self.data_save_folder = "data/d-chessboard/threshold/090"
+        self.data_save_folder = "data/d-chessboard/06/090"
 
 
-class d_t_100(_threshold):
+class d_06_100(d_06):
     def eval(self) -> None:
         super().eval()
         self.threshold = 0.100
-        self.data_save_folder = "data/d-chessboard/threshold/100"
+        self.data_save_folder = "data/d-chessboard/06/100"
 
 
 def getConfig() -> Tuple[Config, ...]: return (
-    d_t_000(),
-    d_t_010(), d_t_020(), d_t_030(), d_t_040(), d_t_050(),
-    d_t_060(), d_t_070(), d_t_080(), d_t_090(), d_t_100(),
+    d_06_000(),
+    d_06_010(), d_06_020(), d_06_030(), d_06_040(), d_06_050(),
+    d_06_060(), d_06_070(), d_06_080(), d_06_090(), d_06_100(),
 )
