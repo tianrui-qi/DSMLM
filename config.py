@@ -76,6 +76,8 @@ class Config:
         self.device: str = "cuda"
         self.ckpt_load_path  : str = ""         # path without .ckpt
         self.data_save_folder: str = "data/default"
+        self.eval_type: str = "outputs"         # outputs, labels
+        self.lum_info : bool = False
 
 
 """
@@ -352,6 +354,7 @@ class d_06_100(d_06):
         self.data_save_folder = "data/d-chessboard/06/100"
 
 
+
 """
 """
 
@@ -361,88 +364,40 @@ class d_07(Config):
 
     def eval(self) -> None:
         super().eval()
-        self.ckpt_load_path = "ckpt/d-chessboard/04/60"
+        self.ckpt_load_path = "ckpt/d-chessboard/04/140"
+        self.data_save_folder = "data/d-chessboard/07"
+        self.eval_type = "outputs"
+        self.lum_info  = True
 
 
-class d_07_000(d_07):
+"""
+For generating labels
+"""
+
+
+class d_labels(Config):
+    def train(self) -> None: raise NotImplementedError
+
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.000
-        self.data_save_folder = "data/d-chessboard/07/000"
+        self.ckpt_load_path = "ckpt/d-chessboard/04/140"
+        self.eval_type = "labels"
 
 
-class d_07_010(d_07):
+class d_labels_lumF(d_labels):
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.010
-        self.data_save_folder = "data/d-chessboard/07/010"
+        self.data_save_folder = "data/d-chessboard/labels/lumF"
+        self.lum_info = False
 
 
-class d_07_020(d_07):
+class d_labels_lumT(d_labels):
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.020
-        self.data_save_folder = "data/d-chessboard/07/020"
-
-
-class d_07_030(d_07):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.030
-        self.data_save_folder = "data/d-chessboard/07/030"
-
-
-class d_07_040(d_07):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.040
-        self.data_save_folder = "data/d-chessboard/07/040"
-
-
-class d_07_050(d_07):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.050
-        self.data_save_folder = "data/d-chessboard/07/050"
-
-
-class d_07_060(d_07):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.060
-        self.data_save_folder = "data/d-chessboard/07/060"
-
-
-class d_07_070(d_07):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.070
-        self.data_save_folder = "data/d-chessboard/07/070"
-
-
-class d_07_080(d_07):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.080
-        self.data_save_folder = "data/d-chessboard/07/080"
-
-
-class d_07_090(d_07):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.090
-        self.data_save_folder = "data/d-chessboard/07/090"
-
-
-class d_07_100(d_07):
-    def eval(self) -> None:
-        super().eval()
-        self.threshold = 0.100
-        self.data_save_folder = "data/d-chessboard/07/100"
+        self.data_save_folder = "data/d-chessboard/labels/lumT"
+        self.lum_info = True
 
 
 def getConfig() -> Tuple[Config, ...]: return (
-    d_07_000(),
-    d_07_010(), d_07_020(), d_07_030(), d_07_040(), d_07_050(),
-    d_07_060(), d_07_070(), d_07_080(), d_07_090(), d_07_100(),
+    d_labels_lumT(), d_labels_lumF(), d_07(), 
 )
