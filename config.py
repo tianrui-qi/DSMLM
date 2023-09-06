@@ -18,9 +18,12 @@ class Config:
 
         # =============================== data =============================== #
 
-        # dimensional config - MUST be same accross whole pipline
+        ## Sim&RawDataset
+        # dimensional config
         self.dim_frame: List[int] = [40, 40, 40]    # [C, H, W], by pixel
         self.up_sample: List[int] = [ 4,  4,  4]    # [C, H, W], by scale
+        # whether using luminance information
+        self.lum_info: bool = False
 
         ## SimDataset
         # config for adjust distribution of molecular
@@ -74,162 +77,33 @@ class Config:
 
         ## Eval - also use some config of train
         self.device: str = "cuda"
-        self.ckpt_load_path  : str = ""         # path without .ckpt
+        self.ckpt_load_path  : str = ""     # path without .ckpt
         self.data_save_folder: str = "data/default"
-        self.eval_type: str = "outputs"         # outputs, labels
-        self.lum_info : bool = False
+        self.eval_type: str = "predi"       # predi, label
 
 
-"""
-[4, 4, 4] [1, 32, 64]
-
-For 1&2, we use the 3D UNet without residual and CBAM and the upsample rate
-is [4, 4, 4], i.e., the pixel size is 32.5 nm in XYZ. 
-
-For 1, we train the model using learning rate 1e-4 but the result goes to all
-dark where the turning point is after 8 epoch. So we load the ckpt 8 and retrain
-the 3D UNet with lr at 1e-5.
-
-The result all match the ground truth except there are checkboard artifacts.
-They appear in every direction and happean in period of 9 pixels, i.e., 1 pixel
-light, 7 pixels dark, 1 pixel light. After check the raw data we use to predict,
-these checkbox already exist in the raw data (low resolution) where the period
-is 1. These checkbox is very dark but follow the Gaussian distribution, i.e., 
-a very small Gaussian point with std around 1.7. So we can not solve this
-problem by simply limit the std or lum of our simulation in some range. 
-
-Trainable parameters: 279,969
-Training   speed: 1.33s/steps
-Validation speed:     s/steps
-Evaluation speed:     s/frames
-"""
+def getConfig() -> Tuple[Config, ...]:
+    return (
+        d_07()
+    )
 
 
-class d_01(Config):
+class d_07(Config):
     def __init__(self) -> None:
         super().__init__()
-        self.feats = [1, 32, 64]
+        self.lum_info = True
 
-    def train(self) -> None:
-        super().train()
-        ## Train
-        self.ckpt_save_folder = "ckpt/d-chessboard/01"
-
-    def eval(self) -> None:
-        super().eval()
-        ## getDataLoader
-        self.num = [1000 * 16]
-        self.batch_size  = 4
-        self.num_workers = 2
-
-        ## Eval
-        self.ckpt_load_path   = "ckpt/d-chessboard/01/8"
-        self.data_save_folder = "data/d-chessboard/01"
-
-
-class d_02(Config):
-    def __init__(self) -> None:
-        super().__init__()
-        self.feats = [1, 32, 64]
-
-    def train(self) -> None:
-        super().train()
-        ## Train
-        self.lr = 1e-5
-        self.ckpt_save_folder = "ckpt/d-chessboard/02"
-        self.ckpt_load_path   = "ckpt/d-chessboard/01/8"
-
-    def eval(self) -> None:
-        super().eval()
-        ## getDataLoader
-        self.batch_size  = 4
-        self.num_workers = 2
-        
-        ## Eval
-        self.ckpt_load_path   = "ckpt/d-chessboard/02/140"
-        self.data_save_folder = "data/d-chessboard/02"
-
-
-"""
-[4, 4, 4] [1, 16, 32]
-
-Before move to [4, 8, 8] upsampling rate, we want to try the 3D UNet with less
-number of features, i.e., 25% of 1&2 used, on [4, 4, 4] so that the [4, 8, 8]
-network can fit in the GPU memory. 
-
-Since 1&2 get the prediction successfully, we may expect to use same training
-step in 3&4 except the new number of features. However, from the running log of
-3, the learning rate is too large according to previous experiment. Thus, in 4,
-we reduce the learning rate to 5e-5. In fact, we did not use same training steps
-in 4 as 1&2, i.e., split the training into two part with different learning
-rate. The result of 4 is compareable to 1&2 except the checkboard artifacts
-become more serious.
-
-Trainable parameters: 70,353
-Training   speed: 0.82s/steps
-Validation speed: 0.49s/steps
-Evaluation speed: 0.28s/frames
-"""
-
-
-class d_03(Config):
-    def train(self) -> None:
-        super().train()
-        ## Train
-        self.ckpt_save_folder = "ckpt/d-chessboard/03"
-
-    def eval(self) -> None: raise NotImplementedError
-
-
-class d_04(Config):
     def train(self) -> None:
         super().train()
         ## Train
         self.lr = 5e-5
-        self.ckpt_save_folder = "ckpt/d-chessboard/04"
+        self.ckpt_save_folder = "ckpt/d-chessboard/07"
 
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path   = "ckpt/d-chessboard/04/140"
-        self.data_save_folder = "data/d-chessboard/04"
-
-
-"""
-[4, 4, 4] [1, 16, 32]
-
-For checkbox problem, we may have two possible solutions:
-
-In 5, we continue to train the 3D UNet with the raw data. Since there are huge 
-number of checkbox, the training process will forcus on the checkbox problem
-first. However, after we train to checkpoint 150, the result show that the
-network become super unstable and the prediction is similar to the result of
-checkpoint 1, which means that the network the network train from the start 
-point.
-
-Trainable parameters: 70,353
-Training   speed: 0.82s/steps
-Validation speed: 0.49s/steps
-Evaluation speed: 0.28s/frames
-"""
-
-
-class d_05(Config):
-    def train(self) -> None:
-        super().train()
-        ## getDataLoader
-        self.type_data = ["Raw", "Raw"]
-
-        ## Train
-        self.ckpt_save_folder = "ckpt/d-chessboard/05"
-        self.ckpt_load_path   = "ckpt/d-chessboard/04/140"
-        self.ckpt_load_lr     = True
-
-    def eval(self) -> None:
-        super().eval()
-        ## Eval
-        self.ckpt_load_path   = "ckpt/d-chessboard/05/150"
-        self.data_save_folder = "data/d-chessboard/05"
+        self.ckpt_load_path   = "ckpt/d-chessboard/07/140"
+        self.data_save_folder = "data/d-chessboard/07"
 
 
 """
@@ -354,50 +228,153 @@ class d_06_100(d_06):
         self.data_save_folder = "data/d-chessboard/06/100"
 
 
-
 """
-"""
+[4, 4, 4] [1, 16, 32]
 
+For checkbox problem, we may have two possible solutions:
 
-class d_07(Config):
-    def train(self) -> None: raise NotImplementedError
+In 5, we continue to train the 3D UNet with the raw data. Since there are huge 
+number of checkbox, the training process will forcus on the checkbox problem
+first. However, after we train to checkpoint 150, the result show that the
+network become super unstable and the prediction is similar to the result of
+checkpoint 1, which means that the network the network train from the start 
+point.
 
-    def eval(self) -> None:
-        super().eval()
-        self.ckpt_load_path = "ckpt/d-chessboard/04/140"
-        self.data_save_folder = "data/d-chessboard/07"
-        self.eval_type = "outputs"
-        self.lum_info  = True
-
-
-"""
-For generating labels
+Trainable parameters: 70,353
+Training   speed: 0.82s/steps
+Validation speed: 0.49s/steps
+Evaluation speed: 0.28s/frames
 """
 
 
-class d_labels(Config):
-    def train(self) -> None: raise NotImplementedError
+class d_05(Config):
+    def train(self) -> None:
+        super().train()
+        ## getDataLoader
+        self.type_data = ["Raw", "Raw"]
+
+        ## Train
+        self.ckpt_save_folder = "ckpt/d-chessboard/05"
+        self.ckpt_load_path   = "ckpt/d-chessboard/04/140"
+        self.ckpt_load_lr     = True
 
     def eval(self) -> None:
         super().eval()
-        self.ckpt_load_path = "ckpt/d-chessboard/04/140"
-        self.eval_type = "labels"
+        ## Eval
+        self.ckpt_load_path   = "ckpt/d-chessboard/05/150"
+        self.data_save_folder = "data/d-chessboard/05"
 
 
-class d_labels_lumF(d_labels):
+"""
+[4, 4, 4] [1, 16, 32]
+
+Before move to [4, 8, 8] upsampling rate, we want to try the 3D UNet with less
+number of features, i.e., 25% of 1&2 used, on [4, 4, 4] so that the [4, 8, 8]
+network can fit in the GPU memory. 
+
+Since 1&2 get the prediction successfully, we may expect to use same training
+step in 3&4 except the new number of features. However, from the running log of
+3, the learning rate is too large according to previous experiment. Thus, in 4,
+we reduce the learning rate to 5e-5. In fact, we did not use same training steps
+in 4 as 1&2, i.e., split the training into two part with different learning
+rate. The result of 4 is compareable to 1&2 except the checkboard artifacts
+become more serious.
+
+Trainable parameters: 70,353
+Training   speed: 0.82s/steps
+Validation speed: 0.49s/steps
+Evaluation speed: 0.28s/frames
+"""
+
+
+class d_04(Config):
+    def train(self) -> None:
+        super().train()
+        ## Train
+        self.lr = 5e-5
+        self.ckpt_save_folder = "ckpt/d-chessboard/04"
+
     def eval(self) -> None:
         super().eval()
-        self.data_save_folder = "data/d-chessboard/labels/lumF"
-        self.lum_info = False
+        ## Eval
+        self.ckpt_load_path   = "ckpt/d-chessboard/04/140"
+        self.data_save_folder = "data/d-chessboard/04"
 
 
-class d_labels_lumT(d_labels):
+class d_03(Config):
+    def train(self) -> None:
+        super().train()
+        ## Train
+        self.ckpt_save_folder = "ckpt/d-chessboard/03"
+
+    def eval(self) -> None: raise NotImplementedError
+
+
+"""
+[4, 4, 4] [1, 32, 64]
+
+For 1&2, we use the 3D UNet without residual and CBAM and the upsample rate
+is [4, 4, 4], i.e., the pixel size is 32.5 nm in XYZ. 
+
+For 1, we train the model using learning rate 1e-4 but the result goes to all
+dark where the turning point is after 8 epoch. So we load the ckpt 8 and retrain
+the 3D UNet with lr at 1e-5.
+
+The result all match the ground truth except there are checkboard artifacts.
+They appear in every direction and happean in period of 9 pixels, i.e., 1 pixel
+light, 7 pixels dark, 1 pixel light. After check the raw data we use to predict,
+these checkbox already exist in the raw data (low resolution) where the period
+is 1. These checkbox is very dark but follow the Gaussian distribution, i.e., 
+a very small Gaussian point with std around 1.7. So we can not solve this
+problem by simply limit the std or lum of our simulation in some range. 
+
+Trainable parameters: 279,969
+Training   speed: 1.33s/steps
+Validation speed:     s/steps
+Evaluation speed:     s/frames
+"""
+
+
+class d_02(Config):
+    def __init__(self) -> None:
+        super().__init__()
+        self.feats = [1, 32, 64]
+
+    def train(self) -> None:
+        super().train()
+        ## Train
+        self.lr = 1e-5
+        self.ckpt_save_folder = "ckpt/d-chessboard/02"
+        self.ckpt_load_path   = "ckpt/d-chessboard/01/8"
+
     def eval(self) -> None:
         super().eval()
-        self.data_save_folder = "data/d-chessboard/labels/lumT"
-        self.lum_info = True
+        ## getDataLoader
+        self.batch_size  = 4
+        self.num_workers = 2
+        
+        ## Eval
+        self.ckpt_load_path   = "ckpt/d-chessboard/02/140"
+        self.data_save_folder = "data/d-chessboard/02"
 
 
-def getConfig() -> Tuple[Config, ...]: return (
-    d_labels_lumT(), d_labels_lumF(), d_07(), 
-)
+class d_01(Config):
+    def __init__(self) -> None:
+        super().__init__()
+        self.feats = [1, 32, 64]
+
+    def train(self) -> None:
+        super().train()
+        ## Train
+        self.ckpt_save_folder = "ckpt/d-chessboard/01"
+
+    def eval(self) -> None:
+        super().eval()
+        ## getDataLoader
+        self.num = [1000 * 16]
+        self.batch_size  = 4
+        self.num_workers = 2
+
+        ## Eval
+        self.ckpt_load_path   = "ckpt/d-chessboard/01/8"
+        self.data_save_folder = "data/d-chessboard/01"

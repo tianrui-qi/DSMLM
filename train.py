@@ -85,13 +85,13 @@ class Train:
 
             # forward and backward
             with amp.autocast(dtype=torch.float16):  # type: ignore
-                outputs = self.model(frames)
-                loss_value = self.loss(outputs, labels) / self.accumu_steps
+                predis = self.model(frames)
+                loss_value = self.loss(predis, labels) / self.accumu_steps
             self.scaler.scale(loss_value).backward()  # type: ignore
 
             # record: tensorboard
-            train_loss.append(loss_value.item() / len(outputs))
-            train_num.append(len(torch.nonzero(outputs)) / len(outputs))
+            train_loss.append(loss_value.item() / len(predis))
+            train_num.append(len(torch.nonzero(predis)) / len(predis))
 
             # update model parameters
             if (i+1) % self.accumu_steps != 0: continue
@@ -133,13 +133,13 @@ class Train:
             frames = frames.to(self.device)
             labels = labels.to(self.device)
             # forward
-            outputs = self.model(frames)
+            predis = self.model(frames)
             # loss
-            loss_value = self.loss(outputs, labels)
+            loss_value = self.loss(predis, labels)
 
             # record: tensorboard
-            valid_loss.append(loss_value.item() / len(outputs))
-            valid_num.append(len(torch.nonzero(outputs)) / len(outputs))
+            valid_loss.append(loss_value.item() / len(predis))
+            valid_num.append(len(torch.nonzero(predis)) / len(predis))
             # record: progress bar
             if (i+1) % self.accumu_steps == 0: pbar.update()
         

@@ -17,8 +17,6 @@ class Eval:
         self.device = config.device
         self.ckpt_load_path   = config.ckpt_load_path
         self.data_save_folder = config.data_save_folder
-        self.eval_type = config.eval_type
-        self.lum_info  = config.lum_info
 
         # model
         self.model = model.ResAttUNet(config).to(self.device)
@@ -34,17 +32,15 @@ class Eval:
         # data index
         self.num_sub = self.dataset.num_sub  # type: ignore
         self.batch_size = self.dataloader.batch_size
-        if self.num_sub % self.batch_size != 0:
-            raise ValueError(
-                "num_sub must be divisible by batch_size, but got {} and {}"
-                .format(self.num_sub, self.batch_size)
-            )
+        if self.num_sub % self.batch_size != 0: raise ValueError(
+            "num_sub must be divisible by batch_size, but got {} and {}"
+            .format(self.num_sub, self.batch_size)
+        )
 
         # print model info
-        para_num = sum(
+        print(f'The model has {sum(
             p.numel() for p in self.model.parameters() if p.requires_grad
-        )
-        print(f'The model has {para_num:,} trainable parameters')
+        ):,} trainable parameters')
 
     @torch.no_grad()
     def eval(self) -> None:
@@ -52,9 +48,7 @@ class Eval:
 
         # record: progress bar
         pbar = tqdm.tqdm(
-            total=int(
-                len(self.dataloader)*self.batch_size/self.num_sub # type: ignore
-            ),
+            total=int(len(self.dataloader)*self.batch_size/self.num_sub),
             desc=self.data_save_folder, unit="frame"
         )
 
@@ -65,41 +59,35 @@ class Eval:
         sub_cat = None  # after concatenation
         sub_cmb = None  # after combination
         for i, (frames, labels) in enumerate(self.dataloader):
-            if self.eval_type != "outputs" and self.eval_type != "labels":
+            if self.eval_type != "predi" and self.eval_type != "label":
                 raise ValueError(
-                    "eval_type must be 'outputs' or 'labels', but got {}"
+                    "eval_type must be 'predi' or 'label', but got {}"
                     .format(self.eval_type)
                 )
-            elif self.eval_type == "outputs":
+            elif self.eval_type == "predi":
                 frames = frames.half().to(self.device)
-                sub = self.model(frames)    # output of the model
-            elif self.eval_type == "labels":
+                sub = self.model(frames)    # prediction from the model
+            elif self.eval_type == "label":
                 sub = labels
-            
-            # since the both labels and outputs of model is binary result,
-            # using self.lum_info to decide whether give brightness information
-            if self.lum_info: sub = sub * frames
 
-            # store subframes to a [self.num_sub, *output.shape] tensor
+            # store subframes to a [self.num_sub, *sub.shape] tensor
             sub_cat = sub if sub_cat is None else torch.cat((sub_cat, sub))
 
-            # combine self.num_sub subframes to a [*output.shape] frame
+            # combine self.num_sub number of subframes to a whole frames
             if len(sub_cat) < self.num_sub: continue
-            if sub_cmb == None: 
-                sub_cmb = self.dataset.combineFrame(sub_cat) # type: ignore
-            else:
-                sub_cmb += self.dataset.combineFrame(sub_cat) # type: ignore
+            if sub_cmb == None: sub_cmb = self.dataset.combineFrame(sub_cat)
+            else: sub_cmb += self.dataset.combineFrame(sub_cat)
             sub_cat = None
 
             # save after combine 1, 2, 4, 8, 16... frames
             current_frame = int((i+1)/(self.num_sub/self.batch_size))
             if current_frame & (current_frame - 1) == 0 \
             or i == len(self.dataloader) - 1:
-                if self.eval_type == "outputs": tifffile.imwrite(
+                if self.eval_type == "predi": tifffile.imwrite(
                     "{}/{:05}.tif".format(self.data_save_folder, current_frame),
                     sub_cmb.float().cpu().detach().numpy()
                 )
-                if self.eval_type == "labels": tifffile.imwrite(
+                if self.eval_type == "label": tifffile.imwrite(
                     "{}/{:05}.tif".format(self.data_save_folder, current_frame), 
                     sub_cmb.numpy()
                 )

@@ -20,6 +20,8 @@ class SimDataset(Dataset):
         self.dim_frame = Tensor(config.dim_frame).int()     # [D]
         self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
+        # whether using luminance information
+        self.lum_info = config.lum_info
 
         # config for adjust distribution of molecular
         self.mol_range = Tensor(config.mol_range).int()     # [2]
@@ -29,6 +31,7 @@ class SimDataset(Dataset):
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
         mean_set, var_set, lum_set = self._generateParas()
 
+        # frame
         frame = self._generateFrame(mean_set, var_set, lum_set)
         frame = self.addCameraNoise(frame)
         frame = F.interpolate(
@@ -36,7 +39,9 @@ class SimDataset(Dataset):
             scale_factor=self.up_sample.tolist()
         ).squeeze(0).squeeze(0)
 
+        # label
         label = self._generateLabel(mean_set)
+        if self.lum_info: label *= frame
 
         return frame, label
 
@@ -49,8 +54,7 @@ class SimDataset(Dataset):
 
     def _generateParas(self) -> Tuple[Tensor, Tensor, Tensor]:
         D = len(self.dim_frame)
-        N = torch.randint(
-            self.mol_range[0], self.mol_range[1] + 1, (1,))  # type: ignore
+        N = torch.randint(self.mol_range[0], self.mol_range[1] + 1, (1,))
 
         # mean set, [N, D]
         mean_set = torch.rand(N, D) * (self.dim_frame - 1)
@@ -82,7 +86,7 @@ class SimDataset(Dataset):
             up = torch.minimum(torch.round(mean) + ra, self.dim_frame - 1).int()
 
             # build coordinate system of the slice
-            index = [torch.arange(l, u+1) for l, u in zip(lo, up)] # type: ignore
+            index = [torch.arange(l, u+1) for l, u in zip(lo, up)]
             grid  = torch.meshgrid(*index, indexing='ij')
             coord = torch.stack([c.ravel() for c in grid], dim=1)
 
@@ -100,23 +104,6 @@ class SimDataset(Dataset):
         return torch.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
     def _generateLabel(self, mean_set: Tensor) -> Tensor:
-        """
-        This function will generate the label that convert the [N, D] mean_set
-        representing the molecular list to [*self.dim_label] tensor where the
-        location of molecular center in mean_set is 1 in label.
-
-        Note that the mean_set and label are in different resolution, i.e., they
-        have different pixel size. So we need to convert the mean_set to label
-        resolution first.
-
-        Args:
-            mean_set (Tensor): [N, D] tensor representing the molecular list
-                in low resolution, i.e., large pixel size.
-        
-        Return:
-            label (Tensor): [*self.dim_label] tensor representing the label in
-                high resolution, i.e., small pixel size. 
-        """
         # low resolution to super resolution, i.e., decrease pixel size
         mean_set = (mean_set + 0.5) * self.up_sample - 0.5
         
@@ -156,10 +143,11 @@ class RawDataset(Dataset):
         self.dim_frame = Tensor(config.dim_frame).int()     # [D]
         self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
+        # whether using luminance information
+        self.lum_info = config.lum_info
 
         # read option
         self.threshold = config.threshold
-
         # subframe index
         self.h_range = config.h_range
         self.w_range = config.w_range
@@ -191,9 +179,9 @@ class RawDataset(Dataset):
             self.current_frame_index = frame_index
 
         # frame
-        subframe = self.frame[  # type: ignore
-            :, 
-            h * 32 : 40 + h * 32, 
+        subframe = self.frame[
+            :,
+            h * 32 : 40 + h * 32,
             w * 32 : 40 + w * 32,
         ]
         subframe = F.interpolate(
@@ -202,8 +190,8 @@ class RawDataset(Dataset):
         ).squeeze(0).squeeze(0)
 
         # mlist
-        submlist = self.mlist  # type: ignore
-        submlist = submlist[submlist[:, 1] >= h * 32]  # type: ignore
+        submlist = self.mlist
+        submlist = submlist[submlist[:, 1] >= h * 32]
         submlist = submlist[submlist[:, 1] <= h * 32 + 39]
         submlist = submlist[submlist[:, 2] >= w * 32]
         submlist = submlist[submlist[:, 2] <= w * 32 + 39]
@@ -214,6 +202,7 @@ class RawDataset(Dataset):
         # label
         sublabel = torch.zeros(*self.dim_label.tolist())
         sublabel[tuple(submlist.t())] = 1
+        if self.lum_info: sublabel *= subframe
 
         return subframe, sublabel
 
@@ -239,7 +228,7 @@ class RawDataset(Dataset):
         self.frame = torch.clip(self.frame, 0, 1)
 
         # mlist
-        _, self.mlist = scipy.io.loadmat( # type: ignore
+        _, self.mlist = scipy.io.loadmat(
             os.path.join(self.mlists_load_folder, self.mlists_list[index])
         ).popitem()
         self.mlist = torch.from_numpy(self.mlist).float()
