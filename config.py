@@ -5,6 +5,7 @@ class Config:
     def __init__(self) -> None:
         # =============================== model ============================== #
 
+        ## ResAttUNet
         self.dim  : int = 3
         self.feats: List[int] = [1, 16, 32]
         self.use_res : bool = False
@@ -12,6 +13,7 @@ class Config:
 
         # =============================== loss =============================== #
 
+        ## GaussianBlurLoss
         self.type_loss   : str   = "l2"     # l1, l2
         self.kernel_size : int   = 7
         self.kernel_sigma: float = 1.0
@@ -23,7 +25,7 @@ class Config:
         self.dim_frame: List[int] = [40, 40, 40]    # [C, H, W], by pixel
         self.up_sample: List[int] = [ 4,  4,  4]    # [C, H, W], by scale
         # whether using luminance information
-        self.lum_info: bool = False
+        self.lum_info: bool = True
 
         ## SimDataset
         # config for adjust distribution of molecular
@@ -84,8 +86,36 @@ class Config:
 
 def getConfig() -> Tuple[Config, ...]: 
     return (
-        d_07(),
+        d_08(),
     )
+
+
+""" whole field of view
+Next we generate a field of view frames as a summary of section d-chessboard of test; for section e, we will move on to 8 times super resolution.
+
+up sampling rate: [4, 4, 4]
+features number : [1, 16, 32]
+Trainable paras : 70,353
+Training   speed:      steps /s ( 10 iterations/step)
+Validation speed:      steps /s ( 10 iterations/step)
+Evaluation speed: 0.24 frames/s (256 subframes/frame)
+"""
+
+class d_08(Config):
+    def train(self) -> None: return NotImplementedError
+
+    def eval(self) -> None:
+        super().eval()
+        ## RawDataset
+        self.h_range = [ 0, 15]
+        self.w_range = [ 0, 15]
+
+        ## getDataLoader
+        self.num: List[int] = [45000 * 256]
+
+        ## Eval
+        self.ckpt_load_path = "ckpt/d_07/170"
+        self.data_save_fold = "data/d-chessboard/08"
 
 
 """ luminance information
@@ -111,17 +141,13 @@ for test set d-chessboard is good enough.
 up sampling rate: [4, 4, 4]
 features number : [1, 16, 32]
 Trainable paras : 70,353
-Training   speed:      steps /s (10 iterations/step)
-Validation speed:      steps /s (10 iterations/step)
-Evaluation speed: 3.80 frames/s (16 subframes/frame)
+Training   speed:      steps /s ( 10 iterations/step)
+Validation speed:      steps /s ( 10 iterations/step)
+Evaluation speed: 3.80 frames/s ( 16 subframes/frame)
 """
 
 
 class d_07(Config):
-    def __init__(self) -> None:
-        super().__init__()
-        self.lum_info = True
-
     def train(self) -> None:
         super().train()
         ## Train
@@ -172,13 +198,18 @@ test.
 up sampling rate: [4, 4, 4]
 features number : [1, 16, 32]
 Trainable paras : 70,353
-Training   speed:      steps /s (10 iterations/step)
-Validation speed:      steps /s (10 iterations/step)
-Evaluation speed: 3.80 frames/s (16 subframes/frame)
+Training   speed:      steps /s ( 10 iterations/step)
+Validation speed:      steps /s ( 10 iterations/step)
+Evaluation speed: 3.80 frames/s ( 16 subframes/frame)
 """
 
 
 class d_06(Config):
+    def __init__(self) -> None:
+        super().__init__()
+        ## Sim&RawDataset
+        self.lum_info = False
+
     def train(self) -> None: raise NotImplementedError
 
     def eval(self) -> None:
@@ -309,13 +340,18 @@ point.
 up sampling rate: [4, 4, 4]
 features number : [1, 16, 32]
 Trainable paras : 70,353
-Training   speed: 1.22 steps /s (10 iterations/step)
-Validation speed: 2.00 steps /s (10 iterations/step)
-Evaluation speed: 3.80 frames/s (16 subframes/frame)
+Training   speed: 1.22 steps /s ( 10 iterations/step)
+Validation speed: 2.00 steps /s ( 10 iterations/step)
+Evaluation speed: 3.80 frames/s ( 16 subframes/frame)
 """
 
 
 class d_05(Config):
+    def __init__(self) -> None:
+        super().__init__()
+        ## Sim&RawDataset
+        self.lum_info = False
+
     def train(self) -> None:
         super().train()
         ## getDataLoader
@@ -349,13 +385,18 @@ become more serious.
 up sampling rate: [4, 4, 4]
 features number : [1, 16, 32]
 Trainable paras : 70,353
-Training   speed: 1.22 steps /s (10 iterations/step)
-Validation speed: 2.00 steps /s (10 iterations/step)
-Evaluation speed: 3.80 frames/s (16 subframes/frame)
+Training   speed: 1.22 steps /s ( 10 iterations/step)
+Validation speed: 2.00 steps /s ( 10 iterations/step)
+Evaluation speed: 3.80 frames/s ( 16 subframes/frame)
 """
 
 
 class d_04(Config):
+    def __init__(self) -> None:
+        super().__init__()
+        ## Sim&RawDataset
+        self.lum_info = False
+
     def train(self) -> None:
         super().train()
         ## Train
@@ -370,6 +411,11 @@ class d_04(Config):
 
 
 class d_03(Config):
+    def __init__(self) -> None:
+        super().__init__()
+        ## Sim&RawDataset
+        self.lum_info = False
+
     def train(self) -> None:
         super().train()
         ## Train
@@ -406,7 +452,11 @@ Evaluation speed:      frames/s
 class d_02(Config):
     def __init__(self) -> None:
         super().__init__()
+        ## ResAttUNet
         self.feats = [1, 32, 64]
+
+        ## Sim&RawDataset
+        self.lum_info = False
 
     def train(self) -> None:
         super().train()
@@ -429,7 +479,11 @@ class d_02(Config):
 class d_01(Config):
     def __init__(self) -> None:
         super().__init__()
+        ## ResAttUNet
         self.feats = [1, 32, 64]
+
+        ## Sim&RawDataset
+        self.lum_info = False
 
     def train(self) -> None:
         super().train()
