@@ -101,6 +101,7 @@ Validation speed:      steps /s ( 10 iterations/step)
 Evaluation speed: 0.24 frames/s (256 subframes/frame)
 """
 
+
 class d_08(Config):
     def train(self) -> None: return NotImplementedError
 
