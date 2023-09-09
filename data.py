@@ -155,12 +155,12 @@ class RawDataset(Dataset):
         self.num_sub_w = self.w_range[1] - self.w_range[0] + 1
         self.num_sub = self.num_sub_h * self.num_sub_w
         # data path
-        self.frames_load_folder = config.frames_load_folder
-        self.mlists_load_folder = config.mlists_load_folder
+        self.frames_load_fold = config.frames_load_fold
+        self.mlists_load_fold = config.mlists_load_fold
         
         # file name list
-        self.frames_list = os.listdir(self.frames_load_folder)
-        self.mlists_list = os.listdir(self.mlists_load_folder)
+        self.frames_list = os.listdir(self.frames_load_fold)
+        self.mlists_list = os.listdir(self.mlists_load_fold)
         
         # store the current frame and mlist in memory
         self.frame = None
@@ -216,7 +216,7 @@ class RawDataset(Dataset):
     def _readNext(self, index: int, max: float = 6.5, pad: int = 4) -> None:
         # frame
         self.frame = torch.from_numpy(tifffile.imread(
-            os.path.join(self.frames_load_folder, self.frames_list[index])
+            os.path.join(self.frames_load_fold, self.frames_list[index])
         ))
         self.frame = (self.frame / max).float()
         self.frame = F.interpolate(
@@ -229,7 +229,7 @@ class RawDataset(Dataset):
 
         # mlist
         _, self.mlist = scipy.io.loadmat(
-            os.path.join(self.mlists_load_folder, self.mlists_list[index])
+            os.path.join(self.mlists_load_fold, self.mlists_list[index])
         ).popitem()
         self.mlist = torch.from_numpy(self.mlist).float()
         self.mlist = self.mlist[:, [2, 0, 1]] - 1  # (H W D) -> (D H W)

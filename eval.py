@@ -15,8 +15,9 @@ torch.backends.cudnn.benchmark = True
 class Eval:
     def __init__(self, config) -> None:
         self.device = config.device
-        self.ckpt_load_path   = config.ckpt_load_path
-        self.data_save_folder = config.data_save_folder
+        self.ckpt_load_path = config.ckpt_load_path
+        self.data_save_fold = config.data_save_fold
+        self.eval_type = config.eval_type
 
         # model
         self.model = model.ResAttUNet(config).to(self.device)
@@ -38,9 +39,10 @@ class Eval:
         )
 
         # print model info
-        print(f'The model has {sum(
+        num_paras = sum(
             p.numel() for p in self.model.parameters() if p.requires_grad
-        ):,} trainable parameters')
+        )
+        print(f'The model has {num_paras:,} trainable parameters')
 
     @torch.no_grad()
     def eval(self) -> None:
@@ -49,12 +51,12 @@ class Eval:
         # record: progress bar
         pbar = tqdm.tqdm(
             total=int(len(self.dataloader)*self.batch_size/self.num_sub),
-            desc=self.data_save_folder, unit="frame"
+            desc=self.data_save_fold, unit="frame"
         )
 
         # create folder
-        if not os.path.exists(self.data_save_folder):
-            os.makedirs(self.data_save_folder)
+        if not os.path.exists(self.data_save_fold):
+            os.makedirs(self.data_save_fold)
 
         sub_cat = None  # after concatenation
         sub_cmb = None  # after combination
@@ -84,11 +86,11 @@ class Eval:
             if current_frame & (current_frame - 1) == 0 \
             or i == len(self.dataloader) - 1:
                 if self.eval_type == "predi": tifffile.imwrite(
-                    "{}/{:05}.tif".format(self.data_save_folder, current_frame),
+                    "{}/{:05}.tif".format(self.data_save_fold, current_frame),
                     sub_cmb.float().cpu().detach().numpy()
                 )
                 if self.eval_type == "label": tifffile.imwrite(
-                    "{}/{:05}.tif".format(self.data_save_folder, current_frame), 
+                    "{}/{:05}.tif".format(self.data_save_fold, current_frame), 
                     sub_cmb.numpy()
                 )
 

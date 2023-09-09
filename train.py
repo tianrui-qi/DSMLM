@@ -25,9 +25,9 @@ class Train:
         self.lr    = config.lr
         self.gamma = config.gamma
         # checkpoint
-        self.ckpt_save_folder = config.ckpt_save_folder
-        self.ckpt_load_path   = config.ckpt_load_path
-        self.ckpt_load_lr     = config.ckpt_load_lr
+        self.ckpt_save_fold = config.ckpt_save_fold
+        self.ckpt_load_path = config.ckpt_load_path
+        self.ckpt_load_lr   = config.ckpt_load_lr
 
         # index
         self.epoch = 1  # epoch index may update in load_ckpt()
@@ -58,7 +58,7 @@ class Train:
         self._load_ckpt()
         for self.epoch in tqdm.tqdm(
             range(self.epoch, self.max_epoch+1), 
-            total=self.max_epoch, desc=self.ckpt_save_folder, smoothing=0.0,
+            total=self.max_epoch, desc=self.ckpt_save_fold, smoothing=0.0,
             unit="epoch", initial=self.epoch
         ):
             self._train_epoch()
@@ -167,8 +167,8 @@ class Train:
     @torch.no_grad()
     def _save_ckpt(self) -> None:
         # file path checking
-        if not os.path.exists(self.ckpt_save_folder): 
-            os.makedirs(self.ckpt_save_folder)
+        if not os.path.exists(self.ckpt_save_fold): 
+            os.makedirs(self.ckpt_save_fold)
 
         torch.save({
             'epoch': self.epoch,  # epoch index start from 1
@@ -176,7 +176,8 @@ class Train:
             'scaler': self.scaler.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'scheduler': self.scheduler.state_dict()
-            }, "{}/{}.ckpt".format(self.ckpt_save_folder, self.epoch))
+            }, "{}/{}.ckpt".format(self.ckpt_save_fold, self.epoch)
+        )
 
     @torch.no_grad()
     def _load_ckpt(self) -> None:

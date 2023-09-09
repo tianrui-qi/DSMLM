@@ -41,8 +41,8 @@ class Config:
         self.h_range: List[int] = [0, 15]
         self.w_range: List[int] = [0, 15]
         # data path
-        self.frames_load_folder = "D:/frames"
-        self.mlists_load_folder = "D:/mlists"
+        self.frames_load_fold = "D:/frames"
+        self.mlists_load_fold = "D:/mlists"
 
     def train(self) -> None:
         ## getDataLoader
@@ -60,9 +60,9 @@ class Config:
         self.lr   : float = 1e-4    # initial learning rate (lr)
         self.gamma: float = 0.95    # decay rate of lr
         # checkpoint
-        self.ckpt_save_folder: str  = "ckpt/default"
-        self.ckpt_load_path  : str  = ""        # path without .ckpt
-        self.ckpt_load_lr    : bool = False     # load lr from ckpt
+        self.ckpt_save_fold: str  = "ckpt/default"
+        self.ckpt_load_path: str  = ""        # path without .ckpt
+        self.ckpt_load_lr  : bool = False     # load lr from ckpt
 
     def eval(self) -> None:
         ## RawDataset
@@ -73,19 +73,48 @@ class Config:
         self.num: List[int] = [45000 * 16]
         self.type_data: List[str] = ["Raw"]
         self.batch_size : int = 8
-        self.num_workers: int = 4
+        self.num_workers: int = 8
 
         ## Eval - also use some config of train
         self.device: str = "cuda"
-        self.ckpt_load_path  : str = ""     # path without .ckpt
-        self.data_save_folder: str = "data/default"
-        self.eval_type: str = "predi"       # predi, label
+        self.ckpt_load_path: str = ""   # path without .ckpt
+        self.data_save_fold: str = "data/default"
+        self.eval_type: str = "predi"   # predi, label
 
 
-def getConfig() -> Tuple[Config, ...]:
+def getConfig() -> Tuple[Config, ...]: 
     return (
-        d_07()
+        d_07(),
     )
+
+
+""" luminance information
+Threshold or some maual operation may not be a good solution for cheessboard
+since first, we have to set them manually by experiment every time when we have
+raw data and how to judge the result is good or not is also a problem. Second,
+this kind of operation may cause some other artifacts.
+
+In 07, we implement a new parameters in __init__ of Config class, i.e., 
+lum_info, where it can be set to True or False. Before, we always set center
+of each Gaussian as 1.0, which means that our label is in fact binary, i.e.,
+this label only tell us where is the center of the Gaussian. After we set 
+`lum_info` to True, the label generate by Sim&Raw dataset will time the frame
+elementwise. Thus, the label will tell us the luminance of each pixel. Then, we
+continue to train the 3D UNet with the new label from ckpt 140 of 04.
+
+The result show that the network can predict the luminance of each pixel 
+where the chessboard in dark area disappear, but still exist in the
+predicition with high density of molecular. We check the output of DeepSTORM
+and they also have the same problem in high density area. Thus, current result
+for test set d-chessboard is good enough.
+
+up sampling rate: [4, 4, 4]
+features number : [1, 16, 32]
+Trainable paras : 70,353
+Training   speed:      steps /s (10 iterations/step)
+Validation speed:      steps /s (10 iterations/step)
+Evaluation speed: 3.80 frames/s (16 subframes/frame)
+"""
 
 
 class d_07(Config):
@@ -96,19 +125,18 @@ class d_07(Config):
     def train(self) -> None:
         super().train()
         ## Train
-        self.lr = 5e-5
-        self.ckpt_save_folder = "ckpt/d-chessboard/07"
+        self.lr = 1e-5
+        self.ckpt_load_path = "ckpt/d_04/140"
+        self.ckpt_save_fold = "ckpt/d_07"
 
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path   = "ckpt/d-chessboard/07/140"
-        self.data_save_folder = "data/d-chessboard/07"
+        self.ckpt_load_path = "ckpt/d_07/170"
+        self.data_save_fold = "data/d-chessboard/07"
 
 
-"""
-[4, 4, 4] [1, 16, 32]
-
+""" threshold
 Another possible solution is to add some threshold such that if the pixel value
 is less than the threhold, we set it as 0.
 
@@ -140,6 +168,13 @@ average maximum value of all frames. Then, we test the new normalization logic
 in 06 where threshold change from 0.0 to 0.1 with step size 0.01. Two problem 
 discrible above still exist. We will use this new normalization logic in future
 test.
+
+up sampling rate: [4, 4, 4]
+features number : [1, 16, 32]
+Trainable paras : 70,353
+Training   speed:      steps /s (10 iterations/step)
+Validation speed:      steps /s (10 iterations/step)
+Evaluation speed: 3.80 frames/s (16 subframes/frame)
 """
 
 
@@ -148,89 +183,120 @@ class d_06(Config):
 
     def eval(self) -> None:
         super().eval()
-        self.ckpt_load_path = "ckpt/d-chessboard/04/140"
+        self.ckpt_load_path = "ckpt/d_04/140"
 
 
 class d_06_000(d_06):
+    def __init__(self) -> None:
+        super().__init__()
+        self.threshold = 0.000
+
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.000
-        self.data_save_folder = "data/d-chessboard/06/000"
+        self.data_save_fold = "data/d-chessboard/06/000"
 
 
 class d_06_010(d_06):
+    def __init__(self) -> None:
+        super().__init__()
+        self.threshold = 0.010
+
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.010
-        self.data_save_folder = "data/d-chessboard/06/010"
+        self.data_save_fold = "data/d-chessboard/06/010"
 
 
 class d_06_020(d_06):
+    def __init__(self) -> None:
+        super().__init__()
+        self.threshold = 0.020
+
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.020
-        self.data_save_folder = "data/d-chessboard/06/020"
+        self.data_save_fold = "data/d-chessboard/06/020"
 
 
 class d_06_030(d_06):
+    def __init__(self) -> None:
+        super().__init__()
+        self.threshold = 0.030
+
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.030
-        self.data_save_folder = "data/d-chessboard/06/030"
+        self.data_save_fold = "data/d-chessboard/06/030"
 
 
 class d_06_040(d_06):
+    def __init__(self) -> None:
+        super().__init__()
+        self.threshold = 0.040
+
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.040
-        self.data_save_folder = "data/d-chessboard/06/040"
+        self.data_save_fold = "data/d-chessboard/06/040"
 
 
 class d_06_050(d_06):
+    def __init__(self) -> None:
+        super().__init__()
+        self.threshold = 0.050
+
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.050
-        self.data_save_folder = "data/d-chessboard/06/050"
+        self.data_save_fold = "data/d-chessboard/06/050"
 
 
 class d_06_060(d_06):
+    def __init__(self) -> None:
+        super().__init__()
+        self.threshold = 0.060
+
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.060
-        self.data_save_folder = "data/d-chessboard/06/060"
+        self.data_save_fold = "data/d-chessboard/06/060"
 
 
 class d_06_070(d_06):
+    def __init__(self) -> None:
+        super().__init__()
+        self.threshold = 0.070
+
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.070
-        self.data_save_folder = "data/d-chessboard/06/070"
+        self.data_save_fold = "data/d-chessboard/06/070"
 
 
 class d_06_080(d_06):
+    def __init__(self) -> None:
+        super().__init__()
+        self.threshold = 0.080
+
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.080
-        self.data_save_folder = "data/d-chessboard/06/080"
+        self.data_save_fold = "data/d-chessboard/06/080"
 
 
 class d_06_090(d_06):
+    def __init__(self) -> None:
+        super().__init__()
+        self.threshold = 0.090
+
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.090
-        self.data_save_folder = "data/d-chessboard/06/090"
+        self.data_save_fold = "data/d-chessboard/06/090"
 
 
 class d_06_100(d_06):
+    def __init__(self) -> None:
+        super().__init__()
+        self.threshold = 0.100
+
     def eval(self) -> None:
         super().eval()
-        self.threshold = 0.100
-        self.data_save_folder = "data/d-chessboard/06/100"
+        self.data_save_fold = "data/d-chessboard/06/100"
 
 
-"""
-[4, 4, 4] [1, 16, 32]
-
+""" continue train with raw data
 For checkbox problem, we may have two possible solutions:
 
 In 5, we continue to train the 3D UNet with the raw data. Since there are huge 
@@ -240,10 +306,12 @@ network become super unstable and the prediction is similar to the result of
 checkpoint 1, which means that the network the network train from the start 
 point.
 
-Trainable parameters: 70,353
-Training   speed: 0.82s/steps
-Validation speed: 0.49s/steps
-Evaluation speed: 0.28s/frames
+up sampling rate: [4, 4, 4]
+features number : [1, 16, 32]
+Trainable paras : 70,353
+Training   speed: 1.22 steps /s (10 iterations/step)
+Validation speed: 2.00 steps /s (10 iterations/step)
+Evaluation speed: 3.80 frames/s (16 subframes/frame)
 """
 
 
@@ -254,20 +322,18 @@ class d_05(Config):
         self.type_data = ["Raw", "Raw"]
 
         ## Train
-        self.ckpt_save_folder = "ckpt/d-chessboard/05"
-        self.ckpt_load_path   = "ckpt/d-chessboard/04/140"
-        self.ckpt_load_lr     = True
+        self.ckpt_save_fold = "ckpt/d_05"
+        self.ckpt_load_path = "ckpt/d_04/140"
+        self.ckpt_load_lr   = True
 
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path   = "ckpt/d-chessboard/05/150"
-        self.data_save_folder = "data/d-chessboard/05"
+        self.ckpt_load_path = "ckpt/d_05/150"
+        self.data_save_fold = "data/d-chessboard/05"
 
 
-"""
-[4, 4, 4] [1, 16, 32]
-
+""" reduce features number
 Before move to [4, 8, 8] upsampling rate, we want to try the 3D UNet with less
 number of features, i.e., 25% of 1&2 used, on [4, 4, 4] so that the [4, 8, 8]
 network can fit in the GPU memory. 
@@ -280,10 +346,12 @@ in 4 as 1&2, i.e., split the training into two part with different learning
 rate. The result of 4 is compareable to 1&2 except the checkboard artifacts
 become more serious.
 
-Trainable parameters: 70,353
-Training   speed: 0.82s/steps
-Validation speed: 0.49s/steps
-Evaluation speed: 0.28s/frames
+up sampling rate: [4, 4, 4]
+features number : [1, 16, 32]
+Trainable paras : 70,353
+Training   speed: 1.22 steps /s (10 iterations/step)
+Validation speed: 2.00 steps /s (10 iterations/step)
+Evaluation speed: 3.80 frames/s (16 subframes/frame)
 """
 
 
@@ -292,27 +360,25 @@ class d_04(Config):
         super().train()
         ## Train
         self.lr = 5e-5
-        self.ckpt_save_folder = "ckpt/d-chessboard/04"
+        self.ckpt_save_fold = "ckpt/d_04"
 
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path   = "ckpt/d-chessboard/04/140"
-        self.data_save_folder = "data/d-chessboard/04"
+        self.ckpt_load_path = "ckpt/d_04/140"
+        self.data_save_fold = "data/d-chessboard/04"
 
 
 class d_03(Config):
     def train(self) -> None:
         super().train()
         ## Train
-        self.ckpt_save_folder = "ckpt/d-chessboard/03"
+        self.ckpt_save_fold = "ckpt/d_03"
 
     def eval(self) -> None: raise NotImplementedError
 
 
 """
-[4, 4, 4] [1, 32, 64]
-
 For 1&2, we use the 3D UNet without residual and CBAM and the upsample rate
 is [4, 4, 4], i.e., the pixel size is 32.5 nm in XYZ. 
 
@@ -328,10 +394,12 @@ is 1. These checkbox is very dark but follow the Gaussian distribution, i.e.,
 a very small Gaussian point with std around 1.7. So we can not solve this
 problem by simply limit the std or lum of our simulation in some range. 
 
-Trainable parameters: 279,969
-Training   speed: 1.33s/steps
-Validation speed:     s/steps
-Evaluation speed:     s/frames
+up sampling rate: [4, 4, 4]
+features number : [1, 32, 64]
+Trainable paras : 279,969
+Training   speed: 0.75 steps /s (10 iterations/step)
+Validation speed:      steps /s
+Evaluation speed:      frames/s
 """
 
 
@@ -344,8 +412,8 @@ class d_02(Config):
         super().train()
         ## Train
         self.lr = 1e-5
-        self.ckpt_save_folder = "ckpt/d-chessboard/02"
-        self.ckpt_load_path   = "ckpt/d-chessboard/01/8"
+        self.ckpt_save_fold = "ckpt/d_02"
+        self.ckpt_load_path = "ckpt/d_01/8"
 
     def eval(self) -> None:
         super().eval()
@@ -354,8 +422,8 @@ class d_02(Config):
         self.num_workers = 2
         
         ## Eval
-        self.ckpt_load_path   = "ckpt/d-chessboard/02/140"
-        self.data_save_folder = "data/d-chessboard/02"
+        self.ckpt_load_path = "ckpt/d_02/140"
+        self.data_save_fold = "data/d-chessboard/02"
 
 
 class d_01(Config):
@@ -366,7 +434,7 @@ class d_01(Config):
     def train(self) -> None:
         super().train()
         ## Train
-        self.ckpt_save_folder = "ckpt/d-chessboard/01"
+        self.ckpt_save_fold = "ckpt/d_01"
 
     def eval(self) -> None:
         super().eval()
@@ -376,5 +444,5 @@ class d_01(Config):
         self.num_workers = 2
 
         ## Eval
-        self.ckpt_load_path   = "ckpt/d-chessboard/01/8"
-        self.data_save_folder = "data/d-chessboard/01"
+        self.ckpt_load_path = "ckpt/d_01/8"
+        self.data_save_fold = "data/d-chessboard/01"
