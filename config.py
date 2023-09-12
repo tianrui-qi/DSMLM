@@ -3,6 +3,12 @@ from typing import List, Tuple
 
 class Config:
     def __init__(self) -> None:
+        """
+        Define config that related to componennt: model, loss, data.
+        Components' config may differ during train and eval but we shall keep
+        most of them consistent.
+        """
+        
         # =============================== model ============================== #
 
         ## ResAttUNet
@@ -43,8 +49,8 @@ class Config:
         self.h_range: List[int] = [0, 15]
         self.w_range: List[int] = [0, 15]
         # data path
-        self.frames_load_fold = "D:/frames"
-        self.mlists_load_fold = "D:/mlists"
+        self.frames_load_fold: str = "D:/frames"
+        self.mlists_load_fold: str = "D:/mlists"    # set to "" if not used
 
     def train(self) -> None:
         ## getDataLoader
@@ -70,6 +76,7 @@ class Config:
         ## RawDataset
         self.h_range = [ 9, 12]
         self.w_range = [11, 14]
+        self.mlists_load_fold = ""  # do not use label when eval
 
         ## getDataLoader
         self.num: List[int] = [45000 * 16]
@@ -81,7 +88,6 @@ class Config:
         self.device: str = "cuda"
         self.ckpt_load_path: str = ""   # path without .ckpt
         self.data_save_fold: str = "data/default"
-        self.eval_type: str = "predi"   # predi, label
 
 
 def getConfig() -> Tuple[Config, ...]: 

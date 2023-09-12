@@ -8,7 +8,7 @@ import os
 import tifffile
 import scipy.io
 
-from typing import Tuple
+from typing import Tuple, Union
 
 
 class SimDataset(Dataset):
@@ -157,17 +157,18 @@ class RawDataset(Dataset):
         # data path
         self.frames_load_fold = config.frames_load_fold
         self.mlists_load_fold = config.mlists_load_fold
-        
+
         # file name list
         self.frames_list = os.listdir(self.frames_load_fold)
-        self.mlists_list = os.listdir(self.mlists_load_fold)
-        
+        if self.mlists_load_fold != "":     # don't need or have mlists
+            self.mlists_list = os.listdir(self.mlists_load_fold)
+
         # store the current frame and mlist in memory
         self.frame = None
         self.mlist = None
         self.current_frame_index = -1
 
-    def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
+    def __getitem__(self, index: int) -> Union[Tensor, Tuple[Tensor, Tensor]]:
         frame_index = index // self.num_sub        # frame index
         sub_index   = index %  self.num_sub        # subframe index
         h = sub_index // self.num_sub_w + self.h_range[0]   # height index 
@@ -188,6 +189,9 @@ class RawDataset(Dataset):
             subframe.unsqueeze(0).unsqueeze(0), 
             scale_factor=self.up_sample.tolist()
         ).squeeze(0).squeeze(0)
+
+        # don't need or have mlists, i.e., when eval
+        if self.mlists_load_fold == "": return subframe 
 
         # mlist
         submlist = self.mlist
@@ -227,6 +231,9 @@ class RawDataset(Dataset):
         self.frame[self.frame < self.threshold] = 0
         self.frame = torch.clip(self.frame, 0, 1)
 
+        # don't need or have mlists, i.e., when eval
+        if self.mlists_load_fold == "": return
+        
         # mlist
         _, self.mlist = scipy.io.loadmat(
             os.path.join(self.mlists_load_fold, self.mlists_list[index])

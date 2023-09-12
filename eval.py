@@ -17,7 +17,6 @@ class Eval:
         self.device = config.device
         self.ckpt_load_path = config.ckpt_load_path
         self.data_save_fold = config.data_save_fold
-        self.eval_type = config.eval_type
 
         # model
         self.model = model.ResAttUNet(config).to(self.device)
@@ -31,7 +30,7 @@ class Eval:
         self.dataset = self.dataloader.dataset  # to call static method
 
         # data index
-        self.num_sub = self.dataset.num_sub  # type: ignore
+        self.num_sub    = self.dataset.num_sub
         self.batch_size = self.dataloader.batch_size
         if self.num_sub % self.batch_size != 0: raise ValueError(
             "num_sub must be divisible by batch_size, but got {} and {}"
@@ -60,17 +59,9 @@ class Eval:
 
         sub_cat = None  # after concatenation
         sub_cmb = None  # after combination
-        for i, (frames, labels) in enumerate(self.dataloader):
-            if self.eval_type != "predi" and self.eval_type != "label":
-                raise ValueError(
-                    "eval_type must be 'predi' or 'label', but got {}"
-                    .format(self.eval_type)
-                )
-            elif self.eval_type == "predi":
-                frames = frames.half().to(self.device)
-                sub = self.model(frames)    # prediction from the model
-            elif self.eval_type == "label":
-                sub = labels
+        for i, frames in enumerate(self.dataloader):
+            frames = frames.half().to(self.device)
+            sub = self.model(frames)    # prediction from the model
 
             # store subframes to a [self.num_sub, *sub.shape] tensor
             sub_cat = sub if sub_cat is None else torch.cat((sub_cat, sub))
@@ -84,15 +75,10 @@ class Eval:
             # save after combine 1, 2, 4, 8, 16... frames
             current_frame = int((i+1)/(self.num_sub/self.batch_size))
             if current_frame & (current_frame - 1) == 0 \
-            or i == len(self.dataloader) - 1:
-                if self.eval_type == "predi": tifffile.imwrite(
-                    "{}/{:05}.tif".format(self.data_save_fold, current_frame),
-                    sub_cmb.float().cpu().detach().numpy()
-                )
-                if self.eval_type == "label": tifffile.imwrite(
-                    "{}/{:05}.tif".format(self.data_save_fold, current_frame), 
-                    sub_cmb.numpy()
-                )
+            or i == len(self.dataloader) - 1: tifffile.imwrite(
+                "{}/{:05}.tif".format(self.data_save_fold, current_frame),
+                sub_cmb.float().cpu().detach().numpy()
+            )
 
             pbar.update()  # update progress bar
 

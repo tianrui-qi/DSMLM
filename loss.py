@@ -21,13 +21,13 @@ class GaussianBlurLoss(nn.Module):
                 self.gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
                 self.gaussianBlur3d(F.pad(label, self.pad), self.kernel),
                 reduction="sum"
-            )  # type: ignore
+            )
         if self.type_loss == "l2": 
             return F.mse_loss(
                 self.gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
                 self.gaussianBlur3d(F.pad(label, self.pad), self.kernel),
                 reduction="sum"
-            )  # type: ignore
+            )
         raise ValueError("loss must be 'l1' or 'l2'")
 
     def to(self, device):
