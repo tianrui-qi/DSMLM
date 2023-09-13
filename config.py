@@ -92,8 +92,33 @@ class Config:
 
 def getConfig() -> Tuple[Config, ...]: 
     return (
-        d_08(),
+        e_01(),
     )
+
+
+""" scale up to 8
+"""
+
+
+class e_01(Config):
+    def __init__(self) -> None:
+        super().__init__()
+        ## Sim&RawDataset
+        self.up_sample = [ 4,  8,  8]
+        self.lum_info = False
+
+    def train(self) -> None:
+        super().train()
+        ## Train
+        self.lr = 5e-5
+        self.ckpt_save_fold = "ckpt/e_01"
+
+    def eval(self) -> None:
+        super().eval()
+        ## Eval
+        self.ckpt_load_path = "ckpt/e_01/140"
+        self.data_save_fold = "data/e_01"
+
 
 
 """ whole field of view
@@ -122,7 +147,7 @@ class d_08(Config):
 
         ## Eval
         self.ckpt_load_path = "ckpt/d_07/170"
-        self.data_save_fold = "data/d-chessboard/08"
+        self.data_save_fold = "data/d_08"
 
 
 """ luminance information
@@ -166,7 +191,7 @@ class d_07(Config):
         super().eval()
         ## Eval
         self.ckpt_load_path = "ckpt/d_07/170"
-        self.data_save_fold = "data/d-chessboard/07"
+        self.data_save_fold = "data/d_07"
 
 
 """ threshold
@@ -231,7 +256,7 @@ class d_06_000(d_06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-chessboard/06/000"
+        self.data_save_fold = "data/d_06/000"
 
 
 class d_06_010(d_06):
@@ -241,7 +266,7 @@ class d_06_010(d_06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-chessboard/06/010"
+        self.data_save_fold = "data/d_06/010"
 
 
 class d_06_020(d_06):
@@ -251,7 +276,7 @@ class d_06_020(d_06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-chessboard/06/020"
+        self.data_save_fold = "data/d_06/020"
 
 
 class d_06_030(d_06):
@@ -261,7 +286,7 @@ class d_06_030(d_06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-chessboard/06/030"
+        self.data_save_fold = "data/d_06/030"
 
 
 class d_06_040(d_06):
@@ -271,7 +296,7 @@ class d_06_040(d_06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-chessboard/06/040"
+        self.data_save_fold = "data/d_06/040"
 
 
 class d_06_050(d_06):
@@ -281,7 +306,7 @@ class d_06_050(d_06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-chessboard/06/050"
+        self.data_save_fold = "data/d_06/050"
 
 
 class d_06_060(d_06):
@@ -291,7 +316,7 @@ class d_06_060(d_06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-chessboard/06/060"
+        self.data_save_fold = "data/d_06/060"
 
 
 class d_06_070(d_06):
@@ -301,7 +326,7 @@ class d_06_070(d_06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-chessboard/06/070"
+        self.data_save_fold = "data/d_06/070"
 
 
 class d_06_080(d_06):
@@ -311,7 +336,7 @@ class d_06_080(d_06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-chessboard/06/080"
+        self.data_save_fold = "data/d_06/080"
 
 
 class d_06_090(d_06):
@@ -321,7 +346,7 @@ class d_06_090(d_06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-chessboard/06/090"
+        self.data_save_fold = "data/d_06/090"
 
 
 class d_06_100(d_06):
@@ -331,7 +356,7 @@ class d_06_100(d_06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-chessboard/06/100"
+        self.data_save_fold = "data/d_06/100"
 
 
 """ continue train with raw data
@@ -373,7 +398,7 @@ class d_05(Config):
         super().eval()
         ## Eval
         self.ckpt_load_path = "ckpt/d_05/150"
-        self.data_save_fold = "data/d-chessboard/05"
+        self.data_save_fold = "data/d_05"
 
 
 """ reduce features number
@@ -414,7 +439,7 @@ class d_04(Config):
         super().eval()
         ## Eval
         self.ckpt_load_path = "ckpt/d_04/140"
-        self.data_save_fold = "data/d-chessboard/04"
+        self.data_save_fold = "data/d_04"
 
 
 class d_03(Config):
@@ -480,7 +505,7 @@ class d_02(Config):
         
         ## Eval
         self.ckpt_load_path = "ckpt/d_02/140"
-        self.data_save_fold = "data/d-chessboard/02"
+        self.data_save_fold = "data/d_02"
 
 
 class d_01(Config):
@@ -506,4 +531,4 @@ class d_01(Config):
 
         ## Eval
         self.ckpt_load_path = "ckpt/d_01/8"
-        self.data_save_fold = "data/d-chessboard/01"
+        self.data_save_fold = "data/d_01"
