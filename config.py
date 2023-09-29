@@ -107,18 +107,17 @@ class e_01(Config):
         self.up_sample = [ 4,  8,  8]
         self.lum_info = False
 
+        ## SimDataset
+        self.mol_range: List[int] = [0, 256]
+
     def train(self) -> None:
         super().train()
         ## Train
-        self.lr = 5e-5
+        self.accumu_steps = 10
+        self.lr = 1e-6
         self.ckpt_save_fold = "ckpt/e_01"
 
-    def eval(self) -> None:
-        super().eval()
-        ## Eval
-        self.ckpt_load_path = "ckpt/e_01/140"
-        self.data_save_fold = "data/e_01"
-
+    def eval(self) -> None: return NotImplementedError
 
 
 """ whole field of view
