@@ -8,14 +8,16 @@ import torch.utils.tensorboard.writer as writer
 import os
 import tqdm
 
-import config, model, loss, data
+import sml_dl.model
+import sml_dl.loss
+import sml_dl.data
 
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
 
 
-class Train:
+class Trainer:
     def __init__(self, config) -> None:
         # train
         self.device = config.device
@@ -33,11 +35,11 @@ class Train:
         self.epoch = 1  # epoch index may update in load_ckpt()
 
         # model
-        self.model = model.ResAttUNet(config).to(self.device)
+        self.model = sml_dl.model.ResAttUNet(config).to(self.device)
         # loss
-        self.loss = loss.GaussianBlurLoss(config).to(self.device)
+        self.loss = sml_dl.loss.GaussianBlurLoss(config).to(self.device)
         # data
-        self.trainloader, self.validloader = data.getDataLoader(config)
+        self.trainloader, self.validloader = sml_dl.data.getDataLoader(config)
 
         # optimizer
         self.scaler    = amp.GradScaler()  # type: ignore
@@ -191,10 +193,3 @@ class Train:
         if not self.ckpt_load_lr: return
         self.optimizer.load_state_dict(ckpt['optimizer'])
         self.scheduler.load_state_dict(ckpt['scheduler'])
-
-
-if __name__ == "__main__":
-    for cfg in config.getConfig():
-        cfg.train()
-        trainer = Train(cfg)
-        trainer.train()

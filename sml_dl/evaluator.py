@@ -5,28 +5,29 @@ import os
 import tifffile
 import tqdm
 
-import config, model, data
+import sml_dl.model
+import sml_dl.data
 
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
 
 
-class Eval:
+class Evaluator:
     def __init__(self, config) -> None:
         self.device = config.device
         self.ckpt_load_path = config.ckpt_load_path
         self.data_save_fold = config.data_save_fold
 
         # model
-        self.model = model.ResAttUNet(config).to(self.device)
+        self.model = sml_dl.model.ResAttUNet(config).to(self.device)
         self.model.load_state_dict(torch.load(
             "{}.ckpt".format(self.ckpt_load_path), 
             map_location=self.device)['model']
         )
         self.model.half()
         # data
-        self.dataloader = data.getDataLoader(config)[0]
+        self.dataloader = sml_dl.data.getDataLoader(config)[0]
         self.dataset = self.dataloader.dataset  # to call static method
 
         # data index
@@ -81,10 +82,3 @@ class Eval:
             )
 
             pbar.update()  # update progress bar
-
-
-if __name__ == "__main__":
-    for cfg in config.getConfig():
-        cfg.eval()
-        evaluator = Eval(cfg)
-        evaluator.eval()

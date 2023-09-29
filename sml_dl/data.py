@@ -298,8 +298,10 @@ if __name__ == "__main__":
     from tifffile import imsave
     from config import Config
 
+    data_save_fold = "test"
+
     # create dir to store test frame
-    if not os.path.exists("data/test"): os.makedirs("data/test")
+    if not os.path.exists(data_save_fold): os.makedirs(data_save_fold)
 
     # test using default config
     config = Config()
@@ -308,8 +310,8 @@ if __name__ == "__main__":
     # test the RawDataset
     dataset = RawDataset(config, 5000)
     frame, label = dataset[0]
-    imsave('data/test/RawFrame.tif', frame.numpy())
-    imsave('data/test/RawLabel.tif', label.numpy())
+    imsave(data_save_fold + '/RawFrame.tif', frame.numpy())
+    imsave(data_save_fold + '/RawLabel.tif', label.numpy())
 
     # density of RawDataset
     num = 0
@@ -322,5 +324,5 @@ if __name__ == "__main__":
     dataset = SimDataset(config, 1)
     frame, label = dataset[0]
     print("Number of molecular:", len(torch.nonzero(label)))
-    imsave('data/test/SimFrame.tif', frame.numpy())
-    imsave('data/test/SimLabel.tif', label.numpy())
+    imsave(data_save_fold + '/SimFrame.tif', frame.numpy())
+    imsave(data_save_fold + '/SimLabel.tif', label.numpy())
