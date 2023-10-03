@@ -11,22 +11,19 @@ import scipy.io
 from typing import Tuple, Union
 
 
-class SimDataset(Dataset):
+class _SimDataset(Dataset):
     def __init__(self, config, num: int) -> None:
-        super(SimDataset, self).__init__()
+        super(_SimDataset, self).__init__()
         self.num = num
 
         # dimensional config
         self.dim_frame = Tensor(config.dim_frame).int()     # [D]
         self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
-        # whether using luminance information
-        self.lum_info = config.lum_info
 
         # config for adjust distribution of molecular
         self.mol_range = Tensor(config.mol_range).int()     # [2]
         self.std_range = Tensor(config.std_range)           # [2, D]
-        self.lum_range = Tensor(config.lum_range)           # [2]
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
         mean_set, var_set, lum_set = self._generateParas()
@@ -38,10 +35,12 @@ class SimDataset(Dataset):
             frame.unsqueeze(0).unsqueeze(0),
             scale_factor=self.up_sample.tolist()
         ).squeeze(0).squeeze(0)
+        frame = torch.clip(frame, 0, 1)     # prevent lum exceeding 1 or below 0
 
         # label
         label = self._generateLabel(mean_set)
-        if self.lum_info: label *= frame
+        label *= frame  # add brightness information to label
+        label = torch.clip(label, 0, 1)     # prevent lum exceeding 1 or below 0
 
         return frame, label
 
@@ -64,8 +63,7 @@ class SimDataset(Dataset):
         var_set += self.std_range[0]
         var_set  = var_set ** 2
         # luminance set, [N]
-        lum_set  = torch.rand(N) * (self.lum_range[1] - self.lum_range[0])
-        lum_set += self.lum_range[0]
+        lum_set  = torch.rand(N)
 
         return mean_set, var_set, lum_set
 
@@ -101,16 +99,16 @@ class SimDataset(Dataset):
             # put the slice back to whole frame
             frame[tuple(coord.int().T)] += pdf
 
-        return torch.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
+        return frame
 
     def _generateLabel(self, mean_set: Tensor) -> Tensor:
         # low resolution to super resolution, i.e., decrease pixel size
         mean_set = (mean_set + 0.5) * self.up_sample - 0.5
-        
+
         label = torch.zeros(self.dim_label.tolist())
         label[tuple(torch.round(mean_set).T.int())] = 1
-        
-        return torch.clip(label, 0, 1)  # prevent lum exceeding 1 or below 0
+
+        return label
 
     @staticmethod
     def addCameraNoise(
@@ -134,20 +132,16 @@ class SimDataset(Dataset):
         return torch.clip(frame, 0, 1)  # prevent lum exceeding 1 or below 0
 
 
-class RawDataset(Dataset):
+class _RawDataset(Dataset):
     def __init__(self, config, num: int) -> None:
-        super(RawDataset, self).__init__()
+        super(_RawDataset, self).__init__()
         self.num = num
 
         # dimensional config
         self.dim_frame = Tensor(config.dim_frame).int()     # [D]
         self.up_sample = Tensor(config.up_sample).int()     # [D]
         self.dim_label = self.dim_frame * self.up_sample    # [D]
-        # whether using luminance information
-        self.lum_info = config.lum_info
 
-        # read option
-        self.threshold = config.threshold
         # subframe index
         self.h_range = config.h_range
         self.w_range = config.w_range
@@ -157,11 +151,12 @@ class RawDataset(Dataset):
         # data path
         self.frames_load_fold = config.frames_load_fold
         self.mlists_load_fold = config.mlists_load_fold
-
         # file name list
         self.frames_list = os.listdir(self.frames_load_fold)
         if self.mlists_load_fold != "":     # don't need or have mlists
             self.mlists_list = os.listdir(self.mlists_load_fold)
+        # read option
+        self.averagemax = self._getAveragemax()  # for normalizing all frames
 
         # store the current frame and mlist in memory
         self.frame = None
@@ -189,6 +184,7 @@ class RawDataset(Dataset):
             subframe.unsqueeze(0).unsqueeze(0), 
             scale_factor=self.up_sample.tolist()
         ).squeeze(0).squeeze(0)
+        subframe = torch.clip(subframe, 0, 1)
 
         # don't need or have mlists, i.e., when eval
         if self.mlists_load_fold == "": return subframe 
@@ -206,7 +202,8 @@ class RawDataset(Dataset):
         # label
         sublabel = torch.zeros(*self.dim_label.tolist())
         sublabel[tuple(submlist.t())] = 1
-        if self.lum_info: sublabel *= subframe
+        sublabel *= subframe  # add brightness information to label
+        sublabel = torch.clip(sublabel, 0, 1)
 
         return subframe, sublabel
 
@@ -217,19 +214,34 @@ class RawDataset(Dataset):
         """
         return self.num
 
-    def _readNext(self, index: int, max: float = 6.5, pad: int = 4) -> None:
+    def _getAveragemax(self) -> float:
+        """
+        Since the max value of each frames is different where the brightest info
+        of each frames is important, we can not use each frame's max value to
+        normalize the frame. Instead, we use the average of all frames' max
+        value to normalize the frame so that the brightest info of each frames
+        can be preserved.
+        This function will be called when initialize the dataset.
+        """
+        averagemax = 0
+        for index in range(len(self.frames_list)//10):
+            averagemax += torch.from_numpy(tifffile.imread(
+                os.path.join(self.frames_load_fold, self.frames_list[index])
+            )).max().float()
+        averagemax /= len(self.frames_list)
+        return averagemax
+
+    def _readNext(self, index: int, pad: int = 4) -> None:
         # frame
         self.frame = torch.from_numpy(tifffile.imread(
             os.path.join(self.frames_load_fold, self.frames_list[index])
         ))
-        self.frame = (self.frame / max).float()
+        self.frame = (self.frame / self.averagemax).float()
         self.frame = F.interpolate(
             self.frame.unsqueeze(0).unsqueeze(0), 
             size = (32, 512, 512)
         ).squeeze(0).squeeze(0)
         self.frame = F.pad(self.frame, (pad, pad, pad, pad, pad, pad))
-        self.frame[self.frame < self.threshold] = 0
-        self.frame = torch.clip(self.frame, 0, 1)
 
         # don't need or have mlists, i.e., when eval
         if self.mlists_load_fold == "": return
@@ -276,9 +288,9 @@ def getDataLoader(config) -> Tuple[DataLoader, ...]:
     dataloader = []
     for d in range(len(config.num)):
         if config.type_data[d] == "Sim":
-            dataset = SimDataset(config, config.num[d])
+            dataset = _SimDataset(config, config.num[d])
         elif config.type_data[d] == "Raw":
-            dataset = RawDataset(config, config.num[d])
+            dataset = _RawDataset(config, config.num[d])
         else:
             raise ValueError(f"Unsupported data: {config.type_data[d]}")
         dataloader.append(DataLoader(
@@ -308,7 +320,7 @@ if __name__ == "__main__":
     config.train()
 
     # test the RawDataset
-    dataset = RawDataset(config, 5000)
+    dataset = _RawDataset(config, 5000)
     frame, label = dataset[0]
     imsave(data_save_fold + '/RawFrame.tif', frame.numpy())
     imsave(data_save_fold + '/RawLabel.tif', label.numpy())
@@ -321,7 +333,7 @@ if __name__ == "__main__":
     print("density of RawDataset:", num / 5000)
 
     # test the SimDataset
-    dataset = SimDataset(config, 1)
+    dataset = _SimDataset(config, 1)
     frame, label = dataset[0]
     print("Number of molecular:", len(torch.nonzero(label)))
     imsave(data_save_fold + '/SimFrame.tif', frame.numpy())

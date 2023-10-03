@@ -34,7 +34,7 @@ def mlist2label(
 
     result = torch.zeros(*dim_label.tolist())
     for index in tqdm.tqdm(
-        range(45000), desc=data_save_fold, unit="frame"
+        range(len(frames_list)), desc=data_save_fold, unit="frame"
     ):
         # frame
         frame = torch.from_numpy(tifffile.imread(

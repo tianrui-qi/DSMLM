@@ -7,7 +7,6 @@ from torch import Tensor
 class GaussianBlurLoss(nn.Module):
     def __init__(self, config) -> None:
         super().__init__()
-        self.type_loss = config.type_loss
         # Gaussian kernel using help function gaussianKernel
         self.kernel = self.gaussianKernel(
             3, config.kernel_size, config.kernel_sigma
@@ -16,19 +15,11 @@ class GaussianBlurLoss(nn.Module):
         self.pad = [config.kernel_size for _ in range(6)]  # [C H W]
     
     def forward(self, predi: Tensor, label: Tensor) -> float:
-        if self.type_loss == "l1": 
-            return F.l1_loss(
-                self.gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
-                self.gaussianBlur3d(F.pad(label, self.pad), self.kernel),
-                reduction="sum"
-            )
-        if self.type_loss == "l2": 
-            return F.mse_loss(
-                self.gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
-                self.gaussianBlur3d(F.pad(label, self.pad), self.kernel),
-                reduction="sum"
-            )
-        raise ValueError("loss must be 'l1' or 'l2'")
+        return F.mse_loss(
+            self.gaussianBlur3d(F.pad(predi, self.pad), self.kernel),
+            self.gaussianBlur3d(F.pad(label, self.pad), self.kernel),
+            reduction="sum"
+        )
 
     def to(self, device):
         # Call the original 'to' method to move parameters and buffers
