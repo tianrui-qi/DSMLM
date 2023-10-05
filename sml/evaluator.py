@@ -5,8 +5,8 @@ import os
 import tifffile
 import tqdm
 
-import sml_dl.model
-import sml_dl.data
+import sml.model
+import sml.data
 
 
 torch.backends.cudnn.enabled = True
@@ -20,14 +20,14 @@ class Evaluator:
         self.data_save_fold = config.data_save_fold
 
         # model
-        self.model = sml_dl.model.ResAttUNet(config).to(self.device)
+        self.model = sml.model.ResAttUNet(config).to(self.device)
         self.model.load_state_dict(torch.load(
             "{}.ckpt".format(self.ckpt_load_path), 
             map_location=self.device)['model']
         )
         self.model.half()
         # data
-        self.dataloader = sml_dl.data.getDataLoader(config)[0]
+        self.dataloader = sml.data.getDataLoader(config)[0]
         self.dataset = self.dataloader.dataset  # to call static method
 
         # data index

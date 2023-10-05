@@ -8,9 +8,9 @@ import torch.utils.tensorboard.writer as writer
 import os
 import tqdm
 
-import sml_dl.model
-import sml_dl.loss
-import sml_dl.data
+import sml.model
+import sml.loss
+import sml.data
 
 
 torch.backends.cudnn.enabled = True
@@ -35,11 +35,11 @@ class Trainer:
         self.epoch = 1  # epoch index may update in load_ckpt()
 
         # model
-        self.model = sml_dl.model.ResAttUNet(config).to(self.device)
+        self.model = sml.model.ResAttUNet(config).to(self.device)
         # loss
-        self.loss = sml_dl.loss.GaussianBlurLoss(config).to(self.device)
+        self.loss = sml.loss.GaussianBlurLoss(config).to(self.device)
         # data
-        self.trainloader, self.validloader = sml_dl.data.getDataLoader(config)
+        self.trainloader, self.validloader = sml.data.getDataLoader(config)
 
         # optimizer
         self.scaler    = amp.GradScaler()  # type: ignore

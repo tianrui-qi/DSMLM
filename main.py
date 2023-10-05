@@ -1,16 +1,16 @@
 import config
 
-from sml_dl import Trainer, Evaluator
+from sml import Trainer, Evaluator
 
 
-def sml_dl_train():
+def sml_train():
     for cfg in config.getConfig():
         cfg.train()
         trainer = Trainer(cfg)
         trainer.train()
 
 
-def sml_dl_eval():
+def sml_eval():
     for cfg in config.getConfig():
         cfg.eval()
         evaluator = Evaluator(cfg)
@@ -18,4 +18,4 @@ def sml_dl_eval():
 
 
 if __name__ == "__main__":
-    sml_dl_eval()
+    sml_eval()
