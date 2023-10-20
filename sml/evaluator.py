@@ -11,9 +11,7 @@ import sml.model, sml.data
 class Evaluator:
     def __init__(self, config) -> None:
         self.device = "cuda"
-        # checkpoint
         self.ckpt_load_path = config.ckpt_load_path
-        # data
         self.data_save_fold = config.data_save_fold
 
         # model
@@ -25,7 +23,7 @@ class Evaluator:
         self.model.half()
         # data
         config.mlists_load_fold = ""  # force to not use mlists
-        self.dataset = sml.data.RawDataset(config, num=None)
+        self.dataset = sml.data.RawDataset(config)
         self.dataloader = DataLoader(
             self.dataset,
             batch_size=config.batch_size, 

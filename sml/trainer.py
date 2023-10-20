@@ -39,7 +39,7 @@ class Trainer:
             pin_memory=True
         )
         self.validloader = DataLoader(
-            sml.data.RawDataset(config, num=config.num[1]),
+            sml.data.RawDataset(config, num=config.num[1], mode="train"),
             batch_size=config.batch_size, 
             num_workers=config.batch_size, 
             pin_memory=True

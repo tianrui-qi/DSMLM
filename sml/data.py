@@ -32,6 +32,7 @@ class SimDataset(Dataset):
         self.vars_set = None    # [N, D], float
         self.peak_set = None    # [N], float   
 
+    # TODO: how to add brightness info, now we use peak
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
         # generate molecular list for current frame
         self._generateMlist()
@@ -65,8 +66,8 @@ class SimDataset(Dataset):
             ## label
             # dim_src -> dim_dst
             mean = torch.round((mean + 0.5) * self.scale - 0.5)
-            # set the brightness to the integral of gaussian/molecular
-            label[tuple(mean.int())] += peak * torch.sqrt(torch.prod(vars))
+            # set the brightness to the peak of gaussian/molecular
+            label[tuple(mean.int())] += peak
 
         # add noise
         save_bit = 2**(3+torch.randint(0, 3, (1,)))     # 8, 16, or 32 bit
@@ -135,9 +136,35 @@ class SimDataset(Dataset):
 
 
 class RawDataset(Dataset):
-    def __init__(self, config, num: int) -> None:
+    def __init__(self, config, num: int = None, mode: str = "eval") -> None:
+        """
+        When `mode` is "train," this Dataset will be use to validate the 
+        training result and `num` must be specified.
+        When `mode` is "eval," this Dataset will be use to patch the whole 
+        frame into subframe (see `__getitem__`) according to user's input (see
+        `_getIndex`). `num` is not necessary in this mode and will be computed
+        automatically if not given.
+
+        We use two help functions `_getIndex` and `_getAveragemax` to compute
+        necessary index and average max value of all frames when initialize the
+        dataset.
+
+        Args:
+            config (Config): Config class define in config.py.
+                .dim_dst (List[int]): Dimension / pixel number of the output
+                    subframe and sublabel of `__getitem__`.
+                .scale (List[int]): Scale up factor for each dimension.
+                .frames_load_fold (str): Path to the folder that store frames. 
+                    Please check `_readNext` for more detail.
+                .mlists_load_fold (str): Path to the folder that store mlists. 
+                    Please check `_readNext` for more detail. 
+                    Will not be use when `mode` is "eval".
+            num (int): Total number of data (subframe). Default: None
+            mode (str): "train" or "eval". Default: "eval"
+        """
         super(RawDataset, self).__init__()
-        self.num = num
+        self.num  = num
+        self.mode = mode    # "train" or "eval"
         # dimension
         self.D = len(config.dim_dst)   # # of dimension
         self.dim_src         = None
@@ -145,7 +172,7 @@ class RawDataset(Dataset):
         self.dim_src_raw     = None
         self.dim_src_raw_pad = None
         self.dim_dst         = None
-        self.dim_dst_pad     = Tensor(config.dim_dst).int()     # [D], int
+        self.dim_dst_pad = Tensor(config.dim_dst).int()     # [D], int
         self.dim_dst_raw     = None
         self.dim_dst_raw_pad = None
 
@@ -155,16 +182,15 @@ class RawDataset(Dataset):
         self.pad_src = Tensor([2, 2, 2]).int()      # [D], int
 
         # subframe index
-        self.num_sub      = None  # [D], int
-        self.num_sub_user = None  # [D], int
-        self.rng_sub_user = None  # [D, 2], int
+        self.num_sub      = None    # [D], int
+        self.num_sub_user = None    # [D], int
+        self.rng_sub_user = None    # [D, 2], int
 
-        # data path
+        # data path and file name list
         self.frames_load_fold = config.frames_load_fold
-        self.mlists_load_fold = config.mlists_load_fold
-        # file name list
         self.frames_list = os.listdir(self.frames_load_fold)
-        if self.mlists_load_fold != "":     # don't need or have mlists
+        if self.mode == "train":
+            self.mlists_load_fold = config.mlists_load_fold
             self.mlists_list = os.listdir(self.mlists_load_fold)
         # read option
         self.averagemax = None  # for normalizing all frames
@@ -178,6 +204,22 @@ class RawDataset(Dataset):
         self._getAveragemax()
 
     def _getIndex(self) -> None:
+        """
+        This function is a initialization helper that compute all the necessary
+        index. First, we will compute eight dimensional index.
+        Next, we compute subframe index according to current mode `self.mode`:
+            Train mode: this dataset will be use to validate the training 
+        result and the patch been selected is not important. So we will simply 
+        choose all patch. Note that the `self.num` must be given when 
+        instantiate in train mode.
+            Eval mode: ask user to input the subframe index that they want to 
+        eval. To do this, we will draw how the program cut the frame into patch
+        and ask user to input the subframe index for each dimension. Then, we 
+        will draw the selected patch by user and compute the `self.num` 
+        automatically if it's not given (not necessary in eval mode). The 
+        drawing will be save in `data/patch.tif.`
+        """
+
         # compute dimension of patch
         self.dim_src = (self.dim_dst_pad / self.scale).int() - 2*self.pad_src   
         self.dim_src_pad = self.dim_src + 2*self.pad_src 
@@ -190,6 +232,20 @@ class RawDataset(Dataset):
         self.dim_dst_pad     = self.dim_dst_pad
         self.dim_dst_raw     = self.scale * self.dim_src_raw
         self.dim_dst_raw_pad = self.scale * self.dim_src_raw_pad
+
+        ## train
+
+        if self.mode == "train":
+            self.rng_sub_user = Tensor([
+                [0, self.num_sub[0]],
+                [0, self.num_sub[1]],
+                [0, self.num_sub[2]]
+            ]).int()
+            self.num_sub_user = self.rng_sub_user[:, 1]
+            # self.num must be given when instantiate in train mode
+            return
+
+        ## eval
 
         # draw all patch
         patch = torch.zeros(self.dim_src_raw_pad.tolist())
@@ -222,7 +278,9 @@ class RawDataset(Dataset):
         ]
         self.rng_sub_user = Tensor(self.rng_sub_user).int().reshape(self.D, 2)
         self.num_sub_user = self.rng_sub_user[:, 1] - self.rng_sub_user[:, 0]
-        if self.num is None: 
+        if self.num is None:
+            # self.num is not necessary when instantiate in eval mode
+            # if not given, compute it automatically 
             self.num = torch.prod(self.num_sub_user) * len(self.frames_list)
 
         # draw selected patch
@@ -264,6 +322,7 @@ class RawDataset(Dataset):
             )).max().float()
         self.averagemax /= len(self.frames_list)
 
+    # TODO: how to add brightness info, now we use peak
     def __getitem__(self, index: int) -> Union[Tensor, Tuple[Tensor, Tensor]]:
         frame_index = index // torch.prod(self.num_sub)       # frame index
         sub_index   = index %  torch.prod(self.num_sub)       # subframe index
@@ -291,7 +350,7 @@ class RawDataset(Dataset):
         ).squeeze(0).squeeze(0)
 
         # don't need or have mlists, i.e., when eval
-        if self.mlists_load_fold == "": return subframe 
+        if self.mode == "eval": return subframe 
 
         # mlist
         submlist = self.mlist
@@ -324,10 +383,9 @@ class RawDataset(Dataset):
         sublabel = torch.zeros(*self.dim_dst_pad.tolist())
         for m in range(len(submlist)):
             mean = submlist[m, 0:3]     # [D], float
-            vars = submlist[m, 3:6]     # [D], float
             peak = submlist[m,   6]     # float
-            # set the brightness to the integral of gaussian/molecular
-            sublabel[tuple(mean.int())] += peak * torch.sqrt(torch.prod(vars))
+            # set the brightness to the peak of gaussian/molecular
+            sublabel[tuple(mean.int())] += peak
 
         return torch.clip(subframe, 0, 1), sublabel
 
@@ -348,7 +406,7 @@ class RawDataset(Dataset):
         ))
 
         # don't need or have mlists, i.e., when eval
-        if self.mlists_load_fold == "": return
+        if self.mode == "eval": return
 
         ## mlist
         # read mlist
@@ -366,7 +424,7 @@ class RawDataset(Dataset):
         # match the coordinate after padding
         self.mlist[:, 0:3] += self.pad_src
 
-    # TODO
+    # TODO: combine frame
     def combineFrame(self, subframes: Tensor, pad: int = 4) -> Tensor:
         shape = self.up_sample * \
             Tensor([32, 32 * self.num_sub_h, 32 * self.num_sub_w]).int()
