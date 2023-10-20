@@ -25,20 +25,22 @@ class Config:
 
         # =============================== data =============================== #
 
-        ## Sim&RawDataset
+        ## SimDataset
+        # config for dimension
+        self.dim_nm_src: List[float] = [130, 130, 130]  # [C, H, W], nm
+        self.dim_px_dst: List[int]   = [160, 160, 160]  # [C, H, W], pixel
+        # config for molecular profile
+        self.std_nm_src: List[List[float]] = [   # std range
+            [130, 130, 130],  # minimum std, [C, H, W], by pixel
+            [320, 260, 260],  # maximum std, [C, H, W], by pixel
+        ]
+        # config for scale up factor 
+        self.scale_list: List[int] = [2, 4, 8, 16]
+
+        ## RawDataset
         # dimensional config
         self.dim_frame: List[int] = [40, 40, 40]    # [C, H, W], by pixel
         self.up_sample: List[int] = [ 4,  4,  4]    # [C, H, W], by scale
-
-        ## SimDataset
-        # config for adjust distribution of molecular
-        self.mol_range: List[int] = [0, 128]    # min, max num of mol/frame
-        self.std_range: List[List[float]] = [   # std range of each dimension
-            [1.0, 1.0, 1.0],  # FWHM [300 300 300], pixel size [130 130 130]
-            [2.5, 2.0, 2.0],  # FWHM [800 600 600], pixel size [130 130 130]
-        ]
-
-        ## RawDataset
         # subframe index
         self.h_range: List[int] = [0, 15]
         self.w_range: List[int] = [0, 15]
