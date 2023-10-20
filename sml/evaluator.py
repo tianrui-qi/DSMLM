@@ -1,22 +1,19 @@
 import torch
-import torch.backends.cudnn
+from torch.utils.data import DataLoader
 
 import os
 import tifffile
 import tqdm
 
-import sml.model
-import sml.data
-
-
-torch.backends.cudnn.enabled = True
-torch.backends.cudnn.benchmark = True
+import sml.model, sml.data
 
 
 class Evaluator:
     def __init__(self, config) -> None:
-        self.device = config.device
+        self.device = "cuda"
+        # checkpoint
         self.ckpt_load_path = config.ckpt_load_path
+        # data
         self.data_save_fold = config.data_save_fold
 
         # model
@@ -27,22 +24,23 @@ class Evaluator:
         )
         self.model.half()
         # data
-        self.dataloader = sml.data.getDataLoader(config)[0]
-        self.dataset = self.dataloader.dataset  # to call static method
+        config.mlists_load_fold = ""  # force to not use mlists
+        self.dataset = sml.data.RawDataset(config, num=None)
+        self.dataloader = DataLoader(
+            self.dataset,
+            batch_size=config.batch_size, 
+            num_workers=config.batch_size, 
+            pin_memory=True
+        )
 
         # data index
-        self.num_sub    = self.dataset.num_sub
-        self.batch_size = self.dataloader.batch_size
-        if self.num_sub % self.batch_size != 0: raise ValueError(
-            "num_sub must be divisible by batch_size, but got {} and {}"
-            .format(self.num_sub, self.batch_size)
+        self.num_sub_user = self.dataset.num_sub_user   # [D], int
+        self.num_sub_user_prod = torch.prod(self.num_sub_user)
+        self.batch_size   = self.dataloader.batch_size
+        if self.num_sub_user_prod % self.batch_size != 0: raise ValueError(
+            "num_sub_user_prod must divisible by batch_size, but got {} and {}"
+            .format(self.num_sub_user_prod, self.batch_size)
         )
-
-        # print model info
-        num_paras = sum(
-            p.numel() for p in self.model.parameters() if p.requires_grad
-        )
-        print(f'The model has {num_paras:,} trainable parameters')
 
     @torch.no_grad()
     def eval(self) -> None:
@@ -50,8 +48,9 @@ class Evaluator:
 
         # record: progress bar
         pbar = tqdm.tqdm(
-            total=int(len(self.dataloader)*self.batch_size/self.num_sub),
-            desc=self.data_save_fold, unit="frame"
+            total=int(
+                len(self.dataloader)*self.batch_size/self.num_sub_user_prod
+            ), desc=self.data_save_fold, unit="frame"
         )
 
         # create folder
@@ -64,17 +63,18 @@ class Evaluator:
             frames = frames.half().to(self.device)
             sub = self.model(frames)    # prediction from the model
 
-            # store subframes to a [self.num_sub, *sub.shape] tensor
+            # store subframes to tensor with shape
+            # [self.num_sub_user_prod, *sub.shape] 
             sub_cat = sub if sub_cat is None else torch.cat((sub_cat, sub))
 
-            # combine self.num_sub number of subframes to a whole frames
-            if len(sub_cat) < self.num_sub: continue
+            # combine self.num_sub_user_prod number of subframes
+            if len(sub_cat) < self.num_sub_user_prod: continue
             if sub_cmb == None: sub_cmb = self.dataset.combineFrame(sub_cat)
             else: sub_cmb += self.dataset.combineFrame(sub_cat)
             sub_cat = None
 
             # save after combine 1, 2, 4, 8, 16... frames
-            current_frame = int((i+1)/(self.num_sub/self.batch_size))
+            current_frame = int((i+1)/(self.num_sub_user_prod/self.batch_size))
             if current_frame & (current_frame - 1) == 0 \
             or i == len(self.dataloader) - 1: tifffile.imwrite(
                 "{}/{:05}.tif".format(self.data_save_fold, current_frame),

@@ -1,29 +1,22 @@
 import torch
-import torch.backends.cudnn
 import torch.cuda.amp as amp
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 import torch.utils.tensorboard.writer as writer
+from torch.utils.data import DataLoader
 
 import os
 import tqdm
 
-import sml.model
-import sml.loss
-import sml.data
-
-
-torch.backends.cudnn.enabled = True
-torch.backends.cudnn.benchmark = True
+import sml.model, sml.loss, sml.data
 
 
 class Trainer:
     def __init__(self, config) -> None:
         # train
-        self.device = config.device
-        self.max_epoch = config.max_epoch
+        self.device = "cuda"
+        self.max_epoch = 400
         self.accumu_steps = config.accumu_steps
-        # learning rate
         self.lr    = config.lr
         self.gamma = config.gamma
         # checkpoint
@@ -39,7 +32,18 @@ class Trainer:
         # loss
         self.loss = sml.loss.GaussianBlurLoss(config).to(self.device)
         # data
-        self.trainloader, self.validloader = sml.data.getDataLoader(config)
+        self.trainloader = DataLoader(
+            sml.data.SimDataset(config, num=config.num[0]),
+            batch_size=config.batch_size,
+            num_workers=config.batch_size, 
+            pin_memory=True
+        )
+        self.validloader = DataLoader(
+            sml.data.RawDataset(config, num=config.num[1]),
+            batch_size=config.batch_size, 
+            num_workers=config.batch_size, 
+            pin_memory=True
+        )
 
         # optimizer
         self.scaler    = amp.GradScaler()  # type: ignore
@@ -49,12 +53,6 @@ class Trainer:
         
         # record
         self.writer = writer.SummaryWriter()
-
-        # print model info
-        para_num = sum(
-            p.numel() for p in self.model.parameters() if p.requires_grad
-        )
-        print(f'The model has {para_num:,} trainable parameters')
 
     def train(self) -> None:
         self._load_ckpt()
