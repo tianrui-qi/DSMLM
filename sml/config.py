@@ -28,8 +28,8 @@ class Config:
         # scale up factor
         self.scale: List[int] = [4, 4, 4]   # [C, H, W]
         # data path
-        self.frames_load_fold: str = "D:/frames"
-        self.mlists_load_fold: str = "D:/mlists"
+        self.frames_load_fold: str = "D:/hela/frames"
+        self.mlists_load_fold: str = "D:/hela/mlists"
 
 
 class ConfigTrain(Config):
@@ -65,21 +65,21 @@ class ConfigEval(Config):
 """
 
 
-class e_01(ConfigTrain):
+class e01(ConfigTrain):
     def __init__(self) -> None:
         super().__init__()
-        self.ckpt_load_path = "ckpt/d_04/140"
-        self.ckpt_save_fold = "ckpt/e_01"
+        self.ckpt_load_path = "ckpt/d04/140"
+        self.ckpt_save_fold = "ckpt/e01"
 
 
 """ whole field of view
 Next we generate a field of view frames as a summary of section d-chessboard of test; for section e, we will move on to 8 times super resolution.
 
 Result:
-In d_08, hela cell's result is good. However, a new group of data in d_09 show
+In d08, hela cell's result is good. However, a new group of data in d09 show
 that the network can not predict them very well. This group of data as 
-bitdepth 8 instead 32 in d_08. This equivalent to add a threshold to the raw
-data and cause a lot of size 5 checkbox, similar to result of d_06 after we add
+bitdepth 8 instead 32 in d08. This equivalent to add a threshold to the raw
+data and cause a lot of size 5 checkbox, similar to result of d06 after we add
 too much threshold. Thus, for futurn training, we have to add random noise for
 bitdepth where before we always set it at 16.
 
@@ -92,7 +92,7 @@ Evaluation speed: 0.24 frames/s (256 subframes/frame)
 """
 
 
-class d_09(Config):
+class d09(Config):
     def __init__(self) -> None:
         super().__init__()
         self.frames_load_fold = "C:/Users/tianrui/Desktop/frames"
@@ -109,11 +109,11 @@ class d_09(Config):
         self.num: List[int] = [40000 * 256]
 
         ## Eval
-        self.ckpt_load_path = "ckpt/d_07/170"
+        self.ckpt_load_path = "ckpt/d07/170"
         self.data_save_fold = "data/d-artefact/09"
 
 
-class d_08(Config):
+class d08(Config):
     def train(self) -> None: return NotImplementedError
 
     def eval(self) -> None:
@@ -126,7 +126,7 @@ class d_08(Config):
         self.num: List[int] = [45000 * 256]
 
         ## Eval
-        self.ckpt_load_path = "ckpt/d_07/170"
+        self.ckpt_load_path = "ckpt/d07/170"
         self.data_save_fold = "data/d-artefact/08"
 
 
@@ -160,18 +160,18 @@ Evaluation speed: 3.80 frames/s ( 16 subframes/frame)
 """
 
 
-class d_07(Config):
+class d07(Config):
     def train(self) -> None:
         super().train()
         ## Train
         self.lr = 1e-5
-        self.ckpt_load_path = "ckpt/d_04/140"
-        self.ckpt_save_fold = "ckpt/d_07"
+        self.ckpt_load_path = "ckpt/d04/140"
+        self.ckpt_save_fold = "ckpt/d07"
 
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path = "ckpt/d_07/170"
+        self.ckpt_load_path = "ckpt/d07/170"
         self.data_save_fold = "data/d-artefact/07"
 
 
@@ -226,7 +226,7 @@ Evaluation speed: 3.80 frames/s ( 16 subframes/frame)
 """
 
 
-class d_06(Config):
+class d06(Config):
     def __init__(self) -> None:
         super().__init__()
         ## Sim&RawDataset
@@ -236,10 +236,10 @@ class d_06(Config):
 
     def eval(self) -> None:
         super().eval()
-        self.ckpt_load_path = "ckpt/d_04/140"
+        self.ckpt_load_path = "ckpt/d04/140"
 
 
-class d_06_000(d_06):
+class d06_000(d06):
     def __init__(self) -> None:
         super().__init__()
         self.threshold = 0.000
@@ -249,7 +249,7 @@ class d_06_000(d_06):
         self.data_save_fold = "data/d-artefact/06/000"
 
 
-class d_06_010(d_06):
+class d06_010(d06):
     def __init__(self) -> None:
         super().__init__()
         self.threshold = 0.010
@@ -259,7 +259,7 @@ class d_06_010(d_06):
         self.data_save_fold = "data/d-artefact/06/010"
 
 
-class d_06_020(d_06):
+class d06_020(d06):
     def __init__(self) -> None:
         super().__init__()
         self.threshold = 0.020
@@ -269,7 +269,7 @@ class d_06_020(d_06):
         self.data_save_fold = "data/d-artefact/06/020"
 
 
-class d_06_030(d_06):
+class d06_030(d06):
     def __init__(self) -> None:
         super().__init__()
         self.threshold = 0.030
@@ -279,7 +279,7 @@ class d_06_030(d_06):
         self.data_save_fold = "data/d-artefact/06/030"
 
 
-class d_06_040(d_06):
+class d06_040(d06):
     def __init__(self) -> None:
         super().__init__()
         self.threshold = 0.040
@@ -289,7 +289,7 @@ class d_06_040(d_06):
         self.data_save_fold = "data/d-artefact/06/040"
 
 
-class d_06_050(d_06):
+class d06_050(d06):
     def __init__(self) -> None:
         super().__init__()
         self.threshold = 0.050
@@ -299,7 +299,7 @@ class d_06_050(d_06):
         self.data_save_fold = "data/d-artefact/06/050"
 
 
-class d_06_060(d_06):
+class d06_060(d06):
     def __init__(self) -> None:
         super().__init__()
         self.threshold = 0.060
@@ -309,7 +309,7 @@ class d_06_060(d_06):
         self.data_save_fold = "data/d-artefact/06/060"
 
 
-class d_06_070(d_06):
+class d06_070(d06):
     def __init__(self) -> None:
         super().__init__()
         self.threshold = 0.070
@@ -319,7 +319,7 @@ class d_06_070(d_06):
         self.data_save_fold = "data/d-artefact/06/070"
 
 
-class d_06_080(d_06):
+class d06_080(d06):
     def __init__(self) -> None:
         super().__init__()
         self.threshold = 0.080
@@ -329,7 +329,7 @@ class d_06_080(d_06):
         self.data_save_fold = "data/d-artefact/06/080"
 
 
-class d_06_090(d_06):
+class d06_090(d06):
     def __init__(self) -> None:
         super().__init__()
         self.threshold = 0.090
@@ -339,7 +339,7 @@ class d_06_090(d_06):
         self.data_save_fold = "data/d-artefact/06/090"
 
 
-class d_06_100(d_06):
+class d06_100(d06):
     def __init__(self) -> None:
         super().__init__()
         self.threshold = 0.100
@@ -370,7 +370,7 @@ Evaluation speed: 3.80 frames/s ( 16 subframes/frame)
 """
 
 
-class d_05(Config):
+class d05(Config):
     def __init__(self) -> None:
         super().__init__()
         ## Sim&RawDataset
@@ -382,14 +382,14 @@ class d_05(Config):
         self.type_data = ["Raw", "Raw"]
 
         ## Train
-        self.ckpt_save_fold = "ckpt/d_05"
-        self.ckpt_load_path = "ckpt/d_04/140"
+        self.ckpt_save_fold = "ckpt/d05"
+        self.ckpt_load_path = "ckpt/d04/140"
         self.ckpt_load_lr   = True
 
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path = "ckpt/d_05/150"
+        self.ckpt_load_path = "ckpt/d05/150"
         self.data_save_fold = "data/d-artefact/05"
 
 
@@ -418,7 +418,7 @@ Evaluation speed: 3.80 frames/s ( 16 subframes/frame)
 """
 
 
-class d_04(Config):
+class d04(Config):
     def __init__(self) -> None:
         super().__init__()
         ## Sim&RawDataset
@@ -428,16 +428,16 @@ class d_04(Config):
         super().train()
         ## Train
         self.lr = 5e-5
-        self.ckpt_save_fold = "ckpt/d_04"
+        self.ckpt_save_fold = "ckpt/d04"
 
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path = "ckpt/d_04/140"
+        self.ckpt_load_path = "ckpt/d04/140"
         self.data_save_fold = "data/d-artefact/04"
 
 
-class d_03(Config):
+class d03(Config):
     def __init__(self) -> None:
         super().__init__()
         ## Sim&RawDataset
@@ -446,7 +446,7 @@ class d_03(Config):
     def train(self) -> None:
         super().train()
         ## Train
-        self.ckpt_save_fold = "ckpt/d_03"
+        self.ckpt_save_fold = "ckpt/d03"
 
     def eval(self) -> None: raise NotImplementedError
 
@@ -480,7 +480,7 @@ Evaluation speed:      frames/s
 """
 
 
-class d_02(Config):
+class d02(Config):
     def __init__(self) -> None:
         super().__init__()
         ## ResAttUNet
@@ -493,8 +493,8 @@ class d_02(Config):
         super().train()
         ## Train
         self.lr = 1e-5
-        self.ckpt_save_fold = "ckpt/d_02"
-        self.ckpt_load_path = "ckpt/d_01/8"
+        self.ckpt_save_fold = "ckpt/d02"
+        self.ckpt_load_path = "ckpt/d01/8"
 
     def eval(self) -> None:
         super().eval()
@@ -503,11 +503,11 @@ class d_02(Config):
         self.num_workers = 2
         
         ## Eval
-        self.ckpt_load_path = "ckpt/d_02/140"
+        self.ckpt_load_path = "ckpt/d02/140"
         self.data_save_fold = "data/d-artefact/02"
 
 
-class d_01(Config):
+class d01(Config):
     def __init__(self) -> None:
         super().__init__()
         ## ResAttUNet
@@ -519,7 +519,7 @@ class d_01(Config):
     def train(self) -> None:
         super().train()
         ## Train
-        self.ckpt_save_fold = "ckpt/d_01"
+        self.ckpt_save_fold = "ckpt/d01"
 
     def eval(self) -> None:
         super().eval()
@@ -529,5 +529,5 @@ class d_01(Config):
         self.num_workers = 2
 
         ## Eval
-        self.ckpt_load_path = "ckpt/d_01/8"
+        self.ckpt_load_path = "ckpt/d01/8"
         self.data_save_fold = "data/d-artefact/01"
