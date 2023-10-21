@@ -324,14 +324,16 @@ class RawDataset(Dataset):
 
     # TODO: how to add brightness info, now we use peak
     def __getitem__(self, index: int) -> Union[Tensor, Tuple[Tensor, Tensor]]:
-        frame_index = index // torch.prod(self.num_sub)       # frame index
-        sub_index   = index %  torch.prod(self.num_sub)       # subframe index
-        c = sub_index // (self.num_sub[1] * self.num_sub[2])  # channel index
+        frame_index = index // torch.prod(self.num_sub_user)    # frame index
+        sub_index   = index %  torch.prod(self.num_sub_user)    # subframe index
+        # channel index
+        c = sub_index // (self.num_sub_user[1] * self.num_sub_user[2])    
         c = c + self.rng_sub_user[0][0]
-        h = sub_index %  (self.num_sub[1] * self.num_sub[2])  # height index
-        h = h // self.num_sub[2] + self.rng_sub_user[1][0]
-        w = sub_index %  self.num_sub[2]                      # width index 
-        w = w + self.rng_sub_user[2][0] 
+        # height index
+        h = sub_index %  (self.num_sub_user[1] * self.num_sub_user[2])    
+        h = h // self.num_sub_user[2] + self.rng_sub_user[1][0]
+        # width index 
+        w = sub_index %  self.num_sub_user[2] + self.rng_sub_user[2][0] 
 
         # load new frame and mlist if frame index is different
         if frame_index != self.current_frame_index: 
@@ -340,9 +342,9 @@ class RawDataset(Dataset):
 
         # frame
         subframe = self.frame[
-            c * self.dim_src[0]: c * self.dim_src[0] + self.dim_src_pad[0],
-            h * self.dim_src[1]: h * self.dim_src[1] + self.dim_src_pad[1],
-            w * self.dim_src[2]: w * self.dim_src[2] + self.dim_src_pad[2],
+            c * self.dim_src[0] : c * self.dim_src[0] + self.dim_src_pad[0],
+            h * self.dim_src[1] : h * self.dim_src[1] + self.dim_src_pad[1],
+            w * self.dim_src[2] : w * self.dim_src[2] + self.dim_src_pad[2],
         ]
         subframe = F.interpolate(
             subframe.unsqueeze(0).unsqueeze(0), 
@@ -424,27 +426,31 @@ class RawDataset(Dataset):
         # match the coordinate after padding
         self.mlist[:, 0:3] += self.pad_src
 
-    # TODO: combine frame
-    def combineFrame(self, subframes: Tensor, pad: int = 4) -> Tensor:
-        shape = self.up_sample * \
-            Tensor([32, 32 * self.num_sub_h, 32 * self.num_sub_w]).int()
+    # TODO: right pad exceed the raw frame
+    def combineFrame(self, subframes: Tensor) -> Tensor:
         frame = torch.zeros(
-            shape.tolist(), dtype=subframes.dtype, device=subframes.device
+            (self.num_sub_user * self.dim_dst).int().tolist(), 
+            dtype=subframes.dtype, device=subframes.device
         )
 
-        for sub_index in range(self.num_sub):
-            h = sub_index // self.num_sub_w
-            w = sub_index %  self.num_sub_w
+        for sub_index in range(torch.prod(self.num_sub_user)):
+            c = sub_index // (self.num_sub_user[1] * self.num_sub_user[2])
+            h = sub_index %  (self.num_sub_user[1] * self.num_sub_user[2])
+            h = h // self.num_sub_user[2]
+            w = sub_index %  self.num_sub_user[2]
 
             frame[
-                :,
-                h * 32 * self.up_sample[1] : (h+1) * 32 * self.up_sample[1], 
-                w * 32 * self.up_sample[2] : (w+1) * 32 * self.up_sample[2],
+                c * self.dim_dst[0] : (c+1) * self.dim_dst[0],
+                h * self.dim_dst[1] : (h+1) * self.dim_dst[1], 
+                w * self.dim_dst[2] : (w+1) * self.dim_dst[2],
             ] = subframes[
                 sub_index,
-                pad * self.up_sample[0] : -pad * self.up_sample[0],
-                pad * self.up_sample[1] : -pad * self.up_sample[1],
-                pad * self.up_sample[2] : -pad * self.up_sample[2],
+                  self.pad_src[0] * self.scale[0] : 
+                - self.pad_src[0] * self.scale[0],
+                  self.pad_src[1] * self.scale[1] : 
+                - self.pad_src[1] * self.scale[1],
+                  self.pad_src[2] * self.scale[2] : 
+                - self.pad_src[2] * self.scale[2],
             ]
 
         return frame

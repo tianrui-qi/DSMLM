@@ -29,9 +29,12 @@ class Config:
         self.scale: List[int] = [4, 4, 4]   # [C, H, W]
         # data path
         self.frames_load_fold: str = "D:/frames"
-        self.mlists_load_fold: str = "D:/mlists"    # set to "" if not used
+        self.mlists_load_fold: str = "D:/mlists"
 
-    def train(self) -> None:
+
+class ConfigTrain(Config):
+    def __init__(self) -> None:
+        super().__init__()
         ## Train
         # train
         self.accumu_steps: int = 5
@@ -45,14 +48,28 @@ class Config:
         self.num: List[int] = [10000, 5000]   # train and valid
         self.batch_size : int = 2
 
-    def eval(self) -> None:
+
+class ConfigEval(Config):
+    def __init__(self) -> None:
+        super().__init__()
         ## Eval
         # checkpoint
         self.ckpt_load_path: str = ""   # path without .ckpt
         # data
         self.data_save_fold: str = "data/default"
         # dataloader
-        self.batch_size : int = 8
+        self.batch_size : int = 5
+
+
+""" super resolution
+"""
+
+
+class e_01(ConfigTrain):
+    def __init__(self) -> None:
+        super().__init__()
+        self.ckpt_load_path = "ckpt/d_04/140"
+        self.ckpt_save_fold = "ckpt/e_01"
 
 
 """ whole field of view
