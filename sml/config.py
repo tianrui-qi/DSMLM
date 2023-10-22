@@ -61,8 +61,46 @@ class ConfigEval(Config):
         self.batch_size : int = 5
 
 
-""" super resolution
+""" new architecture
+To solve the super resolution problem, we complete redesign the training
+process. More specifically, now we fixed the dim_dst to [160 160 160] instead
+of variante according to the scale up factor. By fix the input of the network,
+the size of the network will independent to the scale up factor. The scale up
+factor will only affect how we cut the raw data into subframes to feed into the
+network. Also, now we can train various scale up factor at the same time.
+
+Result:
+In e01, the learning rate is too large, so we reduce it to 1e-5 in e02. In e03,
+we evaluate the network with hela dataset with scale up factor [4, 4, 4]. The
+result show very obvious artifacts with a len 5. The chessbox is different from
+before. 
+
+up sampling rate: [4, 4, 4]
+features number : [1, 16, 32]
+Trainable paras : 70,353
+Training   speed: 1.14 steps /s ( 10 iterations/step)
+Validation speed:      steps /s ( 10 iterations/step)
+Evaluation speed: 3.63 frames/s ( 16 subframes/frame)
 """
+
+
+class e03(ConfigEval):
+    def __init__(self) -> None:
+        super().__init__()
+        self.scale = [4, 4, 4]
+        self.ckpt_load_path = "ckpt/e02/210" 
+        self.data_save_fold = "data/e-sr/03"
+        self.batch_size : int = 4
+
+
+class e02(ConfigTrain):
+    def __init__(self) -> None:
+        super().__init__()
+        #self.lr = 1e-5
+        #self.ckpt_load_path = "ckpt/e01/150"
+        self.ckpt_load_path = "ckpt/e02/172"
+        self.ckpt_save_fold = "ckpt/e02"
+        self.ckpt_load_lr   = True
 
 
 class e01(ConfigTrain):
@@ -70,6 +108,9 @@ class e01(ConfigTrain):
         super().__init__()
         self.ckpt_load_path = "ckpt/d04/140"
         self.ckpt_save_fold = "ckpt/e01"
+
+
+# All the following configs are no longer maintained.
 
 
 """ whole field of view

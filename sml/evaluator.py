@@ -22,8 +22,7 @@ class Evaluator:
         )
         self.model.half()
         # data
-        config.mlists_load_fold = ""  # force to not use mlists
-        self.dataset = sml.data.RawDataset(config)
+        self.dataset = sml.data.RawDataset(config, num=None, mode="eval")
         self.dataloader = DataLoader(
             self.dataset,
             batch_size=config.batch_size, 
@@ -39,6 +38,12 @@ class Evaluator:
             "num_sub_user_prod must divisible by batch_size, but got {} and {}"
             .format(self.num_sub_user_prod, self.batch_size)
         )
+
+        # print model info
+        para_num = sum(
+            p.numel() for p in self.model.parameters() if p.requires_grad
+        )
+        print(f'The model has {para_num:,} trainable parameters')
 
     @torch.no_grad()
     def eval(self) -> None:

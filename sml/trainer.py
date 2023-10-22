@@ -54,6 +54,12 @@ class Trainer:
         # record
         self.writer = writer.SummaryWriter()
 
+        # print model info
+        para_num = sum(
+            p.numel() for p in self.model.parameters() if p.requires_grad
+        )
+        print(f'The model has {para_num:,} trainable parameters')
+
     def train(self) -> None:
         self._load_ckpt()
         for self.epoch in tqdm.tqdm(

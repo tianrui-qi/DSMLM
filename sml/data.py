@@ -357,24 +357,23 @@ class RawDataset(Dataset):
         # mlist
         submlist = self.mlist
         submlist = submlist[
-            submlist[:, 0] >= c * self.dim_src[0]
+            submlist[:, 0] >= -0.5 + c * self.dim_src[0]
         ]
         submlist = submlist[
-            submlist[:, 0] <= c * self.dim_src[0] + self.dim_src_pad[0] - 1
+            submlist[:, 0] <  -0.5 + c * self.dim_src[0] + self.dim_src_pad[0]
         ]
         submlist = submlist[
-            submlist[:, 1] >= h * self.dim_src[1]
+            submlist[:, 1] >= -0.5 + h * self.dim_src[1]
         ]
         submlist = submlist[
-            submlist[:, 1] <= h * self.dim_src[1] + self.dim_src_pad[1] - 1
+            submlist[:, 1] <  -0.5 + h * self.dim_src[1] + self.dim_src_pad[1]
         ]
         submlist = submlist[
-            submlist[:, 2] >= w * self.dim_src[2]
+            submlist[:, 2] >= -0.5 + w * self.dim_src[2]
         ]
         submlist = submlist[
-            submlist[:, 2] <= w * self.dim_src[2] + self.dim_src_pad[2] - 1
+            submlist[:, 2] <  -0.5 + w * self.dim_src[2] + self.dim_src_pad[2]
         ]
-        # mean_set
         submlist[:, 0:3] = submlist[:, 0:3] - Tensor([
             c * self.dim_src[0], h * self.dim_src[1], w * self.dim_src[2]
         ])
@@ -396,9 +395,9 @@ class RawDataset(Dataset):
         # read frame
         self.frame = torch.from_numpy(tifffile.imread(
             os.path.join(self.frames_load_fold, self.frames_list[index])
-        ))
+        )).float()
         # normalize
-        self.frame = (self.frame / self.averagemax).float()
+        self.frame = self.frame / self.averagemax
         # pad frame to self.dim_src_raw_pad
         right_pad  = self.dim_src_raw_pad - self.dim_src_raw - self.pad_src
         self.frame = F.pad(self.frame, (
@@ -413,9 +412,9 @@ class RawDataset(Dataset):
         ## mlist
         # read mlist
         try:
-            with h5py.File(
-                os.path.join(self.mlists_load_fold, self.mlists_list[index]), 'r'
-            ) as file: self.mlist = file['storm_coords'][()].T
+            with h5py.File(os.path.join(
+                self.mlists_load_fold, self.mlists_list[index]
+            ), 'r') as file: self.mlist = file['storm_coords'][()].T
         except OSError:
             _, self.mlist = scipy.io.loadmat(
                 os.path.join(self.mlists_load_fold, self.mlists_list[index])
@@ -481,7 +480,7 @@ if __name__ == "__main__":
 
     # test the RawDataset
     #"""
-    dataset = RawDataset(config, num = 1)
+    dataset = RawDataset(config, num = 1, mode="train")
     frame, label = dataset[512]
     tifffile.imsave(data_save_fold + '/RawFrame.tif', frame.numpy())
     tifffile.imsave(data_save_fold + '/RawLabel.tif', label.numpy())

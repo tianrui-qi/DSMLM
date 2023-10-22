@@ -7,9 +7,13 @@ runs/
 generated/
 dataGeneratorHelper/
 
+# temp folder and files
+**/temp/
+**/temp.*
+
 # compile file
-**.asv
-**__pycache__/
-**.idea/
-**.vscode/
-**.DS_Store
+**/.asv
+**/__pycache__/
+**/.idea/
+**/.vscode/
+**/.DS_Store
