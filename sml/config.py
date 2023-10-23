@@ -18,6 +18,8 @@ class Config:
         self.dim_dst: List[int] = [160, 160, 160]  # [C, H, W], pixel
 
         ## SimDataset
+        # scale up factor
+        self.scale_list: List[int] = [2, 4, 8, 16]
         # molecular profile
         self.std_src: List[List[float]] = [   # std range
             [1.0, 1.0, 1.0],  # minimum std, [C, H, W], by pixel
@@ -26,7 +28,9 @@ class Config:
 
         ## RawDataset
         # scale up factor
-        self.scale: List[int] = [4, 4, 4]   # [C, H, W]
+        self.scale  : List[int] = [4, 4, 4]     # [C, H, W]
+        # pad for patching
+        self.pad_src: List[int] = [2, 2, 2]     # [C, H, W], pixel
         # data path
         self.frames_load_fold: str = "D:/hela/frames"
         self.mlists_load_fold: str = "D:/hela/mlists"
@@ -37,7 +41,7 @@ class ConfigTrain(Config):
         super().__init__()
         ## Train
         # train
-        self.accumu_steps: int = 5
+        self.accumu_steps: int = 10
         self.lr   : float = 1e-4    # initial learning rate (lr)
         self.gamma: float = 0.95    # decay rate of lr
         # checkpoint
@@ -46,7 +50,7 @@ class ConfigTrain(Config):
         self.ckpt_load_lr  : bool = False     # load lr from ckpt
         # dataloader
         self.num: List[int] = [10000, 5000]   # train and valid
-        self.batch_size : int = 2
+        self.batch_size : int = 1
 
 
 class ConfigEval(Config):

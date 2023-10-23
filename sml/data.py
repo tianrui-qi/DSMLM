@@ -16,12 +16,13 @@ class SimDataset(Dataset):
     def __init__(self, config, num: int) -> None:
         super(SimDataset, self).__init__()
         self.num = num
+
         # dimension
         self.D = len(config.dim_dst)                    # # of dimension 
         self.dim_src = None                             # [D], int
         self.dim_dst = Tensor(config.dim_dst).int()     # [D], int
         # scale up factor 
-        self.scale_list = Tensor([2, 4, 8, 16]).int()          
+        self.scale_list = Tensor(config.scale_list).int()          
         self.scale      = None                          # [D], int
         # molecular profile
         self.std_src = Tensor(config.std_src)           # [2, D], float
@@ -78,7 +79,7 @@ class SimDataset(Dataset):
             scale_factor=self.scale.tolist()
         ).squeeze(0).squeeze(0)
 
-        return torch.clip(frame, 0, 1), label
+        return torch.clip(frame, 0, 1), torch.clip(label, 0, 1)
 
     def _generateMlist(self) -> None:
         # random scale up factor
@@ -154,6 +155,8 @@ class RawDataset(Dataset):
                 .dim_dst (List[int]): Dimension / pixel number of the output
                     subframe and sublabel of `__getitem__`.
                 .scale (List[int]): Scale up factor for each dimension.
+                .pad_src (List[int]): Padding of pixel number in source frame
+                    pixel size for each dimension when patching.
                 .frames_load_fold (str): Path to the folder that store frames. 
                     Please check `_readNext` for more detail.
                 .mlists_load_fold (str): Path to the folder that store mlists. 
@@ -165,6 +168,7 @@ class RawDataset(Dataset):
         super(RawDataset, self).__init__()
         self.num  = num
         self.mode = mode    # "train" or "eval"
+
         # dimension
         self.D = len(config.dim_dst)   # # of dimension
         self.dim_src         = None
@@ -175,11 +179,10 @@ class RawDataset(Dataset):
         self.dim_dst_pad = Tensor(config.dim_dst).int()     # [D], int
         self.dim_dst_raw     = None
         self.dim_dst_raw_pad = None
-
         # scale up factor
-        self.scale   = Tensor(config.scale).int()   # [D], int
+        self.scale   = Tensor(config.scale).int()       # [D], int
         # pad for patching
-        self.pad_src = Tensor([2, 2, 2]).int()      # [D], int
+        self.pad_src = Tensor(config.pad_src).int()     # [D], int
 
         # subframe index
         self.num_sub      = None    # [D], int
@@ -316,7 +319,9 @@ class RawDataset(Dataset):
         This function will be called when initialize the dataset.
         """
         self.averagemax = 0
-        for index in tqdm.tqdm(range(len(self.frames_list)//10), unit="frame"):
+        for index in tqdm.tqdm(
+            range(len(self.frames_list)//10), unit="frame", leave=False
+        ):
             self.averagemax += torch.from_numpy(tifffile.imread(
                 os.path.join(self.frames_load_fold, self.frames_list[index])
             )).max().float()
@@ -388,7 +393,7 @@ class RawDataset(Dataset):
             # set the brightness to the peak of gaussian/molecular
             sublabel[tuple(mean.int())] += peak
 
-        return torch.clip(subframe, 0, 1), sublabel
+        return torch.clip(subframe, 0, 1), torch.clip(sublabel, 0, 1)
 
     def _readNext(self, index: int) -> None:
         ## frame
