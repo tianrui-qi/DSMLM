@@ -48,7 +48,7 @@ class ConfigTrainer(Config):
         self.ckpt_load_lr  : bool = False     # load lr from ckpt
         # dataloader
         self.num: List[int] = [10000, 5000]   # train and valid
-        self.batch_size : int = 1
+        self.batch_size: int = 1
         # optimizer
         self.lr   : float = 1e-4    # initial learning rate (lr)
         self.gamma: float = 0.95    # decay rate of lr
@@ -61,7 +61,7 @@ class ConfigEvaluator(Config):
         self.ckpt_load_path: str = ""   # path without .ckpts
         self.data_save_fold: str = "data/default"
         # dataloader
-        self.batch_size : int = 5
+        self.batch_size: int = 5
 
 
 """ new architecture

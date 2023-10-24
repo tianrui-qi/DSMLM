@@ -16,6 +16,20 @@ complexcity of the network and retrain.
 """
 
 
+class e05(sml.ConfigTrainer):
+    def __init__(self) -> None:
+        super().__init__()
+        ## SimDataset & RawDataset
+        self.lum_info   = False
+        self.scale_list = [2, 4, 8, 16]
+        ## ResAttUNet
+        self.feats = [1, 16, 32, 64, 128]
+        ## Train
+        self.ckpt_save_fold = "ckpt/e05"
+        self.ckpt_load_path = "ckpt/e04/10"
+        self.ckpt_load_lr   = True
+
+
 class e04(sml.ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
@@ -34,7 +48,7 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--mode", type=str, choices=["train", "eval"])
     args = parser.parse_args()
 
-    config = e04()
+    config = e05()
     if   args.mode == "train": sml.Trainer(config).train()
     elif args.mode == "eval" : sml.Evaluator(config).eval()
     else: parser.print_help()
