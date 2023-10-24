@@ -6,6 +6,7 @@ import torch.utils.tensorboard.writer as writer
 from torch.utils.data import DataLoader
 
 import os
+import tifffile
 import tqdm
 
 import sml.model, sml.loss, sml.data
@@ -13,25 +14,15 @@ import sml.model, sml.loss, sml.data
 
 class Trainer:
     def __init__(self, config) -> None:
-        # train
         self.device = "cuda"
         self.max_epoch = 400
         self.accumu_steps = config.accumu_steps
-        self.lr    = config.lr
-        self.gamma = config.gamma
-        # checkpoint
+        # path
         self.ckpt_save_fold = config.ckpt_save_fold
         self.ckpt_load_path = config.ckpt_load_path
         self.ckpt_load_lr   = config.ckpt_load_lr
 
-        # index
-        self.epoch = 1  # epoch index may update in load_ckpt()
-
-        # model
-        self.model = sml.model.ResAttUNet(config).to(self.device)
-        # loss
-        self.loss = sml.loss.GaussianBlurLoss(config).to(self.device)
-        # data
+        # dataloader
         self.trainloader = DataLoader(
             sml.data.SimDataset(config, num=config.num[0]),
             batch_size=config.batch_size,
@@ -44,21 +35,28 @@ class Trainer:
             num_workers=config.batch_size, 
             pin_memory=True
         )
-
+        # model
+        self.model = sml.model.ResAttUNet(config).to(self.device)
+        # loss
+        self.loss  = sml.loss.GaussianBlurLoss(config).to(self.device)
         # optimizer
         self.scaler    = amp.GradScaler()  # type: ignore
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr)
         self.scheduler = lr_scheduler.ExponentialLR(
-            self.optimizer, gamma=self.gamma)
-        
-        # record
+            self.optimizer, gamma=config.gamma)
+        # recorder
         self.writer = writer.SummaryWriter()
 
+        # index
+        self.epoch = 1  # epoch index may update in load_ckpt()
+
         # print model info
+        """
         para_num = sum(
             p.numel() for p in self.model.parameters() if p.requires_grad
         )
         print(f'The model has {para_num:,} trainable parameters')
+        """
 
     def train(self) -> None:
         self._load_ckpt()
@@ -90,10 +88,10 @@ class Trainer:
             labels = labels.to(self.device)
 
             # forward and backward
-            with amp.autocast(dtype=torch.float16):  # type: ignore
+            with amp.autocast(dtype=torch.float16):
                 predis = self.model(frames)
                 loss_value = self.loss(predis, labels) / self.accumu_steps
-            self.scaler.scale(loss_value).backward()  # type: ignore
+            self.scaler.scale(loss_value).backward()
 
             # record: tensorboard
             train_loss.append(loss_value.item() / len(predis))
@@ -107,12 +105,12 @@ class Trainer:
 
             # record: tensorboard
             self.writer.add_scalars(
-                'Loss', {'train': torch.sum(torch.as_tensor(train_loss))}, 
+                'scalars/loss', {'train': torch.sum(torch.as_tensor(train_loss))}, 
                 (self.epoch - 1) * len(self.trainloader) / self.accumu_steps + 
                 (i + 1) / self.accumu_steps
             )  # average loss of each frame
             self.writer.add_scalars(
-                'Num', {'train': torch.mean(torch.as_tensor(train_num))}, 
+                'scalars/numb', {'train': torch.mean(torch.as_tensor(train_num))}, 
                 (self.epoch - 1) * len(self.trainloader) / self.accumu_steps + 
                 (i + 1) / self.accumu_steps
             )  # average num of each frame
@@ -151,11 +149,11 @@ class Trainer:
         
         # record: tensorboard
         self.writer.add_scalars(
-            'Loss', {'valid': torch.mean(torch.as_tensor(valid_loss))}, 
+            'scalars/loss', {'valid': torch.mean(torch.as_tensor(valid_loss))}, 
             self.epoch * len(self.trainloader) / self.accumu_steps
         )
         self.writer.add_scalars(
-            'Num', {'valid': torch.mean(torch.as_tensor(valid_num))}, 
+            'scalars/numb', {'valid': torch.mean(torch.as_tensor(valid_num))}, 
             self.epoch * len(self.trainloader) / self.accumu_steps
         )
 
@@ -166,7 +164,7 @@ class Trainer:
 
         # record: tensorboard
         self.writer.add_scalar(
-            'LR', self.optimizer.param_groups[0]['lr'], 
+            'scalars/lr', self.optimizer.param_groups[0]['lr'], 
             self.epoch * len(self.trainloader) / self.accumu_steps
         )
 
@@ -197,3 +195,85 @@ class Trainer:
         if not self.ckpt_load_lr: return
         self.optimizer.load_state_dict(ckpt['optimizer'])
         self.scheduler.load_state_dict(ckpt['scheduler'])
+
+
+class Evaluator:
+    def __init__(self, config) -> None:
+        self.device = "cuda"
+        # path
+        self.ckpt_load_path = config.ckpt_load_path
+        self.data_save_fold = config.data_save_fold
+
+        # dataloader
+        self.dataset = sml.data.RawDataset(config, num=None, mode="eval")
+        self.dataloader = DataLoader(
+            self.dataset,
+            batch_size=config.batch_size, 
+            num_workers=config.batch_size, 
+            pin_memory=True
+        )
+        # model
+        self.model = sml.model.ResAttUNet(config).to(self.device)
+        self.model.load_state_dict(torch.load(
+            "{}.ckpt".format(self.ckpt_load_path), 
+            map_location=self.device)['model']
+        )
+        self.model.half()
+
+        # index
+        self.num_sub_user = self.dataset.num_sub_user   # [D], int
+        self.num_sub_user_prod = torch.prod(self.num_sub_user)
+        self.batch_size   = self.dataloader.batch_size
+        if self.num_sub_user_prod % self.batch_size != 0: raise ValueError(
+            "num_sub_user_prod must divisible by batch_size, but got {} and {}"
+            .format(self.num_sub_user_prod, self.batch_size)
+        )
+
+        # print model info
+        """
+        para_num = sum(
+            p.numel() for p in self.model.parameters() if p.requires_grad
+        )
+        print(f'The model has {para_num:,} trainable parameters')
+        """
+
+    @torch.no_grad()
+    def eval(self) -> None:
+        self.model.eval()
+
+        # record: progress bar
+        pbar = tqdm.tqdm(
+            total=int(
+                len(self.dataloader)*self.batch_size/self.num_sub_user_prod
+            ), desc=self.data_save_fold, unit="frame"
+        )
+
+        # create folder
+        if not os.path.exists(self.data_save_fold):
+            os.makedirs(self.data_save_fold)
+
+        sub_cat = None  # after concatenation
+        sub_cmb = None  # after combination
+        for i, frames in enumerate(self.dataloader):
+            frames = frames.half().to(self.device)
+            sub = self.model(frames)    # prediction from the model
+
+            # store subframes to tensor with shape
+            # [self.num_sub_user_prod, *sub.shape] 
+            sub_cat = sub if sub_cat is None else torch.cat((sub_cat, sub))
+
+            # combine self.num_sub_user_prod number of subframes
+            if len(sub_cat) < self.num_sub_user_prod: continue
+            if sub_cmb == None: sub_cmb = self.dataset.combineFrame(sub_cat)
+            else: sub_cmb += self.dataset.combineFrame(sub_cat)
+            sub_cat = None
+
+            # save after combine 1, 2, 4, 8, 16... frames
+            current_frame = int((i+1)/(self.num_sub_user_prod/self.batch_size))
+            if current_frame & (current_frame - 1) == 0 \
+            or i == len(self.dataloader) - 1: tifffile.imwrite(
+                "{}/{:05}.tif".format(self.data_save_fold, current_frame),
+                sub_cmb.float().cpu().detach().numpy()
+            )
+
+            pbar.update()  # update progress bar

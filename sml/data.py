@@ -17,6 +17,8 @@ class SimDataset(Dataset):
         super(SimDataset, self).__init__()
         self.num = num
 
+        # luminance/brightness information
+        self.lum_info = config.lum_info
         # dimension
         self.D = len(config.dim_dst)                    # # of dimension 
         self.dim_src = None                             # [D], int
@@ -68,7 +70,7 @@ class SimDataset(Dataset):
             # dim_src -> dim_dst
             mean = torch.round((mean + 0.5) * self.scale - 0.5)
             # set the brightness to the peak of gaussian/molecular
-            label[tuple(mean.int())] += peak
+            label[tuple(mean.int())] += peak if self.lum_info else 1
 
         # add noise
         save_bit = 2**(3+torch.randint(0, 3, (1,)))     # 8, 16, or 32 bit
@@ -152,6 +154,8 @@ class RawDataset(Dataset):
 
         Args:
             config (Config): Config class define in config.py.
+                .lum_info (bool): Whether to add brightness info to the label.
+                    If set as False, the label will be a binary image.
                 .dim_dst (List[int]): Dimension / pixel number of the output
                     subframe and sublabel of `__getitem__`.
                 .scale (List[int]): Scale up factor for each dimension.
@@ -169,6 +173,8 @@ class RawDataset(Dataset):
         self.num  = num
         self.mode = mode    # "train" or "eval"
 
+        # luminance/brightness information
+        self.lum_info = config.lum_info
         # dimension
         self.D = len(config.dim_dst)   # # of dimension
         self.dim_src         = None
@@ -391,7 +397,7 @@ class RawDataset(Dataset):
             mean = submlist[m, 0:3]     # [D], float
             peak = submlist[m,   6]     # float
             # set the brightness to the peak of gaussian/molecular
-            sublabel[tuple(mean.int())] += peak
+            sublabel[tuple(mean.int())] += peak if self.lum_info else 1
 
         return torch.clip(subframe, 0, 1), torch.clip(sublabel, 0, 1)
 

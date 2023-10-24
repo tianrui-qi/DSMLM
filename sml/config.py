@@ -3,17 +3,9 @@ from typing import List
 
 class Config:
     def __init__(self) -> None:
-        ## ResAttUNet
-        self.dim  : int = 3
-        self.feats: List[int] = [1, 16, 32]
-        self.use_res : bool = False
-        self.use_cbam: bool = False
-
-        ## GaussianBlurLoss
-        self.kernel_size : int   = 7
-        self.kernel_sigma: float = 1.0
-
         ## SimDataset & RawDataset
+        # luminance/brightness information
+        self.lum_info: bool = True
         # dimension
         self.dim_dst: List[int] = [160, 160, 160]  # [C, H, W], pixel
 
@@ -35,31 +27,38 @@ class Config:
         self.frames_load_fold: str = "D:/hela/frames"
         self.mlists_load_fold: str = "D:/hela/mlists"
 
+        ## ResAttUNet
+        self.dim  : int = 3
+        self.feats: List[int] = [1, 16, 32]
+        self.use_res : bool = False
+        self.use_cbam: bool = False
 
-class ConfigTrain(Config):
+        ## GaussianBlurLoss
+        self.kernel_size : int   = 7
+        self.kernel_sigma: float = 1.0
+
+
+class ConfigTrainer(Config):
     def __init__(self) -> None:
         super().__init__()
-        ## Train
-        # train
         self.accumu_steps: int = 10
-        self.lr   : float = 1e-4    # initial learning rate (lr)
-        self.gamma: float = 0.95    # decay rate of lr
-        # checkpoint
+        # path
         self.ckpt_save_fold: str  = "ckpt/default"
         self.ckpt_load_path: str  = ""        # path without .ckpt
         self.ckpt_load_lr  : bool = False     # load lr from ckpt
         # dataloader
         self.num: List[int] = [10000, 5000]   # train and valid
         self.batch_size : int = 1
+        # optimizer
+        self.lr   : float = 1e-4    # initial learning rate (lr)
+        self.gamma: float = 0.95    # decay rate of lr
 
 
-class ConfigEval(Config):
+class ConfigEvaluator(Config):
     def __init__(self) -> None:
         super().__init__()
-        ## Eval
-        # checkpoint
-        self.ckpt_load_path: str = ""   # path without .ckpt
-        # data
+        # path
+        self.ckpt_load_path: str = ""   # path without .ckpts
         self.data_save_fold: str = "data/default"
         # dataloader
         self.batch_size : int = 5
@@ -88,7 +87,7 @@ Evaluation speed: 3.63 frames/s ( 16 subframes/frame)
 """
 
 
-class e03(ConfigEval):
+class e03(ConfigEvaluator):
     def __init__(self) -> None:
         super().__init__()
         self.scale = [4, 4, 4]
@@ -97,7 +96,7 @@ class e03(ConfigEval):
         self.batch_size : int = 4
 
 
-class e02(ConfigTrain):
+class e02(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         #self.lr = 1e-5
@@ -107,7 +106,7 @@ class e02(ConfigTrain):
         self.ckpt_load_lr   = True
 
 
-class e01(ConfigTrain):
+class e01(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         self.ckpt_load_path = "ckpt/d04/140"

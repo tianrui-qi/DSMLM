@@ -2,8 +2,7 @@ import torch.backends.cudnn
 
 import argparse
 
-from sml import ConfigTrain, ConfigEval, Trainer, Evaluator
-
+import sml
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
@@ -17,24 +16,17 @@ complexcity of the network and retrain.
 """
 
 
-class e05(ConfigTrain):
+class e04(sml.ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
-        self.feats = [1, 16, 32, 64, 128]
-
+        ## SimDataset & RawDataset
+        self.lum_info   = False
         self.scale_list = [4]
-
-        self.lr = 1e-5
-        self.ckpt_save_fold = "ckpt/e05"
-        self.ckpt_load_path = "ckpt/e04/10"
-
-
-class e04(ConfigTrain):
-    def __init__(self) -> None:
-        super().__init__()
+        ## ResAttUNet
         self.feats = [1, 16, 32, 64, 128]
-
+        ## Train
         self.ckpt_save_fold = "ckpt/e04"
+        self.lr = 5e-5
 
 
 if __name__ == "__main__":
@@ -42,7 +34,7 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--mode", type=str, choices=["train", "eval"])
     args = parser.parse_args()
 
-    config = e05()
-    if   args.mode == "train": Trainer(config).train()
-    elif args.mode == "eval" : Evaluator(config).eval()
+    config = e04()
+    if   args.mode == "train": sml.Trainer(config).train()
+    elif args.mode == "eval" : sml.Evaluator(config).eval()
     else: parser.print_help()
