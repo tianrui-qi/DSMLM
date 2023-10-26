@@ -65,11 +65,35 @@ class EvaluerConfig(Config):
         self.batch_size: int = 4
 
 
+""" reduce scale up list
+Now we have two gauss reason:
+1.  The network training does not finish, which cause these checkbox.
+2.  scale uo to (2, 4, 8, 16) is too expand for the network to learn. 
+We will explore the second reason first. We load the result from d04 and
+continue to train it with both scale up factor 4 and 8. Then, expand it to
+LumT.
+"""
+
+
+
+
+
 """ increase feature number
 Currently we gauss the problem in e01-03 is because the complexcity of the 
 network is not enough to locolize. Reference to d05 and other, it's seems like
 these checkbox is cause by not enough training. Thus, we try to increase the
 complexcity of the network and retrain.
+
+From 04-06, we define a training process where we start from scale up by 4 LumF,
+then expand the salce to (2, 4, 8, 16), and finally LumT. We split first since
+it's easier to control the training process of scale up 4 and second since we
+may change how we add brightness information in the future, i.e., we can tuning
+by load checkpoint of 02.
+
+Result:
+In e07, (4, 4, 4) LumF, the result is compareable to d04 which is also (4, 4, 4)
+LumF. In e08, the problem of checkbox is still exist. Like e03. Thus, we may 
+conclude the complexcity of the network is not the problem.
 
 features number : [1, 16, 32, 64, 128]
 Trainable paras : 
@@ -77,6 +101,18 @@ Training   speed: 1.07 steps /s ( 10 iterations/step)
 Validation speed: 1.70 steps /s ( 10 iterations/step)
 Evaluation speed: 2.95 frames/s ( 16 subframes/frame)
 """
+
+
+class e08(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## SimDataset & RawDataset
+        self.lum_info = False
+        ## ResAttUNet
+        self.feats = [1, 16, 32, 64, 128]
+        ## Evaluer
+        self.ckpt_load_path = "ckpt/e06/90"
+        self.data_save_fold = "data/e-sr/08"
 
 
 class e07(EvaluerConfig):
