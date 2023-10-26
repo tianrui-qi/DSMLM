@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
+import sml.config
+
 
 class _ChannelAttentionModule(nn.Module):
     def __init__(self, dim: int, in_c: int, ratio: int = 16) -> None:
@@ -103,7 +105,7 @@ class _DualConv(nn.Module):
 
 
 class ResAttUNet(nn.Module):
-    def __init__(self, config) -> None:
+    def __init__(self, config: sml.config.Config) -> None:
         super(ResAttUNet, self).__init__()
         self.dim   = config.dim
         self.feats = config.feats

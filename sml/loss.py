@@ -3,9 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
+import sml.config
+
 
 class GaussianBlurLoss(nn.Module):
-    def __init__(self, config) -> None:
+    def __init__(self, config: sml.config.Config) -> None:
         super().__init__()
         # Gaussian kernel using help function gaussianKernel
         self.kernel = self.gaussianKernel(

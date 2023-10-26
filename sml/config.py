@@ -13,16 +13,14 @@ class Config:
         # scale up factor
         self.scale_list: List[int] = [2, 4, 8, 16]
         # molecular profile
-        self.std_src: List[List[float]] = [   # std range
+        self.std_src: List[List[float]] = [     # std range
             [1.0, 1.0, 1.0],  # minimum std, [C, H, W], by pixel
             [3.0, 2.5, 2.5],  # maximum std, [C, H, W], by pixel
         ]
 
         ## RawDataset
         # scale up factor
-        self.scale  : List[int] = [4, 4, 4]     # [C, H, W]
-        # pad for patching
-        self.pad_src: List[int] = [2, 2, 2]     # [C, H, W], pixel
+        self.scale: List[int] = [4, 4, 4]   # [C, H, W]
         # data path
         self.frames_load_fold: str = "D:/hela/frames"
         self.mlists_load_fold: str = "D:/hela/mlists"
@@ -38,9 +36,11 @@ class Config:
         self.kernel_sigma: float = 1.0
 
 
-class ConfigTrainer(Config):
+class TrainerConfig(Config):
     def __init__(self) -> None:
         super().__init__()
+        ## Trainer
+        self.max_epoch   : int = 200
         self.accumu_steps: int = 10
         # path
         self.ckpt_save_fold: str  = "ckpt/default"
@@ -54,14 +54,81 @@ class ConfigTrainer(Config):
         self.gamma: float = 0.95    # decay rate of lr
 
 
-class ConfigEvaluator(Config):
+class EvaluerConfig(Config):
     def __init__(self) -> None:
         super().__init__()
+        ## Evaluer
         # path
         self.ckpt_load_path: str = ""   # path without .ckpts
         self.data_save_fold: str = "data/default"
         # dataloader
-        self.batch_size: int = 5
+        self.batch_size: int = 4
+
+
+""" increase feature number
+Currently we gauss the problem in e01-03 is because the complexcity of the 
+network is not enough to locolize. Reference to d05 and other, it's seems like
+these checkbox is cause by not enough training. Thus, we try to increase the
+complexcity of the network and retrain.
+
+features number : [1, 16, 32, 64, 128]
+Trainable paras : 
+Training   speed: 1.07 steps /s ( 10 iterations/step)
+Validation speed: 1.70 steps /s ( 10 iterations/step)
+Evaluation speed: 2.95 frames/s ( 16 subframes/frame)
+"""
+
+
+class e07(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## SimDataset & RawDataset
+        self.lum_info = False
+        ## ResAttUNet
+        self.feats = [1, 16, 32, 64, 128]
+        ## Evaluer
+        self.ckpt_load_path = "ckpt/e05/80"
+        self.data_save_fold = "data/e-sr/07"
+
+
+class e06(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## ResAttUNet
+        self.feats = [1, 16, 32, 64, 128]
+        ## Trainer
+        self.max_epoch = 90
+        self.ckpt_save_fold = "ckpt/e06"
+        self.ckpt_load_path = "ckpt/e05/80"
+        self.ckpt_load_lr   = True
+
+
+class e05(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## SimDataset & RawDataset
+        self.lum_info = False
+        ## ResAttUNet
+        self.feats = [1, 16, 32, 64, 128]
+        ## Trainer
+        self.max_epoch = 80
+        self.ckpt_save_fold = "ckpt/e05"
+        self.ckpt_load_path = "ckpt/e04/10"
+        self.ckpt_load_lr   = True
+
+
+class e04(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## SimDataset & RawDataset
+        self.lum_info   = False
+        self.scale_list = [4]
+        ## ResAttUNet
+        self.feats = [1, 16, 32, 64, 128]
+        ## Train
+        self.max_epoch = 10
+        self.ckpt_save_fold = "ckpt/e04"
+        self.lr = 5e-5
 
 
 """ new architecture
@@ -78,7 +145,6 @@ we evaluate the network with hela dataset with scale up factor [4, 4, 4]. The
 result show very obvious artifacts with a len 5. The chessbox is different from
 before. 
 
-up sampling rate: [4, 4, 4]
 features number : [1, 16, 32]
 Trainable paras : 70,353
 Training   speed: 1.14 steps /s ( 10 iterations/step)
@@ -87,26 +153,23 @@ Evaluation speed: 3.63 frames/s ( 16 subframes/frame)
 """
 
 
-class e03(ConfigEvaluator):
+class e03(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
         self.scale = [4, 4, 4]
         self.ckpt_load_path = "ckpt/e02/210" 
         self.data_save_fold = "data/e-sr/03"
-        self.batch_size : int = 4
 
 
-class e02(ConfigTrainer):
+class e02(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
-        #self.lr = 1e-5
-        #self.ckpt_load_path = "ckpt/e01/150"
-        self.ckpt_load_path = "ckpt/e02/172"
+        self.lr = 1e-5
+        self.ckpt_load_path = "ckpt/e01/150"
         self.ckpt_save_fold = "ckpt/e02"
-        self.ckpt_load_lr   = True
 
 
-class e01(ConfigTrainer):
+class e01(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
         self.ckpt_load_path = "ckpt/d04/140"

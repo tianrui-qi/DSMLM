@@ -11,9 +11,11 @@ import scipy.io
 import tqdm
 from typing import Tuple, Union
 
+import sml.config
+
 
 class SimDataset(Dataset):
-    def __init__(self, config, num: int) -> None:
+    def __init__(self, config: sml.config.Config, num: int) -> None:
         super(SimDataset, self).__init__()
         self.num = num
 
@@ -139,39 +141,10 @@ class SimDataset(Dataset):
 
 
 class RawDataset(Dataset):
-    def __init__(self, config, num: int = None, mode: str = "eval") -> None:
-        """
-        When `mode` is "train," this Dataset will be use to validate the 
-        training result and `num` must be specified.
-        When `mode` is "eval," this Dataset will be use to patch the whole 
-        frame into subframe (see `__getitem__`) according to user's input (see
-        `_getIndex`). `num` is not necessary in this mode and will be computed
-        automatically if not given.
-
-        We use two help functions `_getIndex` and `_getAveragemax` to compute
-        necessary index and average max value of all frames when initialize the
-        dataset.
-
-        Args:
-            config (Config): Config class define in config.py.
-                .lum_info (bool): Whether to add brightness info to the label.
-                    If set as False, the label will be a binary image.
-                .dim_dst (List[int]): Dimension / pixel number of the output
-                    subframe and sublabel of `__getitem__`.
-                .scale (List[int]): Scale up factor for each dimension.
-                .pad_src (List[int]): Padding of pixel number in source frame
-                    pixel size for each dimension when patching.
-                .frames_load_fold (str): Path to the folder that store frames. 
-                    Please check `_readNext` for more detail.
-                .mlists_load_fold (str): Path to the folder that store mlists. 
-                    Please check `_readNext` for more detail. 
-                    Will not be use when `mode` is "eval".
-            num (int): Total number of data (subframe). Default: None
-            mode (str): "train" or "eval". Default: "eval"
-        """
+    def __init__(self, config: sml.config.Config, num: int, mode: str) -> None:
         super(RawDataset, self).__init__()
         self.num  = num
-        self.mode = mode    # "train" or "eval"
+        self.mode = mode    # "train" or "evalu"
 
         # luminance/brightness information
         self.lum_info = config.lum_info
@@ -186,9 +159,9 @@ class RawDataset(Dataset):
         self.dim_dst_raw     = None
         self.dim_dst_raw_pad = None
         # scale up factor
-        self.scale   = Tensor(config.scale).int()       # [D], int
+        self.scale   = Tensor(config.scale).int()   # [D], int
         # pad for patching
-        self.pad_src = Tensor(config.pad_src).int()     # [D], int
+        self.pad_src = Tensor([2, 2, 2]).int()      # [D], int
 
         # subframe index
         self.num_sub      = None    # [D], int
@@ -213,22 +186,6 @@ class RawDataset(Dataset):
         self._getAveragemax()
 
     def _getIndex(self) -> None:
-        """
-        This function is a initialization helper that compute all the necessary
-        index. First, we will compute eight dimensional index.
-        Next, we compute subframe index according to current mode `self.mode`:
-            Train mode: this dataset will be use to validate the training 
-        result and the patch been selected is not important. So we will simply 
-        choose all patch. Note that the `self.num` must be given when 
-        instantiate in train mode.
-            Eval mode: ask user to input the subframe index that they want to 
-        eval. To do this, we will draw how the program cut the frame into patch
-        and ask user to input the subframe index for each dimension. Then, we 
-        will draw the selected patch by user and compute the `self.num` 
-        automatically if it's not given (not necessary in eval mode). The 
-        drawing will be save in `data/patch.tif.`
-        """
-
         # compute dimension of patch
         self.dim_src = (self.dim_dst_pad / self.scale).int() - 2*self.pad_src   
         self.dim_src_pad = self.dim_src + 2*self.pad_src 
@@ -254,7 +211,7 @@ class RawDataset(Dataset):
             # self.num must be given when instantiate in train mode
             return
 
-        ## eval
+        ## evalu
 
         # draw all patch
         patch = torch.zeros(self.dim_src_raw_pad.tolist())
@@ -288,7 +245,7 @@ class RawDataset(Dataset):
         self.rng_sub_user = Tensor(self.rng_sub_user).int().reshape(self.D, 2)
         self.num_sub_user = self.rng_sub_user[:, 1] - self.rng_sub_user[:, 0]
         if self.num is None:
-            # self.num is not necessary when instantiate in eval mode
+            # self.num is not necessary when instantiate in evalu mode
             # if not given, compute it automatically 
             self.num = torch.prod(self.num_sub_user) * len(self.frames_list)
 
@@ -362,8 +319,8 @@ class RawDataset(Dataset):
             scale_factor=self.scale.tolist()
         ).squeeze(0).squeeze(0)
 
-        # don't need or have mlists, i.e., when eval
-        if self.mode == "eval": return subframe 
+        # don't need or have mlists, i.e., when evalu
+        if self.mode == "evalu": return subframe 
 
         # mlist
         submlist = self.mlist
@@ -417,8 +374,8 @@ class RawDataset(Dataset):
             self.pad_src[0], right_pad[0], 
         ))
 
-        # don't need or have mlists, i.e., when eval
-        if self.mode == "eval": return
+        # don't need or have mlists, i.e., when evalu
+        if self.mode == "evalu": return
 
         ## mlist
         # read mlist
@@ -474,8 +431,7 @@ class RawDataset(Dataset):
 
 
 if __name__ == "__main__":
-    import config
-    config = config.Config()
+    config = sml.config.Config()
 
     data_save_fold = "temp"
     if not os.path.exists(data_save_fold): os.makedirs(data_save_fold)

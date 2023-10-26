@@ -1,8 +1,8 @@
-from .config import ConfigTrainer, ConfigEvaluator
-from .runner import Trainer, Evaluator
+from .config import TrainerConfig, EvaluerConfig
+from .runner import Trainer      , Evaluer
 
 
 __all__ = [
-    "ConfigTrainer", "ConfigEvaluator",
-    "Trainer"      , "Evaluator"      ,
+    "TrainerConfig", "EvaluerConfig",
+    "Trainer"      , "Evaluer"      ,
 ]

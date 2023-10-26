@@ -9,13 +9,14 @@ import os
 import tifffile
 import tqdm
 
+import sml.config
 import sml.model, sml.loss, sml.data
 
 
 class Trainer:
-    def __init__(self, config) -> None:
+    def __init__(self, config: sml.config.TrainerConfig) -> None:
         self.device = "cuda"
-        self.max_epoch = 400
+        self.max_epoch = config.max_epoch
         self.accumu_steps = config.accumu_steps
         # path
         self.ckpt_save_fold = config.ckpt_save_fold
@@ -58,7 +59,7 @@ class Trainer:
         print(f'The model has {para_num:,} trainable parameters')
         """
 
-    def train(self) -> None:
+    def fit(self) -> None:
         self._load_ckpt()
         for self.epoch in tqdm.tqdm(
             range(self.epoch, self.max_epoch+1), 
@@ -197,15 +198,15 @@ class Trainer:
         self.scheduler.load_state_dict(ckpt['scheduler'])
 
 
-class Evaluator:
-    def __init__(self, config) -> None:
+class Evaluer:
+    def __init__(self, config: sml.config.EvaluerConfig) -> None:
         self.device = "cuda"
         # path
         self.ckpt_load_path = config.ckpt_load_path
         self.data_save_fold = config.data_save_fold
 
         # dataloader
-        self.dataset = sml.data.RawDataset(config, num=None, mode="eval")
+        self.dataset = sml.data.RawDataset(config, num=None, mode="evalu")
         self.dataloader = DataLoader(
             self.dataset,
             batch_size=config.batch_size, 
@@ -238,7 +239,7 @@ class Evaluator:
         """
 
     @torch.no_grad()
-    def eval(self) -> None:
+    def fit(self) -> None:
         self.model.eval()
 
         # record: progress bar
