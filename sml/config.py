@@ -72,10 +72,44 @@ Now we have two gauss reason:
 We will explore the second reason first. We load the result from d04 and
 continue to train it with both scale up factor 4 and 8. Then, expand it to
 LumT.
+
+features number : [1, 16, 32]
+Trainable paras : 70,353
+Training   speed:      steps /s ( 10 iterations/step)
+Validation speed:      steps /s ( 10 iterations/step)
+Evaluation speed: 3.52 frames/s ( 16 subframes/frame)
+                  1.10 frames/s ( 64 subframes/frame)
 """
 
 
+class e11(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## Evaluer
+        self.ckpt_load_path = "ckpt/e10/320"
+        self.data_save_fold = "data/e-sr/11"
+        self.batch_size     = 4
 
+
+class e10(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## SimDataset & RawDataset
+        self.scale_list = [4, 8]
+        ## Trainer
+        self.ckpt_save_fold = "ckpt/e10"
+        self.ckpt_load_path = "ckpt/e09/240"
+
+
+class e09(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## SimDataset & RawDataset
+        self.lum_info = False
+        self.scale_list = [4, 8]
+        ## Trainer
+        self.ckpt_save_fold = "ckpt/e09"
+        self.ckpt_load_path = "ckpt/d04/140"
 
 
 """ increase feature number
