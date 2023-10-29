@@ -12,6 +12,7 @@ class e11(sml.EvaluerConfig):
         ## Evaluer
         self.ckpt_load_path = "ckpt/e10/320"
         self.data_save_fold = "data/e-sr/11"
+        self.batch_size     = 4
 
 
 class e10(sml.TrainerConfig):

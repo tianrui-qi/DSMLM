@@ -395,7 +395,6 @@ class RawDataset(Dataset):
         # match the coordinate after padding
         self.mlist[:, 0:3] += self.pad_src
 
-    # TODO: right pad exceed the raw frame
     def combineFrame(self, subframes: Tensor) -> Tensor:
         frame = torch.zeros(
             (self.num_sub_user * self.dim_dst).int().tolist(), 
@@ -421,6 +420,16 @@ class RawDataset(Dataset):
                   self.pad_src[2] * self.scale[2] : 
                 - self.pad_src[2] * self.scale[2],
             ]
+
+        # right pad exceed the raw frame
+        exceed_src = self.dim_src_raw_pad - self.dim_src_raw - 2*self.pad_src
+        exceed_dst = exceed_src * self.scale
+        if self.rng_sub_user[0][1] == self.num_sub[0]:
+            frame = frame[:-exceed_dst[0], :, :]
+        if self.rng_sub_user[1][1] == self.num_sub[1]:
+            frame = frame[:, :-exceed_dst[1], :]
+        if self.rng_sub_user[2][1] == self.num_sub[2]:
+            frame = frame[:, :, :-exceed_dst[2]]
 
         return frame
 
