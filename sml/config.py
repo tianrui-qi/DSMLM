@@ -40,7 +40,7 @@ class TrainerConfig(Config):
     def __init__(self) -> None:
         super().__init__()
         ## Trainer
-        self.max_epoch   : int = 200
+        self.max_epoch   : int = 400
         self.accumu_steps: int = 10
         # path
         self.ckpt_save_fold: str  = "ckpt/default"

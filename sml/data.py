@@ -15,7 +15,7 @@ import sml.config
 
 
 class SimDataset(Dataset):
-    def __init__(self, config: sml.config.Config, num: int) -> None:
+    def __init__(self, config: sml.config.TrainerConfig, num: int) -> None:
         super(SimDataset, self).__init__()
         self.num = num
 
@@ -141,10 +141,12 @@ class SimDataset(Dataset):
 
 
 class RawDataset(Dataset):
-    def __init__(self, config: sml.config.Config, num: int, mode: str) -> None:
+    def __init__(self, config: sml.config.Config, num: int) -> None:
         super(RawDataset, self).__init__()
         self.num  = num
-        self.mode = mode    # "train" or "evalu"
+        self.mode = None
+        if isinstance(config, sml.config.TrainerConfig): self.mode = "train"
+        if isinstance(config, sml.config.EvaluerConfig): self.mode = "evalu"
 
         # luminance/brightness information
         self.lum_info = config.lum_info
@@ -178,9 +180,9 @@ class RawDataset(Dataset):
         self.averagemax = None  # for normalizing all frames
 
         # store the current frame and mlist in memory
+        self.current_frame_index = -1
         self.frame = None
         self.mlist = None   # [N, 7], float  
-        self.current_frame_index = -1
 
         self._getIndex()
         self._getAveragemax()
