@@ -73,6 +73,11 @@ We will explore the second reason first. We load the result from d04 and
 continue to train it with both scale up factor 4 and 8. Then, expand it to
 LumT.
 
+Result:
+In e11, when scale by 4, the lens of the checkbox is 5; when scale up by 9, the
+lens of the checkbox is 9. Thus, the checkbox is in fact cause by super
+resolution itself. 
+
 features number : [1, 16, 32]
 Trainable paras : 70,353
 Training   speed:      steps /s ( 10 iterations/step)
@@ -80,6 +85,16 @@ Validation speed:      steps /s ( 10 iterations/step)
 Evaluation speed: 3.52 frames/s ( 16 subframes/frame)
                   1.10 frames/s ( 64 subframes/frame)
 """
+
+
+class e12(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.scale = [4, 8, 8]
+        ## Evaluer
+        self.ckpt_load_path = "ckpt/e10/320"
+        self.data_save_fold = "data/e-sr/12"
+        self.batch_size     = 4
 
 
 class e11(EvaluerConfig):

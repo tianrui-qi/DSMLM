@@ -221,6 +221,8 @@ class Evaluer:
         )
         self.model.half()
 
+        # dim
+        self.dim_dst_pad = self.dataset.dim_dst_pad     # [D], int
         # index
         self.num_sub_user = self.dataset.num_sub_user   # [D], int
         self.num_sub_user_prod = torch.prod(self.num_sub_user)
@@ -250,31 +252,34 @@ class Evaluer:
         )
 
         # create folder
-        if not os.path.exists(self.data_save_fold):
+        if not os.path.exists(self.data_save_fold): 
             os.makedirs(self.data_save_fold)
 
-        sub_cat = None  # after concatenation
-        sub_cmb = None  # after combination
+        sub_cat = torch.zeros(
+            self.num_sub_user_prod, *self.dim_dst_pad, 
+            dtype=torch.float16, device=self.device
+        )
         for i, frames in enumerate(self.dataloader):
-            frames = frames.half().to(self.device)
-            sub = self.model(frames)    # prediction from the model
+            frame_index = int(i // (self.num_sub_user_prod/self.batch_size))
+            sub_index   = int(i  % (self.num_sub_user_prod/self.batch_size))
 
-            # store subframes to tensor with shape
-            # [self.num_sub_user_prod, *sub.shape] 
-            sub_cat = sub if sub_cat is None else torch.cat((sub_cat, sub))
+            # prediction of batch_size patches of the current frame
+            sub_cat[
+                sub_index * self.batch_size : (sub_index+1) * self.batch_size,
+                :, :, :
+            ] += self.model(frames.half().to(self.device))
 
-            # combine self.num_sub_user_prod number of subframes
-            if len(sub_cat) < self.num_sub_user_prod: continue
-            if sub_cmb == None: sub_cmb = self.dataset.combineFrame(sub_cat)
-            else: sub_cmb += self.dataset.combineFrame(sub_cat)
-            sub_cat = None
+            # continue if we haven't complete the prediction of all patches of
+            # the current frame
+            if (sub_index+1)*self.batch_size < self.num_sub_user_prod: continue
 
             # save after combine 1, 2, 4, 8, 16... frames
-            current_frame = int((i+1)/(self.num_sub_user_prod/self.batch_size))
-            if current_frame & (current_frame - 1) == 0 \
+            if (frame_index+1) & frame_index == 0 \
             or i == len(self.dataloader) - 1: tifffile.imwrite(
-                "{}/{:05}.tif".format(self.data_save_fold, current_frame),
-                sub_cmb.float().cpu().detach().numpy()
+                "{}/{:05}.tif".format(self.data_save_fold, frame_index+1),
+                self.dataset.combineFrame(
+                    sub_cat
+                ).float().cpu().detach().numpy()
             )
 
             pbar.update()  # update progress bar
