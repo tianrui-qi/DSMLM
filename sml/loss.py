@@ -3,19 +3,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
-import sml.config
-
 
 class GaussianBlurLoss(nn.Module):
-    def __init__(self, config: sml.config.Config) -> None:
+    def __init__(self, kernel_size: int = 7, kernel_sigma: float = 1.0) -> None:
         super().__init__()
         # Gaussian kernel using help function gaussianKernel
-        self.kernel = self.gaussianKernel(
-            3, config.kernel_size, config.kernel_sigma
-        )
+        self.kernel = self.gaussianKernel(3, kernel_size, kernel_sigma)
         # pad size, pad before convolve Gaussian kernel
-        self.pad = [config.kernel_size for _ in range(6)]  # [C H W]
-    
+        self.pad = [kernel_size for _ in range(6)]  # [C H W]
+
     def forward(self, predi: Tensor, label: Tensor) -> float:
         return F.mse_loss(
             self.gaussianBlur3d(F.pad(predi, self.pad), self.kernel),

@@ -11,7 +11,7 @@ class Config:
 
         ## SimDataset
         # scale up factor
-        self.scale_list: List[int] = [2, 4, 8, 16]
+        self.scale_list: List[int] = [4, 8]
         # molecular profile
         self.std_src: List[List[float]] = [     # std range
             [1.0, 1.0, 1.0],  # minimum std, [C, H, W], by pixel
@@ -30,10 +30,6 @@ class Config:
         self.feats: List[int] = [1, 16, 32]
         self.use_res : bool = False
         self.use_cbam: bool = False
-
-        ## GaussianBlurLoss
-        self.kernel_size : int   = 7
-        self.kernel_sigma: float = 1.0
 
 
 class TrainerConfig(Config):
@@ -65,6 +61,87 @@ class EvaluerConfig(Config):
         self.batch_size: int = 4
 
 
+"""
+features number : [1, 32, 64, 128, 256, 512]
+Trainable paras : 21,359,713
+Training   speed: 1.70 steps /s ( 10 iterations/step)
+Validation speed:      steps /s ( 10 iterations/step)
+Evaluation speed:      frames/s ( 16 subframes/frame)
+                       frames/s ( 64 subframes/frame)
+"""
+
+
+"""
+Now we combining the strategy of e04-06 and e09-e10, i.e., we reduce the scale
+up list we train from [2, 4, 8, 16] to [4, 8] and increase the features number
+of the number from [1, 16, 32] to [1, 16, 32, 64, 128]. 
+
+In e12, we load the ckpt from e04, which is trained with scale up factor 4 and 
+luminance off, and continue to train it with scale up factor [4, 8] and lum on.
+In e13, we simply increase the lr a little bit to make sure the learning rate 
+is not too small.
+
+Result:
+Increase complexcity of the network does not solve the checkbox problem. In our
+prediction of hela cell with scale up 4 in e14, the checkbox completely solved!
+However, when we scale up by 8, the checkbox appear again as more frame stack
+togather. But it's still better than e12. Thus, we may conclude that the reason
+cause checkbox is the complexcity of the network is not enough to locolize.
+
+features number : [1, 16, 32, 64, 128]
+Trainable paras :
+Training   speed:      steps /s ( 10 iterations/step)
+Validation speed:      steps /s ( 10 iterations/step)
+Evaluation speed: 2.92 frames/s ( 16 subframes/frame)
+                       frames/s ( 64 subframes/frame)
+"""
+
+
+class e15(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.scale = [4, 8, 8]
+        ## ResAttUNet
+        self.feats = [1, 16, 32, 64, 128]
+        ## Evaluer
+        self.ckpt_load_path = "ckpt/e13/200"
+        self.data_save_fold = "data/e-sr/15"
+
+
+class e14(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## ResAttUNet
+        self.feats = [1, 16, 32, 64, 128]
+        ## Evaluer
+        self.ckpt_load_path = "ckpt/e13/200"
+        self.data_save_fold = "data/e14"
+
+
+class e13(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## ResAttUNet
+        self.feats = [1, 16, 32, 64, 128]
+        ## Trainer
+        self.max_epoch = 200
+        self.ckpt_save_fold = "ckpt/e13"
+        self.ckpt_load_path = "ckpt/e12/100"
+        self.lr = 5e-6
+
+
+class e12(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## ResAttUNet
+        self.feats = [1, 16, 32, 64, 128]
+        ## Trainer
+        self.max_epoch = 100
+        self.ckpt_save_fold = "ckpt/e12"
+        self.ckpt_load_path = "ckpt/e04/10"
+        self.ckpt_load_lr   = True
+
+
 """ reduce scale up list
 Now we have two gauss reason:
 1.  The network training does not finish, which cause these checkbox.
@@ -93,8 +170,7 @@ class e12(EvaluerConfig):
         self.scale = [4, 8, 8]
         ## Evaluer
         self.ckpt_load_path = "ckpt/e10/320"
-        self.data_save_fold = "data/e-sr/12"
-        self.batch_size     = 4
+        self.data_save_fold = "data/e12"
 
 
 class e11(EvaluerConfig):
@@ -102,15 +178,12 @@ class e11(EvaluerConfig):
         super().__init__()
         ## Evaluer
         self.ckpt_load_path = "ckpt/e10/320"
-        self.data_save_fold = "data/e-sr/11"
-        self.batch_size     = 4
+        self.data_save_fold = "data/e11"
 
 
 class e10(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
-        ## SimDataset & RawDataset
-        self.scale_list = [4, 8]
         ## Trainer
         self.ckpt_save_fold = "ckpt/e10"
         self.ckpt_load_path = "ckpt/e09/240"
@@ -121,7 +194,6 @@ class e09(TrainerConfig):
         super().__init__()
         ## SimDataset & RawDataset
         self.lum_info = False
-        self.scale_list = [4, 8]
         ## Trainer
         self.ckpt_save_fold = "ckpt/e09"
         self.ckpt_load_path = "ckpt/d04/140"
@@ -161,7 +233,7 @@ class e08(EvaluerConfig):
         self.feats = [1, 16, 32, 64, 128]
         ## Evaluer
         self.ckpt_load_path = "ckpt/e06/90"
-        self.data_save_fold = "data/e-sr/08"
+        self.data_save_fold = "data/e08"
 
 
 class e07(EvaluerConfig):
@@ -173,12 +245,14 @@ class e07(EvaluerConfig):
         self.feats = [1, 16, 32, 64, 128]
         ## Evaluer
         self.ckpt_load_path = "ckpt/e05/80"
-        self.data_save_fold = "data/e-sr/07"
+        self.data_save_fold = "data/e07"
 
 
 class e06(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
+        ## SimDataset & RawDataset
+        self.scale_list = [2, 4, 8, 16]
         ## ResAttUNet
         self.feats = [1, 16, 32, 64, 128]
         ## Trainer
@@ -193,6 +267,7 @@ class e05(TrainerConfig):
         super().__init__()
         ## SimDataset & RawDataset
         self.lum_info = False
+        self.scale_list = [2, 4, 8, 16]
         ## ResAttUNet
         self.feats = [1, 16, 32, 64, 128]
         ## Trainer
@@ -243,20 +318,22 @@ class e03(EvaluerConfig):
         super().__init__()
         self.scale = [4, 4, 4]
         self.ckpt_load_path = "ckpt/e02/210" 
-        self.data_save_fold = "data/e-sr/03"
+        self.data_save_fold = "data/e03"
 
 
 class e02(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
-        self.lr = 1e-5
+        self.scale_list = [2, 4, 8, 16]
         self.ckpt_load_path = "ckpt/e01/150"
         self.ckpt_save_fold = "ckpt/e02"
+        self.lr = 1e-5
 
 
 class e01(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
+        self.scale_list = [2, 4, 8, 16]
         self.ckpt_load_path = "ckpt/d04/140"
         self.ckpt_save_fold = "ckpt/e01"
 
@@ -302,7 +379,7 @@ class d09(Config):
 
         ## Eval
         self.ckpt_load_path = "ckpt/d07/170"
-        self.data_save_fold = "data/d-artefact/09"
+        self.data_save_fold = "data/d09"
 
 
 class d08(Config):
@@ -319,7 +396,7 @@ class d08(Config):
 
         ## Eval
         self.ckpt_load_path = "ckpt/d07/170"
-        self.data_save_fold = "data/d-artefact/08"
+        self.data_save_fold = "data/d08"
 
 
 """ luminance information
@@ -364,7 +441,7 @@ class d07(Config):
         super().eval()
         ## Eval
         self.ckpt_load_path = "ckpt/d07/170"
-        self.data_save_fold = "data/d-artefact/07"
+        self.data_save_fold = "data/d07"
 
 
 """ threshold
@@ -438,7 +515,7 @@ class d06_000(d06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-artefact/06/000"
+        self.data_save_fold = "data/d06/000"
 
 
 class d06_010(d06):
@@ -448,7 +525,7 @@ class d06_010(d06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-artefact/06/010"
+        self.data_save_fold = "data/d06/010"
 
 
 class d06_020(d06):
@@ -458,7 +535,7 @@ class d06_020(d06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-artefact/06/020"
+        self.data_save_fold = "data/d06/020"
 
 
 class d06_030(d06):
@@ -468,7 +545,7 @@ class d06_030(d06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-artefact/06/030"
+        self.data_save_fold = "data/d06/030"
 
 
 class d06_040(d06):
@@ -478,7 +555,7 @@ class d06_040(d06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-artefact/06/040"
+        self.data_save_fold = "data/d06/040"
 
 
 class d06_050(d06):
@@ -488,7 +565,7 @@ class d06_050(d06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-artefact/06/050"
+        self.data_save_fold = "data/d06/050"
 
 
 class d06_060(d06):
@@ -498,7 +575,7 @@ class d06_060(d06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-artefact/06/060"
+        self.data_save_fold = "data/d06/060"
 
 
 class d06_070(d06):
@@ -508,7 +585,7 @@ class d06_070(d06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-artefact/06/070"
+        self.data_save_fold = "data/d06/070"
 
 
 class d06_080(d06):
@@ -518,7 +595,7 @@ class d06_080(d06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-artefact/06/080"
+        self.data_save_fold = "data/d06/080"
 
 
 class d06_090(d06):
@@ -528,7 +605,7 @@ class d06_090(d06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-artefact/06/090"
+        self.data_save_fold = "data/d06/090"
 
 
 class d06_100(d06):
@@ -538,7 +615,7 @@ class d06_100(d06):
 
     def eval(self) -> None:
         super().eval()
-        self.data_save_fold = "data/d-artefact/06/100"
+        self.data_save_fold = "data/d06/100"
 
 
 """ continue train with raw data
@@ -582,7 +659,7 @@ class d05(Config):
         super().eval()
         ## Eval
         self.ckpt_load_path = "ckpt/d05/150"
-        self.data_save_fold = "data/d-artefact/05"
+        self.data_save_fold = "data/d05"
 
 
 """ reduce features number
@@ -626,7 +703,7 @@ class d04(Config):
         super().eval()
         ## Eval
         self.ckpt_load_path = "ckpt/d04/140"
-        self.data_save_fold = "data/d-artefact/04"
+        self.data_save_fold = "data/d04"
 
 
 class d03(Config):
@@ -696,7 +773,7 @@ class d02(Config):
         
         ## Eval
         self.ckpt_load_path = "ckpt/d02/140"
-        self.data_save_fold = "data/d-artefact/02"
+        self.data_save_fold = "data/d02"
 
 
 class d01(Config):
@@ -722,4 +799,4 @@ class d01(Config):
 
         ## Eval
         self.ckpt_load_path = "ckpt/d01/8"
-        self.data_save_fold = "data/d-artefact/01"
+        self.data_save_fold = "data/d01"

@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 
 import os
 import tifffile
+
 import tqdm
 
 import sml.config
@@ -39,7 +40,7 @@ class Trainer:
         # model
         self.model = sml.model.ResAttUNet(config).to(self.device)
         # loss
-        self.loss  = sml.loss.GaussianBlurLoss(config).to(self.device)
+        self.loss  = sml.loss.GaussianBlurLoss().to(self.device)
         # optimizer
         self.scaler    = amp.GradScaler()  # type: ignore
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr)
@@ -52,12 +53,10 @@ class Trainer:
         self.epoch = 1  # epoch index may update in load_ckpt()
 
         # print model info
-        """
         para_num = sum(
             p.numel() for p in self.model.parameters() if p.requires_grad
         )
         print(f'The model has {para_num:,} trainable parameters')
-        """
 
     def fit(self) -> None:
         self._load_ckpt()
