@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-import sml.config
+from typing import List
 
 
 class _ChannelAttentionModule(nn.Module):
@@ -105,12 +105,14 @@ class _DualConv(nn.Module):
 
 
 class ResAttUNet(nn.Module):
-    def __init__(self, config: sml.config.Config) -> None:
+    def __init__(
+        self, dim: int, feats: List[int], use_cbam: bool, use_res: bool
+    ) -> None:
         super(ResAttUNet, self).__init__()
-        self.dim   = config.dim
-        self.feats = config.feats
-        self.use_cbam = config.use_cbam
-        self.use_res  = config.use_res
+        self.dim      = dim
+        self.feats    = feats
+        self.use_cbam = use_cbam
+        self.use_res  = use_res
 
         if   self.dim == 2: Conv, MaxPool = nn.Conv2d, nn.MaxPool2d
         elif self.dim == 3: Conv, MaxPool = nn.Conv3d, nn.MaxPool3d

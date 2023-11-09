@@ -28,8 +28,8 @@ class Config:
         ## ResAttUNet
         self.dim  : int = 3
         self.feats: List[int] = [1, 16, 32]
-        self.use_res : bool = False
         self.use_cbam: bool = False
+        self.use_res : bool = False
 
 
 class TrainerConfig(Config):
@@ -64,8 +64,8 @@ class EvaluerConfig(Config):
 """
 features number : [1, 32, 64, 128, 256, 512]
 Trainable paras : 21,359,713
-Training   speed: 1.70 steps /s ( 10 iterations/step)
-Validation speed:      steps /s ( 10 iterations/step)
+Training   speed: 0.59 steps /s ( 10 iterations/step)
+Validation speed: 0.95 steps /s ( 10 iterations/step)
 Evaluation speed:      frames/s ( 16 subframes/frame)
                        frames/s ( 64 subframes/frame)
 """
@@ -105,7 +105,7 @@ class e15(EvaluerConfig):
         self.feats = [1, 16, 32, 64, 128]
         ## Evaluer
         self.ckpt_load_path = "ckpt/e13/200"
-        self.data_save_fold = "data/e-sr/15"
+        self.data_save_fold = "data/e15"
 
 
 class e14(EvaluerConfig):

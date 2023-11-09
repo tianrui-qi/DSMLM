@@ -10,27 +10,30 @@ import h5py
 import scipy.io
 
 import tqdm
-from typing import Tuple, Union
+from typing import Tuple, Union, List
 
 import sml.config
 
 
 class SimDataset(Dataset):
-    def __init__(self, config: sml.config.TrainerConfig, num: int) -> None:
+    def __init__(
+        self, num: int, lum_info: bool, dim_dst: List[int], 
+        scale_list: List[int], std_src: List[List[float]]
+    ) -> None:
         super(SimDataset, self).__init__()
         self.num = num
 
         # luminance/brightness information
-        self.lum_info = config.lum_info
+        self.lum_info = lum_info
         # dimension
-        self.D = len(config.dim_dst)                    # # of dimension 
+        self.D = len(dim_dst)                    # # of dimension 
         self.dim_src = None                             # [D], int
-        self.dim_dst = Tensor(config.dim_dst).int()     # [D], int
+        self.dim_dst = Tensor(dim_dst).int()     # [D], int
         # scale up factor 
-        self.scale_list = Tensor(config.scale_list).int()          
+        self.scale_list = Tensor(scale_list).int()          
         self.scale      = None                          # [D], int
         # molecular profile
-        self.std_src = Tensor(config.std_src)           # [2, D], float
+        self.std_src = Tensor(std_src)           # [2, D], float
 
         # store molecular list for current frame
         self.N        = None    # # of molecula    

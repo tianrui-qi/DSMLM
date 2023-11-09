@@ -26,7 +26,13 @@ class Trainer:
 
         # dataloader
         self.trainloader = DataLoader(
-            sml.data.SimDataset(config, num=config.num[0]),
+            sml.data.SimDataset(
+                num=config.num[0], 
+                lum_info=config.lum_info, 
+                dim_dst=config.dim_dst, 
+                scale_list=config.scale_list, 
+                std_src=config.std_src
+            ),
             batch_size=config.batch_size,
             num_workers=config.batch_size, 
             pin_memory=True
@@ -38,7 +44,9 @@ class Trainer:
             pin_memory=True
         )
         # model
-        self.model = sml.model.ResAttUNet(config).to(self.device)
+        self.model = sml.model.ResAttUNet(
+            config.dim, config.feats, config.use_cbam, config.use_res
+        ).to(self.device)
         # loss
         self.loss  = sml.loss.GaussianBlurLoss().to(self.device)
         # optimizer
@@ -189,7 +197,7 @@ class Trainer:
         ckpt = torch.load("{}.ckpt".format(self.ckpt_load_path))
         
         self.epoch = ckpt['epoch']+1  # start train from next epoch index
-        self.model.load_state_dict(ckpt['model'])
+        self.model.load_state_dict(ckpt['model'], strict=False)
         self.scaler.load_state_dict(ckpt['scaler'])
         
         if not self.ckpt_load_lr: return
@@ -213,7 +221,9 @@ class Evaluer:
             pin_memory=True
         )
         # model
-        self.model = sml.model.ResAttUNet(config).to(self.device)
+        self.model = sml.model.ResAttUNet(
+            config.dim, config.feats, config.use_cbam, config.use_res
+        ).to(self.device)
         self.model.load_state_dict(torch.load(
             "{}.ckpt".format(self.ckpt_load_path), 
             map_location=self.device)['model']
