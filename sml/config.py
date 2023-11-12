@@ -62,39 +62,6 @@ class EvaluerConfig(Config):
 
 
 """
-features number : [1, 32, 64, 128, 256, 512]
-Trainable paras : 21,359,713
-Training   speed: 0.59 steps /s ( 10 iterations/step)
-Validation speed: 0.95 steps /s ( 10 iterations/step)
-Evaluation speed:      frames/s ( 16 subframes/frame)
-                       frames/s ( 64 subframes/frame)
-"""
-
-
-class e17(TrainerConfig):
-    def __init__(self) -> None:
-        super().__init__()
-        ## ResAttUNet
-        self.feats = [1, 16, 32, 64, 128, 256]
-        ## Trainer
-        self.ckpt_save_fold = "ckpt/e17"
-        self.ckpt_load_path = "ckpt/e16/300"
-        self.lr = 1e-6
-
-
-class e16(TrainerConfig):
-    def __init__(self) -> None:
-        super().__init__()
-        ## ResAttUNet
-        self.feats = [1, 16, 32, 64, 128, 256]
-        ## Trainer
-        self.max_epoch = 300
-        self.ckpt_save_fold = "ckpt/e16"
-        self.ckpt_load_path = "ckpt/e13/200"
-        self.lr = 1e-5
-
-
-"""
 Now we combining the strategy of e04-06 and e09-e10, i.e., we reduce the scale
 up list we train from [2, 4, 8, 16] to [4, 8] and increase the features number
 of the number from [1, 16, 32] to [1, 16, 32, 64, 128]. 
