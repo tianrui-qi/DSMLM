@@ -27,7 +27,7 @@ class Config:
 
         ## ResAttUNet
         self.dim  : int = 3
-        self.feats: List[int] = [1, 16, 32]
+        self.feats: List[int] = [1, 16, 32, 64, 128]
         self.use_cbam: bool = False
         self.use_res : bool = False
 
@@ -46,7 +46,7 @@ class TrainerConfig(Config):
         self.num: List[int] = [10000, 5000]   # train and valid
         self.batch_size: int = 1
         # optimizer
-        self.lr   : float = 1e-4    # initial learning rate (lr)
+        self.lr   : float = 1e-5    # initial learning rate (lr)
         self.gamma: float = 0.95    # decay rate of lr
 
 
@@ -72,7 +72,7 @@ In e13, we simply increase the lr a little bit to make sure the learning rate
 is not too small.
 
 Result:
-Increase complexcity of the network does not solve the checkbox problem. In our
+Increase complexcity of the network does solve the checkbox problem. In our
 prediction of hela cell with scale up 4 in e14, the checkbox completely solved!
 However, when we scale up by 8, the checkbox appear again as more frame stack
 togather. But it's still better than e12. Thus, we may conclude that the reason
@@ -90,10 +90,9 @@ Evaluation speed: 2.92 frames/s ( 16 subframes/frame)
 class e15(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
+        ## data
         self.scale = [4, 8, 8]
-        ## ResAttUNet
-        self.feats = [1, 16, 32, 64, 128]
-        ## Evaluer
+        ## runner
         self.ckpt_load_path = "ckpt/e13/200"
         self.data_save_fold = "data/e15"
 
@@ -101,9 +100,7 @@ class e15(EvaluerConfig):
 class e14(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
-        ## ResAttUNet
-        self.feats = [1, 16, 32, 64, 128]
-        ## Evaluer
+        ## runner
         self.ckpt_load_path = "ckpt/e13/200"
         self.data_save_fold = "data/e14"
 
@@ -111,10 +108,7 @@ class e14(EvaluerConfig):
 class e13(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
-        ## ResAttUNet
-        self.feats = [1, 16, 32, 64, 128]
-        ## Trainer
-        self.max_epoch = 200
+        ## runner
         self.ckpt_save_fold = "ckpt/e13"
         self.ckpt_load_path = "ckpt/e12/100"
         self.lr = 5e-6
@@ -123,10 +117,7 @@ class e13(TrainerConfig):
 class e12(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
-        ## ResAttUNet
-        self.feats = [1, 16, 32, 64, 128]
-        ## Trainer
-        self.max_epoch = 100
+        ## runner
         self.ckpt_save_fold = "ckpt/e12"
         self.ckpt_load_path = "ckpt/e04/10"
         self.ckpt_load_lr   = True
@@ -157,8 +148,11 @@ Evaluation speed: 3.52 frames/s ( 16 subframes/frame)
 class e12(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
+        ## data
         self.scale = [4, 8, 8]
-        ## Evaluer
+        ## model
+        self.feats = [1, 16, 32]
+        ## runner
         self.ckpt_load_path = "ckpt/e10/320"
         self.data_save_fold = "data/e12"
 
@@ -166,7 +160,9 @@ class e12(EvaluerConfig):
 class e11(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
-        ## Evaluer
+        ## model
+        self.feats = [1, 16, 32]
+        ## runner
         self.ckpt_load_path = "ckpt/e10/320"
         self.data_save_fold = "data/e11"
 
@@ -174,19 +170,25 @@ class e11(EvaluerConfig):
 class e10(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
-        ## Trainer
+        ## model
+        self.feats = [1, 16, 32]
+        ## runner
         self.ckpt_save_fold = "ckpt/e10"
         self.ckpt_load_path = "ckpt/e09/240"
+        self.lr = 1e-4
 
 
 class e09(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
-        ## SimDataset & RawDataset
+        ## data
         self.lum_info = False
-        ## Trainer
+        ## model
+        self.feats = [1, 16, 32]
+        ## runner
         self.ckpt_save_fold = "ckpt/e09"
         self.ckpt_load_path = "ckpt/d04/140"
+        self.lr = 1e-4
 
 
 """ increase feature number
@@ -217,11 +219,9 @@ Evaluation speed: 2.95 frames/s ( 16 subframes/frame)
 class e08(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
-        ## SimDataset & RawDataset
+        ## data
         self.lum_info = False
-        ## ResAttUNet
-        self.feats = [1, 16, 32, 64, 128]
-        ## Evaluer
+        ## runner
         self.ckpt_load_path = "ckpt/e06/90"
         self.data_save_fold = "data/e08"
 
@@ -229,11 +229,9 @@ class e08(EvaluerConfig):
 class e07(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
-        ## SimDataset & RawDataset
+        ## data
         self.lum_info = False
-        ## ResAttUNet
-        self.feats = [1, 16, 32, 64, 128]
-        ## Evaluer
+        ## runner
         self.ckpt_load_path = "ckpt/e05/80"
         self.data_save_fold = "data/e07"
 
@@ -241,12 +239,9 @@ class e07(EvaluerConfig):
 class e06(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
-        ## SimDataset & RawDataset
+        ## data
         self.scale_list = [2, 4, 8, 16]
-        ## ResAttUNet
-        self.feats = [1, 16, 32, 64, 128]
-        ## Trainer
-        self.max_epoch = 90
+        ## runner
         self.ckpt_save_fold = "ckpt/e06"
         self.ckpt_load_path = "ckpt/e05/80"
         self.ckpt_load_lr   = True
@@ -258,10 +253,7 @@ class e05(TrainerConfig):
         ## SimDataset & RawDataset
         self.lum_info = False
         self.scale_list = [2, 4, 8, 16]
-        ## ResAttUNet
-        self.feats = [1, 16, 32, 64, 128]
-        ## Trainer
-        self.max_epoch = 80
+        ## runner
         self.ckpt_save_fold = "ckpt/e05"
         self.ckpt_load_path = "ckpt/e04/10"
         self.ckpt_load_lr   = True
@@ -273,10 +265,7 @@ class e04(TrainerConfig):
         ## SimDataset & RawDataset
         self.lum_info   = False
         self.scale_list = [4]
-        ## ResAttUNet
-        self.feats = [1, 16, 32, 64, 128]
-        ## Train
-        self.max_epoch = 10
+        ## runner
         self.ckpt_save_fold = "ckpt/e04"
         self.lr = 5e-5
 
@@ -306,7 +295,11 @@ Evaluation speed: 3.63 frames/s ( 16 subframes/frame)
 class e03(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
+        ## data
         self.scale = [4, 4, 4]
+        ## model
+        self.feats = [1, 16, 32]
+        ## runner
         self.ckpt_load_path = "ckpt/e02/210" 
         self.data_save_fold = "data/e03"
 
@@ -314,18 +307,26 @@ class e03(EvaluerConfig):
 class e02(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
+        ## data
         self.scale_list = [2, 4, 8, 16]
+        ## model
+        self.feats = [1, 16, 32]
+        ## runner
         self.ckpt_load_path = "ckpt/e01/150"
         self.ckpt_save_fold = "ckpt/e02"
-        self.lr = 1e-5
 
 
 class e01(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
+        ## data
         self.scale_list = [2, 4, 8, 16]
+        ## model
+        self.feats = [1, 16, 32]
+        ## runner
         self.ckpt_load_path = "ckpt/d04/140"
         self.ckpt_save_fold = "ckpt/e01"
+        self.lr = 1e-4
 
 
 # All the following configs are no longer maintained.
