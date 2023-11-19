@@ -10,8 +10,7 @@ import tifffile
 
 import tqdm
 
-import sml.config
-import sml.model, sml.loss, sml.data
+import sml.config, sml.model, sml.loss, sml.data
 
 
 class Trainer:
@@ -26,34 +25,29 @@ class Trainer:
 
         # dataloader
         self.trainloader = DataLoader(
-            sml.data.SimDataset(
-                num=config.num[0], 
-                lum_info=config.lum_info, 
-                dim_dst=config.dim_dst, 
-                scale_list=config.scale_list, 
-                std_src=config.std_src
-            ),
+            sml.data.SimDataset(num=config.num[0], **config.SimDataset),
             batch_size=config.batch_size,
             num_workers=config.batch_size, 
             pin_memory=True
         )
         self.validloader = DataLoader(
-            sml.data.RawDataset(config, num=config.num[1]),
+            sml.data.RawDataset(
+                num=config.num[1], mode="train", **config.RawDataset
+            ),
             batch_size=config.batch_size, 
             num_workers=config.batch_size, 
             pin_memory=True
         )
         # model
-        self.model = sml.model.ResAttUNet(
-            config.dim, config.feats, config.use_cbam, config.use_res
-        ).to(self.device)
+        self.model = sml.model.ResAttUNet(**config.ResAttUNet).to(self.device)
         # loss
         self.loss  = sml.loss.GaussianBlurLoss().to(self.device)
         # optimizer
         self.scaler    = amp.GradScaler()  # type: ignore
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr)
         self.scheduler = lr_scheduler.ExponentialLR(
-            self.optimizer, gamma=config.gamma)
+            self.optimizer, gamma=config.gamma
+        )
         # recorder
         self.writer = writer.SummaryWriter()
 
@@ -213,7 +207,9 @@ class Evaluer:
         self.data_save_fold = config.data_save_fold
 
         # dataloader
-        self.dataset = sml.data.RawDataset(config, num=None)
+        self.dataset = sml.data.RawDataset(
+            num=None, mode="evalu", **config.RawDataset
+        )
         self.dataloader = DataLoader(
             self.dataset,
             batch_size=config.batch_size, 
@@ -221,9 +217,7 @@ class Evaluer:
             pin_memory=True
         )
         # model
-        self.model = sml.model.ResAttUNet(
-            config.dim, config.feats, config.use_cbam, config.use_res
-        ).to(self.device)
+        self.model = sml.model.ResAttUNet(**config.ResAttUNet).to(self.device)
         self.model.load_state_dict(torch.load(
             "{}.ckpt".format(self.ckpt_load_path), 
             map_location=self.device)['model']

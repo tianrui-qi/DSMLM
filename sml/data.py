@@ -12,13 +12,12 @@ import scipy.io
 import tqdm
 from typing import Tuple, Union, List
 
-import sml.config
-
 
 class SimDataset(Dataset):
     def __init__(
-        self, num: int, lum_info: bool, dim_dst: List[int], 
-        scale_list: List[int], std_src: List[List[float]]
+        self, num: int, 
+        lum_info: bool, dim_dst: List[int], 
+        scale_list: List[List[int]], std_src: List[List[float]]
     ) -> None:
         super(SimDataset, self).__init__()
         self.num = num
@@ -26,14 +25,14 @@ class SimDataset(Dataset):
         # luminance/brightness information
         self.lum_info = lum_info
         # dimension
-        self.D = len(dim_dst)                    # # of dimension 
-        self.dim_src = None                             # [D], int
-        self.dim_dst = Tensor(dim_dst).int()     # [D], int
+        self.D = len(dim_dst)                   # # of dimension 
+        self.dim_src = None                     # [D], int
+        self.dim_dst = Tensor(dim_dst).int()    # [D], int
         # scale up factor 
         self.scale_list = Tensor(scale_list).int()          
-        self.scale      = None                          # [D], int
+        self.scale      = None                  # [D], int
         # molecular profile
-        self.std_src = Tensor(std_src)           # [2, D], float
+        self.std_src = Tensor(std_src)          # [2, D], float
 
         # store molecular list for current frame
         self.N        = None    # # of molecula    
@@ -91,8 +90,8 @@ class SimDataset(Dataset):
 
     def _generateMlist(self) -> None:
         # random scale up factor
-        self.scale = torch.randint(0, len(self.scale_list), (self.D,))
-        self.scale = self.scale_list[self.scale]            # [D], int
+        self.scale = torch.randint(0, len(self.scale_list), (1,))
+        self.scale = self.scale_list[self.scale.item()]     # [D], int
 
         # pixel number of source frame
         self.dim_src = (self.dim_dst / self.scale).int()    # [D], int
@@ -145,29 +144,31 @@ class SimDataset(Dataset):
 
 
 class RawDataset(Dataset):
-    def __init__(self, config: sml.config.Config, num: int) -> None:
+    def __init__(
+        self, num: int, mode: str,
+        lum_info: bool, dim_dst: List[int], 
+        scale: List[int], frames_load_fold: str, mlists_load_fold: str = None
+    ) -> None:
         super(RawDataset, self).__init__()
         self.num  = num
-        self.mode = None
-        if isinstance(config, sml.config.TrainerConfig): self.mode = "train"
-        if isinstance(config, sml.config.EvaluerConfig): self.mode = "evalu"
+        self.mode = mode
 
         # luminance/brightness information
-        self.lum_info = config.lum_info
+        self.lum_info = lum_info
         # dimension
-        self.D = len(config.dim_dst)   # # of dimension
+        self.D = len(dim_dst)   # # of dimension
         self.dim_src         = None
         self.dim_src_pad     = None
         self.dim_src_raw     = None
         self.dim_src_raw_pad = None
         self.dim_dst         = None
-        self.dim_dst_pad = Tensor(config.dim_dst).int()     # [D], int
+        self.dim_dst_pad = Tensor(dim_dst).int()    # [D], int
         self.dim_dst_raw     = None
         self.dim_dst_raw_pad = None
         # scale up factor
-        self.scale   = Tensor(config.scale).int()   # [D], int
+        self.scale   = Tensor(scale).int()      # [D], int
         # pad for patching
-        self.pad_src = Tensor([2, 2, 2]).int()      # [D], int
+        self.pad_src = Tensor([2, 2, 2]).int()  # [D], int
 
         # subframe index
         self.num_sub      = None    # [D], int
@@ -175,10 +176,10 @@ class RawDataset(Dataset):
         self.rng_sub_user = None    # [D, 2], int
 
         # data path and file name list
-        self.frames_load_fold = config.frames_load_fold
+        self.frames_load_fold = frames_load_fold
         self.frames_list = os.listdir(self.frames_load_fold)
         if self.mode == "train":
-            self.mlists_load_fold = config.mlists_load_fold
+            self.mlists_load_fold = mlists_load_fold
             self.mlists_list = os.listdir(self.mlists_load_fold)
         # read option
         self.averagemax = None  # for normalizing all frames
@@ -446,6 +447,7 @@ class RawDataset(Dataset):
 
 
 if __name__ == "__main__":
+    import sml.config
     config = sml.config.Config()
 
     data_save_fold = "temp"
@@ -453,7 +455,7 @@ if __name__ == "__main__":
 
     # test the SimDataset
     #"""
-    dataset = SimDataset(config, num = 1)
+    dataset = SimDataset(num = 1, **config.SimDataset)
     frame, label = dataset[0]
     print("Number of molecular:", len(torch.nonzero(label)))
     tifffile.imsave(data_save_fold + '/SimFrame.tif', frame.numpy())
@@ -462,7 +464,7 @@ if __name__ == "__main__":
 
     # test the RawDataset
     #"""
-    dataset = RawDataset(config, num = 1, mode="train")
+    dataset = RawDataset(num = 1, mode="train", **config.RawDataset)
     frame, label = dataset[512]
     tifffile.imsave(data_save_fold + '/RawFrame.tif', frame.numpy())
     tifffile.imsave(data_save_fold + '/RawLabel.tif', label.numpy())

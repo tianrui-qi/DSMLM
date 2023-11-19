@@ -3,33 +3,30 @@ from typing import List
 
 class Config:
     def __init__(self) -> None:
-        ## SimDataset & RawDataset
-        # luminance/brightness information
-        self.lum_info: bool = True
-        # dimension
-        self.dim_dst: List[int] = [160, 160, 160]  # [C, H, W], pixel
+        self.SimDataset = {
+            "lum_info": True,  
+            "dim_dst" : [160, 160, 160],
 
-        ## SimDataset
-        # scale up factor
-        self.scale_list: List[int] = [4, 8]
-        # molecular profile
-        self.std_src: List[List[float]] = [     # std range
-            [1.0, 1.0, 1.0],  # minimum std, [C, H, W], by pixel
-            [3.0, 2.5, 2.5],  # maximum std, [C, H, W], by pixel
-        ]
+            "scale_list": [[4, 4, 4], [4, 8, 8],],
+            "std_src": [     # std range
+                [1.0, 1.0, 1.0],  # minimum std, [C, H, W], by pixel
+                [3.0, 2.5, 2.5],  # maximum std, [C, H, W], by pixel
+            ],
+        }
+        self.RawDataset  = {
+            "lum_info": True,
+            "dim_dst" : [160, 160, 160],
 
-        ## RawDataset
-        # scale up factor
-        self.scale: List[int] = [4, 4, 4]   # [C, H, W]
-        # data path
-        self.frames_load_fold: str = "D:/hela/frames"
-        self.mlists_load_fold: str = "D:/hela/mlists"
-
-        ## ResAttUNet
-        self.dim  : int = 3
-        self.feats: List[int] = [1, 16, 32, 64, 128]
-        self.use_cbam: bool = False
-        self.use_res : bool = False
+            "scale": [4, 4, 4],
+            "frames_load_fold": "D:/hela/frames",
+            "mlists_load_fold": "D:/hela/mlists",
+        }
+        self.ResAttUNet = {
+            "dim"     : 3,
+            "feats"   : [1, 16, 32, 64, 128],
+            "use_cbam": False,
+            "use_res" : False,
+        }
 
 
 class TrainerConfig(Config):
@@ -62,6 +59,84 @@ class EvaluerConfig(Config):
 
 
 """
+features number : [1, 32, 64, 128, 256, 512, 1024]
+Trainable paras : 85,591,649
+Training   speed: 0.58 steps /s ( 10 iterations/step)
+Validation speed: 0.91 steps /s ( 10 iterations/step)
+Evaluation speed:      frames/s ( 64 subframes/frame)
+"""
+
+
+class e21(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.RawDataset["scale"] = [4, 8, 8]
+        self.ResAttUNet["feats"] = [1, 32, 64, 128, 256, 512, 1024]
+        ## runner
+        self.ckpt_load_path = "ckpt/e20/350"
+        self.data_save_fold = "data/e21"
+
+
+class e20(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.SimDataset["scale_list"] = [[4, 8, 8], [4, 16, 16],]
+        self.ResAttUNet["feats"] = [1, 32, 64, 128, 256, 512, 1024]
+        ## runner
+        self.ckpt_save_fold = "ckpt/e20"
+        self.ckpt_load_path = "ckpt/e19/330"
+        self.lr = 1e-6
+
+
+class e19(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.SimDataset["scale_list"] = [[4, 4, 4], [4, 8, 8], [4, 16, 16],]
+        self.ResAttUNet["feats"] = [1, 32, 64, 128, 256, 512, 1024]
+        ## runner
+        self.ckpt_save_fold = "ckpt/e19"
+        self.ckpt_load_path = "ckpt/e18/230"
+
+
+class e18(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## data
+        self.lum_info = False
+        self.SimDataset["scale_list"] = [[4, 4, 4], [4, 8, 8], [4, 16, 16],]
+        self.ResAttUNet["feats"] = [1, 32, 64, 128, 256, 512, 1024]
+        ## runner
+        self.ckpt_save_fold = "ckpt/e18"
+        self.ckpt_load_path = "ckpt/e17/170"
+
+
+class e17(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## data
+        self.SimDataset["lum_info"] = False
+        self.SimDataset["scale_list"] = [[4, 4, 4], [4, 8, 8]]
+        self.RawDataset["lum_info"] = False
+        self.ResAttUNet["feats"] = [1, 32, 64, 128, 256, 512, 1024]
+        ## runner
+        self.ckpt_save_fold = "ckpt/e17"
+        self.ckpt_load_path = "ckpt/e16/160"
+
+
+class e16(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## data
+        self.SimDataset["lum_info"] = False
+        self.SimDataset["scale_list"] = [[4, 4, 4], [4, 8, 8]]
+        self.RawDataset["lum_info"] = False
+        self.ResAttUNet["feats"] = [1, 32, 64, 128, 256]
+        ## runner
+        self.ckpt_save_fold = "ckpt/e16"
+        self.ckpt_load_path = "ckpt/d02/140"
+
+
+"""
 Now we combining the strategy of e04-06 and e09-e10, i.e., we reduce the scale
 up list we train from [2, 4, 8, 16] to [4, 8] and increase the features number
 of the number from [1, 16, 32] to [1, 16, 32, 64, 128]. 
@@ -90,8 +165,7 @@ Evaluation speed: 2.92 frames/s ( 16 subframes/frame)
 class e15(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
-        ## data
-        self.scale = [4, 8, 8]
+        self.RawDataset["scale"] = [4, 8, 8]
         ## runner
         self.ckpt_load_path = "ckpt/e13/200"
         self.data_save_fold = "data/e15"
@@ -121,6 +195,9 @@ class e12(TrainerConfig):
         self.ckpt_save_fold = "ckpt/e12"
         self.ckpt_load_path = "ckpt/e04/10"
         self.ckpt_load_lr   = True
+
+
+# All the following configs are no longer maintained.
 
 
 """ reduce scale up list
@@ -327,9 +404,6 @@ class e01(TrainerConfig):
         self.ckpt_load_path = "ckpt/d04/140"
         self.ckpt_save_fold = "ckpt/e01"
         self.lr = 1e-4
-
-
-# All the following configs are no longer maintained.
 
 
 """ whole field of view
