@@ -74,7 +74,7 @@ class e21(EvaluerConfig):
         self.ResAttUNet["feats"] = [1, 32, 64, 128, 256, 512, 1024]
         ## runner
         self.ckpt_load_path = "ckpt/e20/350"
-        self.data_save_fold = "data/e21"
+        self.data_save_fold = "data/e-sr/21"
 
 
 class e20(TrainerConfig):
@@ -137,21 +137,19 @@ class e16(TrainerConfig):
 
 
 """
-Now we combining the strategy of e04-06 and e09-e10, i.e., we reduce the scale
+Now we combining the strategy of e03-05 and e06-e07, i.e., we reduce the scale
 up list we train from [2, 4, 8, 16] to [4, 8] and increase the features number
 of the number from [1, 16, 32] to [1, 16, 32, 64, 128]. 
 
-In e12, we load the ckpt from e04, which is trained with scale up factor 4 and 
+In e08, we load the ckpt from e03, which is trained with scale up factor 4 and 
 luminance off, and continue to train it with scale up factor [4, 8] and lum on.
-In e13, we simply increase the lr a little bit to make sure the learning rate 
-is not too small.
+In e09, we simply increase the lr a little bit to make sure the learning rate 
+is not too small. After some small test, we find that the network is capable to
+scale up by 4, so in e10 we only train the network with scale up factor 4.
 
 Result:
 Increase complexcity of the network does solve the checkbox problem. In our
-prediction of hela cell with scale up 4 in e14, the checkbox completely solved!
-However, when we scale up by 8, the checkbox appear again as more frame stack
-togather. But it's still better than e12. Thus, we may conclude that the reason
-cause checkbox is the complexcity of the network is not enough to locolize.
+prediction of hela cell with scale up 4, the checkbox completely solved!
 
 features number : [1, 16, 32, 64, 128]
 Trainable paras :
@@ -162,38 +160,30 @@ Evaluation speed: 2.92 frames/s ( 16 subframes/frame)
 """
 
 
-class e15(EvaluerConfig):
+class e10(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
-        self.RawDataset["scale"] = [4, 8, 8]
+        self.SimDataset["scale_list"] = [[4, 4, 4], ]
         ## runner
-        self.ckpt_load_path = "ckpt/e13/200"
-        self.data_save_fold = "data/e15"
+        self.ckpt_save_fold = "ckpt/e10"
+        self.ckpt_load_path = "ckpt/e09/200"
 
 
-class e14(EvaluerConfig):
-    def __init__(self) -> None:
-        super().__init__()
-        ## runner
-        self.ckpt_load_path = "ckpt/e13/200"
-        self.data_save_fold = "data/e14"
-
-
-class e13(TrainerConfig):
+class e09(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
         ## runner
-        self.ckpt_save_fold = "ckpt/e13"
-        self.ckpt_load_path = "ckpt/e12/100"
+        self.ckpt_save_fold = "ckpt/e09"
+        self.ckpt_load_path = "ckpt/e08/100"
         self.lr = 5e-6
 
 
-class e12(TrainerConfig):
+class e08(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
         ## runner
-        self.ckpt_save_fold = "ckpt/e12"
-        self.ckpt_load_path = "ckpt/e04/10"
+        self.ckpt_save_fold = "ckpt/e08"
+        self.ckpt_load_path = "ckpt/e03/10"
         self.ckpt_load_lr   = True
 
 
@@ -209,7 +199,7 @@ continue to train it with both scale up factor 4 and 8. Then, expand it to
 LumT.
 
 Result:
-In e11, when scale by 4, the lens of the checkbox is 5; when scale up by 9, the
+In e11, when scale by 4, the lens of the checkbox is 5; when scale up by 8, the
 lens of the checkbox is 9. Thus, the checkbox is in fact cause by super
 resolution itself. 
 
@@ -222,7 +212,7 @@ Evaluation speed: 3.52 frames/s ( 16 subframes/frame)
 """
 
 
-class e12(EvaluerConfig):
+class e07_8(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
         ## data
@@ -230,32 +220,32 @@ class e12(EvaluerConfig):
         ## model
         self.feats = [1, 16, 32]
         ## runner
-        self.ckpt_load_path = "ckpt/e10/320"
-        self.data_save_fold = "data/e12"
+        self.ckpt_load_path = "ckpt/e07/320"
+        self.data_save_fold = "data/e-sr/07_8"
 
 
-class e11(EvaluerConfig):
+class e07_4(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
         ## model
         self.feats = [1, 16, 32]
         ## runner
-        self.ckpt_load_path = "ckpt/e10/320"
-        self.data_save_fold = "data/e11"
+        self.ckpt_load_path = "ckpt/e07/320"
+        self.data_save_fold = "data/e-sr/07_4"
 
 
-class e10(TrainerConfig):
+class e07(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
         ## model
         self.feats = [1, 16, 32]
         ## runner
-        self.ckpt_save_fold = "ckpt/e10"
-        self.ckpt_load_path = "ckpt/e09/240"
+        self.ckpt_save_fold = "ckpt/e07"
+        self.ckpt_load_path = "ckpt/e06/240"
         self.lr = 1e-4
 
 
-class e09(TrainerConfig):
+class e06(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
         ## data
@@ -263,27 +253,26 @@ class e09(TrainerConfig):
         ## model
         self.feats = [1, 16, 32]
         ## runner
-        self.ckpt_save_fold = "ckpt/e09"
+        self.ckpt_save_fold = "ckpt/e06"
         self.ckpt_load_path = "ckpt/d04/140"
         self.lr = 1e-4
 
 
 """ increase feature number
-Currently we gauss the problem in e01-03 is because the complexcity of the 
+Currently we gauss the problem in e01-02 is because the complexcity of the 
 network is not enough to locolize. Reference to d05 and other, it's seems like
 these checkbox is cause by not enough training. Thus, we try to increase the
 complexcity of the network and retrain.
 
-From 04-06, we define a training process where we start from scale up by 4 LumF,
+From 03-05, we define a training process where we start from scale up by 4 LumF,
 then expand the salce to (2, 4, 8, 16), and finally LumT. We split first since
 it's easier to control the training process of scale up 4 and second since we
-may change how we add brightness information in the future, i.e., we can tuning
-by load checkpoint of 02.
+may change how we add brightness information in the future.
 
 Result:
-In e07, (4, 4, 4) LumF, the result is compareable to d04 which is also (4, 4, 4)
-LumF. In e08, the problem of checkbox is still exist. Like e03. Thus, we may 
-conclude the complexcity of the network is not the problem.
+In e04_4, (4, 4, 4) LumF, the result is compareable to d04 which is also 
+(4, 4, 4) LumF. In e05_4, the problem of checkbox is still exist, like e02_4. 
+Thus, we may conclude the complexcity of the network is not the problem.
 
 features number : [1, 16, 32, 64, 128]
 Trainable paras : 
@@ -293,57 +282,57 @@ Evaluation speed: 2.95 frames/s ( 16 subframes/frame)
 """
 
 
-class e08(EvaluerConfig):
+class e05_4(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
         ## data
         self.lum_info = False
         ## runner
-        self.ckpt_load_path = "ckpt/e06/90"
-        self.data_save_fold = "data/e08"
-
-
-class e07(EvaluerConfig):
-    def __init__(self) -> None:
-        super().__init__()
-        ## data
-        self.lum_info = False
-        ## runner
-        self.ckpt_load_path = "ckpt/e05/80"
-        self.data_save_fold = "data/e07"
-
-
-class e06(TrainerConfig):
-    def __init__(self) -> None:
-        super().__init__()
-        ## data
-        self.scale_list = [2, 4, 8, 16]
-        ## runner
-        self.ckpt_save_fold = "ckpt/e06"
-        self.ckpt_load_path = "ckpt/e05/80"
-        self.ckpt_load_lr   = True
+        self.ckpt_load_path = "ckpt/e05/90"
+        self.data_save_fold = "data/e-sr/05_4"
 
 
 class e05(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
-        ## SimDataset & RawDataset
-        self.lum_info = False
+        ## data
         self.scale_list = [2, 4, 8, 16]
         ## runner
         self.ckpt_save_fold = "ckpt/e05"
-        self.ckpt_load_path = "ckpt/e04/10"
+        self.ckpt_load_path = "ckpt/e04/80"
         self.ckpt_load_lr   = True
+
+
+class e04_4(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## data
+        self.lum_info = False
+        ## runner
+        self.ckpt_load_path = "ckpt/e04/80"
+        self.data_save_fold = "data/e-sr/04_4"
 
 
 class e04(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
         ## SimDataset & RawDataset
+        self.lum_info = False
+        self.scale_list = [2, 4, 8, 16]
+        ## runner
+        self.ckpt_save_fold = "ckpt/e04"
+        self.ckpt_load_path = "ckpt/e03/10"
+        self.ckpt_load_lr   = True
+
+
+class e03(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## SimDataset & RawDataset
         self.lum_info   = False
         self.scale_list = [4]
         ## runner
-        self.ckpt_save_fold = "ckpt/e04"
+        self.ckpt_save_fold = "ckpt/e03"
         self.lr = 5e-5
 
 
@@ -355,11 +344,12 @@ the size of the network will independent to the scale up factor. The scale up
 factor will only affect how we cut the raw data into subframes to feed into the
 network. Also, now we can train various scale up factor at the same time.
 
+In e01, the learning rate is too large, so we reduce it to 1e-5 in e02. 
+
 Result:
-In e01, the learning rate is too large, so we reduce it to 1e-5 in e02. In e03,
-we evaluate the network with hela dataset with scale up factor [4, 4, 4]. The
-result show very obvious artifacts with a len 5. The chessbox is different from
-before. 
+In e02_4, we evaluate the network with hela dataset with scale up factor 
+[4, 4, 4]. The result show very obvious artifacts with a len 5. The chessbox is 
+different from before. 
 
 features number : [1, 16, 32]
 Trainable paras : 70,353
@@ -369,7 +359,7 @@ Evaluation speed: 3.63 frames/s ( 16 subframes/frame)
 """
 
 
-class e03(EvaluerConfig):
+class e02_4(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
         ## data
@@ -378,7 +368,7 @@ class e03(EvaluerConfig):
         self.feats = [1, 16, 32]
         ## runner
         self.ckpt_load_path = "ckpt/e02/210" 
-        self.data_save_fold = "data/e03"
+        self.data_save_fold = "data/e-sr/02_4"
 
 
 class e02(TrainerConfig):
