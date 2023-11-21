@@ -1,7 +1,7 @@
 import torch.backends.cudnn
 
 import sml.config
-from sml.config import e21 as config
+from sml.config import e10_4 as config
 import sml.runner
 
 

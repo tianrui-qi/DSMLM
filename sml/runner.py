@@ -236,12 +236,10 @@ class Evaluer:
         )
 
         # print model info
-        """
         para_num = sum(
             p.numel() for p in self.model.parameters() if p.requires_grad
         )
         print(f'The model has {para_num:,} trainable parameters')
-        """
 
     @torch.no_grad()
     def fit(self) -> None:
