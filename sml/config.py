@@ -67,16 +67,15 @@ Evaluation speed:      frames/s ( 64 subframes/frame)
 """
 
 
-# TODO: run on server (2783574.e22, GPU2, runs/Nov21_16-36-48_admin)
+# TODO: run on server (GPU3, runs/Nov22_09-05-49_admin)
 class e22(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
-        self.SimDataset["scale_list"] = [[4, 8, 8], ]
+        self.SimDataset["scale_list"] = [[4, 8, 8], [4, 16, 16]]
         self.ResAttUNet["feats"] = [1, 32, 64, 128, 256, 512, 1024]
         ## runner
         self.ckpt_save_fold = "ckpt/e22"
-        self.ckpt_load_path = "ckpt/e21/440"
-        self.lr = 1e-6
+        self.ckpt_load_path = "ckpt/e20/350"
 
 
 # TODO: run on local
@@ -86,7 +85,7 @@ class e21_8(EvaluerConfig):
         self.RawDataset["scale"] = [4, 8, 8]
         self.ResAttUNet["feats"] = [1, 32, 64, 128, 256, 512, 1024]
         ## runner
-        self.ckpt_load_path = "ckpt/e21/440"
+        self.ckpt_load_path = "ckpt/e21/480"
         self.data_save_fold = "data/e-sr/21_8"
 
 
@@ -96,9 +95,13 @@ class e21(TrainerConfig):
         self.SimDataset["scale_list"] = [[4, 8, 8], ]
         self.ResAttUNet["feats"] = [1, 32, 64, 128, 256, 512, 1024]
         ## runner
-        self.max_epoch = 440
+        #self.max_epoch = 440
+        #self.ckpt_save_fold = "ckpt/e21"
+        #self.ckpt_load_path = "ckpt/e20/350"
+        self.max_epoch = 480
         self.ckpt_save_fold = "ckpt/e21"
-        self.ckpt_load_path = "ckpt/e20/350"
+        self.ckpt_load_path = "ckpt/e21/440"
+        self.lr = 1e-6
 
 
 class e20_8(EvaluerConfig):
@@ -152,7 +155,6 @@ class e17(TrainerConfig):
         super().__init__()
         ## data
         self.SimDataset["lum_info"] = False
-        self.SimDataset["scale_list"] = [[4, 4, 4], [4, 8, 8]]
         self.RawDataset["lum_info"] = False
         self.ResAttUNet["feats"] = [1, 32, 64, 128, 256, 512, 1024]
         ## runner
@@ -166,7 +168,6 @@ class e16(TrainerConfig):
         super().__init__()
         ## data
         self.SimDataset["lum_info"] = False
-        self.SimDataset["scale_list"] = [[4, 4, 4], [4, 8, 8]]
         self.RawDataset["lum_info"] = False
         self.ResAttUNet["feats"] = [1, 32, 64, 128, 256]
         ## runner
@@ -180,20 +181,19 @@ features number : [1, 16, 32, 64, 128, 256, 512]
 Trainable paras : 21,401,393
 Training   speed:      steps /s ( 10 iterations/step)
 Validation speed:      steps /s ( 10 iterations/step)
-Evaluation speed:      frames/s ( 16 subframes/frame)
+Evaluation speed: 2.95 frames/s ( 16 subframes/frame)
 """
 
 
-# TODO: run on server (2777565.e13, GPU1, runs/Nov21_16-24-24_admin)
+# TODO: run on server (GPU2, runs/Nov22_09-00-43_admin)
 class e13(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
-        self.SimDataset["scale_list"] = [[4, 8, 8],]
+        self.SimDataset["scale_list"] = [[4, 4, 4], [4, 8, 8], [4, 16, 16]]
         self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
         ## runner
         self.ckpt_save_fold = "ckpt/e13"
-        self.ckpt_load_path = "ckpt/e12/320"
-        self.lr = 1e-6
+        self.ckpt_load_path = "ckpt/e08/200"
 
 
 # TODO: run on local
@@ -203,7 +203,7 @@ class e12_8(EvaluerConfig):
         self.RawDataset["scale"] = [4, 8, 8]
         self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
         ## runner
-        self.ckpt_load_path = "ckpt/e12/320"
+        self.ckpt_load_path = "ckpt/e12/370"
         self.data_save_fold = "data/e-sr/12_8"
 
 
@@ -213,12 +213,47 @@ class e12(TrainerConfig):
         self.SimDataset["scale_list"] = [[4, 8, 8],]
         self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
         ## runner
-        self.max_epoch = 320
+        #self.max_epoch = 320
+        #self.ckpt_save_fold = "ckpt/e12"
+        #self.ckpt_load_path = "ckpt/e08/200"
+        self.max_epoch = 370
         self.ckpt_save_fold = "ckpt/e12"
-        self.ckpt_load_path = "ckpt/e09/200"
+        self.ckpt_load_path = "ckpt/e12/320"
+        self.lr = 1e-6
 
 
 """
+To address the problem of e09, we perform a control experiment where in e10 and 
+e11, just like 09, we continue to train the network with different scale list.
+
+features number : [1, 16, 32, 64, 128]
+Trainable paras : 1,326,001
+Training   speed:      steps /s ( 10 iterations/step)
+Validation speed:      steps /s ( 10 iterations/step)
+Evaluation speed: 2.92 frames/s ( 16 subframes/frame)
+"""
+
+
+# TODO: run on server (GPU1, runs/Nov22_08-57-36_admin)
+class e11(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.SimDataset["scale_list"] = [[4, 4, 4], [4, 8, 8], [4, 16, 16]]
+        ## runner
+        self.ckpt_save_fold = "ckpt/e11"
+        self.ckpt_load_path = "ckpt/e08/200"
+
+
+# TODO: run on server (GPU0, runs/Nov22_08-54-57_admin)
+class e10(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## runner
+        self.ckpt_save_fold = "ckpt/e10"
+        self.ckpt_load_path = "ckpt/e08/200"
+
+
+""" combine reduce scale up list and increase features number
 Now we combining the strategy of e03-05 and e06-e07, i.e., we reduce the scale
 up list we train from [2, 4, 8, 16] to [4, 8] and increase the features number
 of the number from [1, 16, 32] to [1, 16, 32, 64, 128]. 
@@ -226,72 +261,67 @@ of the number from [1, 16, 32] to [1, 16, 32, 64, 128].
 In e08, we load the ckpt from e03, which is trained with scale up factor 4 and 
 luminance off, to train it with scale up factor [4, 8] and lum on.
 After some small test, we find that the network is capable to scale up by 4 but 
-not 8, so in e10 we only train the network with scale up factor 4 to further
+not 8, so in e09 we only train the network with scale up factor 4 to further
 improve the scale up by 4 result.
-In e09 and e11, we simply increase the lr a little bit to make sure converging 
-is not because of lr is too small.
 
 Result:
 Increase complexcity of the network does solve the checkbox problem. In our
-prediction of hela cell with scale up 4, the checkbox completely solved!
+prediction of hela cell with scale up 4 in e08, the checkbox completely solved!
+However, as we continue to train the network with only 4, the checkbox problem
+appear again.
 
 features number : [1, 16, 32, 64, 128]
 Trainable paras : 1,326,001
 Training   speed:      steps /s ( 10 iterations/step)
 Validation speed:      steps /s ( 10 iterations/step)
 Evaluation speed: 2.92 frames/s ( 16 subframes/frame)
-                       frames/s ( 64 subframes/frame)
 """
 
 
-# TODO: run on server (2776399.e11, GPU0, runs/Nov21_16-23-15_admin)
-class e11(TrainerConfig):
-     def __init__(self) -> None:
-        super().__init__()
-        self.SimDataset["scale_list"] = [[4, 4, 4], ]
-        ## runner
-        self.ckpt_save_fold = "ckpt/e11"
-        self.ckpt_load_path = "ckpt/e10/320"
-        self.lr = 1e-6 
-
-
-# TODO: run on local (change data/e-sr/e10_4 to data/e-sr/10_4)
-class e10_4(EvaluerConfig):
+# TODO: run on local
+class e09_4(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
         ## runner
-        self.ckpt_load_path = "ckpt/e10/320"
-        self.data_save_fold = "data/e-sr/10_4"
-
-
-class e10(TrainerConfig):
-    def __init__(self) -> None:
-        super().__init__()
-        self.SimDataset["scale_list"] = [[4, 4, 4], ]
-        ## runner
-        self.max_epoch = 320
-        self.ckpt_save_fold = "ckpt/e10"
-        self.ckpt_load_path = "ckpt/e09/200"
+        self.ckpt_load_path = "ckpt/e09/370"
+        self.data_save_fold = "data/e-sr/09_4"
 
 
 class e09(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
+        self.SimDataset["scale_list"] = [[4, 4, 4], ]
         ## runner
-        self.max_epoch = 200
+        #self.max_epoch = 320
+        #self.ckpt_save_fold = "ckpt/e09"
+        #self.ckpt_load_path = "ckpt/e08/200"
+        self.max_epoch = 370
         self.ckpt_save_fold = "ckpt/e09"
-        self.ckpt_load_path = "ckpt/e08/100"
-        self.lr = 5e-6
+        self.ckpt_load_path = "ckpt/e09/320"
+        self.lr = 1e-6 
+
+
+# TODO: run on local
+class e08_4(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## runner
+        self.ckpt_load_path = "ckpt/e08/200"
+        self.data_save_fold = "data/e-sr/08_4"
 
 
 class e08(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
         ## runner
-        self.max_epoch = 100
+        #self.max_epoch = 100
+        #self.ckpt_save_fold = "ckpt/e08"
+        #self.ckpt_load_path = "ckpt/e03/10"
+        #self.ckpt_load_lr   = True
+        self.max_epoch = 200
         self.ckpt_save_fold = "ckpt/e08"
-        self.ckpt_load_path = "ckpt/e03/10"
-        self.ckpt_load_lr   = True
+        self.ckpt_load_path = "ckpt/e08/100"
+        self.lr = 5e-6
 
 
 # All the following configs are no longer maintained.
