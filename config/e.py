@@ -22,6 +22,71 @@ class e16(TrainerConfig):
         self.ckpt_load_path = self.ckpt_disk + "d02/140"
 
 
+"""
+"""
+
+
+# run on server
+class e14(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.SimDataset["scale_list"] = [4, 8, 16]
+        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
+        self.ResAttUNet["use_res"] = True
+        self.ckpt_load_path = self.ckpt_disk + "e08/200"
+        self.lr = 1e-6
+
+
+# run on server
+class e13(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.SimDataset["scale_list"] = [8, 16]
+        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
+        self.ResAttUNet["use_res"] = True
+        self.ckpt_load_path = self.ckpt_disk + "e08/200"
+        self.lr = 1e-6
+
+
+# run on server
+class e12(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
+        self.ResAttUNet["use_res"] = True
+        self.ckpt_load_path = self.ckpt_disk + "e08/200"
+        self.lr = 1e-6
+
+
+# run on server
+class e11(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.SimDataset["scale_list"] = [4, 8, 16]
+        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
+        self.ckpt_load_path = self.ckpt_disk + "e08/200"
+        self.lr = 1e-6
+
+
+# run on server
+class e10(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.SimDataset["scale_list"] = [8, 16]
+        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
+        self.ckpt_load_path = self.ckpt_disk + "e08/200"
+        self.lr = 1e-6
+
+
+# run on server
+class e09(TrainerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
+        self.ckpt_load_path = self.ckpt_disk + "e08/200"
+        self.lr = 1e-6
+
+
 """ combine reduce scale up list and increase features number
 Now we combining the strategy of e03-05 and e06-e07, i.e., we reduce the scale
 up list we train from [2, 4, 8, 16] to [4, 8] and increase the features number
@@ -48,6 +113,7 @@ class e08_4(EvaluerConfig):
         self.ckpt_load_path = self.ckpt_disk + "e08/200"
 
 
+# run on server
 class e08(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
@@ -57,9 +123,14 @@ class e08(TrainerConfig):
         self.ckpt_load_lr   = True
         """
 
+        """
         self.max_epoch = 200
         self.ckpt_load_path = self.ckpt_disk + "e08/100"
         self.lr = 5e-6
+        """
+
+        self.ckpt_load_path = self.ckpt_disk + "e08/200"
+        self.lr = 1e-6
 
 
 # All the following configs are no longer maintained.

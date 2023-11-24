@@ -26,7 +26,7 @@ def set_seed(seed):
 if __name__ == "__main__":
     set_seed(42)
     for cfg in (
-        config.e09_4(),
+        config.e08(),
     ):
         if isinstance(cfg, config.TrainerConfig): sml.Trainer(cfg).fit()
         if isinstance(cfg, config.EvaluerConfig): sml.Evaluer(cfg).fit()
