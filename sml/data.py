@@ -455,15 +455,15 @@ class RawDataset(Dataset):
 
 
 if __name__ == "__main__":
-    import sml.config
-    config = sml.config.Config()
+    import config
+    cfg = config.Config()
 
     data_save_fold = "temp"
     if not os.path.exists(data_save_fold): os.makedirs(data_save_fold)
 
     # test the SimDataset
     #"""
-    dataset = SimDataset(num = 1, **config.SimDataset)
+    dataset = SimDataset(num = 1, **cfg.SimDataset)
     frame, label = dataset[0]
     print("Number of molecular:", len(torch.nonzero(label)))
     tifffile.imsave(data_save_fold + '/SimFrame.tif', frame.numpy())
@@ -472,7 +472,7 @@ if __name__ == "__main__":
 
     # test the RawDataset
     #"""
-    dataset = RawDataset(num = 1, mode="train", **config.RawDataset)
+    dataset = RawDataset(num = 1, mode="train", **cfg.RawDataset)
     frame, label = dataset[512]
     tifffile.imsave(data_save_fold + '/RawFrame.tif', frame.numpy())
     tifffile.imsave(data_save_fold + '/RawLabel.tif', label.numpy())

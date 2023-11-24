@@ -28,7 +28,5 @@ if __name__ == "__main__":
     for cfg in (
         config.e09_4(),
     ):
-        if isinstance(cfg, config.TrainerConfig): 
-            sml.Trainer(cfg).fit()
-        if isinstance(cfg, config.EvaluerConfig): 
-            sml.Evaluer(cfg).fit()
+        if isinstance(cfg, config.TrainerConfig): sml.Trainer(cfg).fit()
+        if isinstance(cfg, config.EvaluerConfig): sml.Evaluer(cfg).fit()
