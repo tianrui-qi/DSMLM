@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
+__all__ = ["GaussianBlurLoss"]
+
 
 class GaussianBlurLoss(nn.Module):
     def __init__(self, kernel_size: int = 7, kernel_sigma: float = 1.0) -> None:

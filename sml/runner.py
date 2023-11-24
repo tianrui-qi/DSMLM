@@ -10,11 +10,13 @@ import tifffile
 
 import tqdm
 
-import sml.config, sml.model, sml.loss, sml.data
+import sml.model, sml.loss, sml.data
+
+__all__ = ["Trainer", "Evaluer"]
 
 
 class Trainer:
-    def __init__(self, config: sml.config.TrainerConfig) -> None:
+    def __init__(self, config) -> None:
         self.device = "cuda"
         self.max_epoch = config.max_epoch
         self.accumu_steps = config.accumu_steps
@@ -200,7 +202,7 @@ class Trainer:
 
 
 class Evaluer:
-    def __init__(self, config: sml.config.EvaluerConfig) -> None:
+    def __init__(self, config) -> None:
         self.device = "cuda"
         # path
         self.ckpt_load_path = config.ckpt_load_path

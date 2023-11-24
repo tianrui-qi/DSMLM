@@ -4,6 +4,8 @@ from torch import Tensor
 
 from typing import List
 
+__all__ = ["ResAttUNet"]
+
 
 class ResAttUNet(nn.Module):
     def __init__(
@@ -21,7 +23,7 @@ class ResAttUNet(nn.Module):
 
         # encoder
         self.encoder = nn.ModuleList([
-            _DualConv(
+            DualConv(
                 self.dim, self.feats[i], self.feats[i+1], 
                 self.use_cbam, self.use_res
             ) for i in range(len(self.feats)-1)
@@ -37,7 +39,7 @@ class ResAttUNet(nn.Module):
             ) for i in range(1, len(self.feats)-1)
         ])
         self.decoder = nn.ModuleList([
-            _DualConv(
+            DualConv(
                 self.dim, self.feats[i+1], self.feats[i], 
                 self.use_cbam, self.use_res
             ) for i in range(1, len(self.feats)-1)
@@ -71,12 +73,12 @@ class ResAttUNet(nn.Module):
         return x
 
 
-class _DualConv(nn.Module):
+class DualConv(nn.Module):
     def __init__(
         self, dim: int, in_c: int, out_c: int, 
         use_cbam: bool = False, use_res: bool = False
     ) -> None:
-        super(_DualConv, self).__init__()
+        super(DualConv, self).__init__()
         self.use_cbam = use_cbam
         self.use_res  = use_res
 
@@ -97,8 +99,8 @@ class _DualConv(nn.Module):
 
         # cbam
         if self.use_cbam:
-            self.channel_attention = _ChannelAttentionModule(dim, out_c)
-            self.spatial_attention = _SpatialAttentionModule(dim)
+            self.channel_attention = ChannelAttentionModule(dim, out_c)
+            self.spatial_attention = SpatialAttentionModule(dim)
 
         # residual
         if self.use_res:
@@ -124,9 +126,9 @@ class _DualConv(nn.Module):
         return self.relu(x)
 
 
-class _ChannelAttentionModule(nn.Module):
+class ChannelAttentionModule(nn.Module):
     def __init__(self, dim: int, in_c: int, ratio: int = 16) -> None:
-        super(_ChannelAttentionModule, self).__init__()
+        super(ChannelAttentionModule, self).__init__()
         if   dim == 2: 
             Conv = nn.Conv2d
             AdaptiveAvgPool = nn.AdaptiveAvgPool2d
@@ -152,9 +154,9 @@ class _ChannelAttentionModule(nn.Module):
         )
 
 
-class _SpatialAttentionModule(nn.Module):
+class SpatialAttentionModule(nn.Module):
     def __init__(self, dim: int, kernel_size: int = 7) -> None:
-        super(_SpatialAttentionModule, self).__init__()
+        super(SpatialAttentionModule, self).__init__()
         if   dim == 2: Conv = nn.Conv2d
         elif dim == 3: Conv = nn.Conv3d
         else: raise ValueError("dim must be 2 or 3")

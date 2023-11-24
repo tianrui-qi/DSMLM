@@ -12,12 +12,14 @@ import scipy.io
 import tqdm
 from typing import Tuple, Union, List
 
+__all__ = ["SimDataset", "RawDataset"]
+
 
 class SimDataset(Dataset):
     def __init__(
         self, num: int, 
         lum_info: bool, dim_dst: List[int], 
-        scale_list: List[List[int]], std_src: List[List[float]]
+        scale_list: List[int], std_src: List[List[float]]
     ) -> None:
         super(SimDataset, self).__init__()
         self.num = num
@@ -90,8 +92,8 @@ class SimDataset(Dataset):
 
     def _generateMlist(self) -> None:
         # random scale up factor
-        self.scale = torch.randint(0, len(self.scale_list), (1,))
-        self.scale = self.scale_list[self.scale.item()]     # [D], int
+        self.scale = torch.randint(0, len(self.scale_list), (self.D,))
+        self.scale = self.scale_list[self.scale]            # [D], int
 
         # pixel number of source frame
         self.dim_src = (self.dim_dst / self.scale).int()    # [D], int
@@ -220,6 +222,7 @@ class RawDataset(Dataset):
         ## evalu
 
         # draw all patch
+        """
         patch = torch.zeros(self.dim_src_raw_pad.tolist())
         patch[
             self.pad_src[0] : self.pad_src[0] + self.dim_src_raw[0],
@@ -238,6 +241,7 @@ class RawDataset(Dataset):
         if not os.path.exists("data"): os.makedirs("data")
         tifffile.imwrite("data/patch.tif", patch.numpy())
         print("Check data/patch.tif for the all patch.")
+        """
 
         # ask user to input sub_range, six number
         print("Number of subframe: ", self.num_sub.tolist())
@@ -256,6 +260,7 @@ class RawDataset(Dataset):
             self.num = torch.prod(self.num_sub_user) * len(self.frames_list)
 
         # draw selected patch
+        """
         patch = torch.zeros(self.dim_src_raw_pad.tolist())
         patch[
             self.pad_src[0] + self.dim_src[0] * self.rng_sub_user[0][0] :
@@ -277,6 +282,7 @@ class RawDataset(Dataset):
         if not os.path.exists("data"): os.makedirs("data")
         tifffile.imwrite("data/patch.tif", patch.numpy())
         print("Check data/patch.tif for selected patch.")
+        """
 
     def _getAveragemax(self) -> None:
         """
