@@ -33,7 +33,7 @@ class TrainerConfig(Config):
     def __init__(self) -> None:
         super().__init__()
         ## Trainer
-        self.max_epoch   : int = 400
+        self.max_epoch   : int = 800
         self.accumu_steps: int = 10
         # path
         self.ckpt_save_fold: str  = "ckpt/default"
@@ -78,7 +78,6 @@ class e22(TrainerConfig):
         self.ckpt_load_path = "ckpt/e20/350"
 
 
-# TODO: run on local
 class e21_8(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
@@ -185,18 +184,29 @@ Evaluation speed: 2.95 frames/s ( 16 subframes/frame)
 """
 
 
-# TODO: run on server (GPU2, runs/Nov22_09-00-43_admin)
+# TODO: run on local
+class e13_8(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.RawDataset["scale"] = [4, 8, 8]
+        self.SimDataset["scale_list"] = [[4, 4, 4], [4, 8, 8], [4, 16, 16]]
+        ## runner
+        self.ckpt_load_path = "ckpt/e13/370"
+        self.data_save_fold = "data/e-sr/13_8"
+
+
+# TODO: run on server (GPU2, runs/Nov24_11-15-01_admin)
 class e13(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
         self.SimDataset["scale_list"] = [[4, 4, 4], [4, 8, 8], [4, 16, 16]]
         self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
         ## runner
+        self.max_epoch = 370
         self.ckpt_save_fold = "ckpt/e13"
         self.ckpt_load_path = "ckpt/e08/200"
 
 
-# TODO: run on local
 class e12_8(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
@@ -234,21 +244,63 @@ Evaluation speed: 2.92 frames/s ( 16 subframes/frame)
 """
 
 
-# TODO: run on server (GPU1, runs/Nov22_08-57-36_admin)
+# TODO: run on local
+class e11_8(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.RawDataset["scale"] = [4, 8, 8]
+        self.SimDataset["scale_list"] = [[4, 4, 4], [4, 8, 8], [4, 16, 16]]
+        ## runner
+        self.ckpt_load_path = "ckpt/e11/370"
+        self.data_save_fold = "data/e-sr/11_8"
+
+
+# TODO: run on local
+class e11_4(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.SimDataset["scale_list"] = [[4, 4, 4], [4, 8, 8], [4, 16, 16]]
+        ## runner
+        self.ckpt_load_path = "ckpt/e11/370"
+        self.data_save_fold = "data/e-sr/11_4"
+
+
+# TODO: run on server (GPU1, runs/Nov24_11-09-40_admin)
 class e11(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
         self.SimDataset["scale_list"] = [[4, 4, 4], [4, 8, 8], [4, 16, 16]]
         ## runner
+        self.max_epoch = 370
         self.ckpt_save_fold = "ckpt/e11"
         self.ckpt_load_path = "ckpt/e08/200"
 
 
-# TODO: run on server (GPU0, runs/Nov22_08-54-57_admin)
+# TODO: run on local
+class e10_8(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.RawDataset["scale"] = [4, 8, 8]
+        ## runner
+        self.ckpt_load_path = "ckpt/e10/370"
+        self.data_save_fold = "data/e-sr/10_8"
+
+
+# TODO: run on local
+class e10_4(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        ## runner
+        self.ckpt_load_path = "ckpt/e10/370"
+        self.data_save_fold = "data/e-sr/10_4"
+
+
+# TODO: run on server (GPU0, runs/Nov24_11-05-31_admin)
 class e10(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
         ## runner
+        self.max_epoch = 370
         self.ckpt_save_fold = "ckpt/e10"
         self.ckpt_load_path = "ckpt/e08/200"
 
@@ -278,7 +330,6 @@ Evaluation speed: 2.92 frames/s ( 16 subframes/frame)
 """
 
 
-# TODO: run on local
 class e09_4(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
@@ -301,7 +352,6 @@ class e09(TrainerConfig):
         self.lr = 1e-6 
 
 
-# TODO: run on local
 class e08_4(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()

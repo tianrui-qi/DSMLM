@@ -162,7 +162,7 @@ class Trainer:
     @torch.no_grad()
     def _update_lr(self) -> None:
         # update learning rate
-        if self.scheduler.get_last_lr()[0] > 1e-8: self.scheduler.step()
+        if self.scheduler.get_last_lr()[0] > 1e-10: self.scheduler.step()
 
         # record: tensorboard
         self.writer.add_scalar(

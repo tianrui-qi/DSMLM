@@ -182,7 +182,7 @@ class RawDataset(Dataset):
             self.mlists_load_fold = mlists_load_fold
             self.mlists_list = os.listdir(self.mlists_load_fold)
         # read option
-        self.averagemax = None  # for normalizing all frames
+        self.averagemax = self._getAveragemax()     # for normalizing all frames
 
         # store the current frame and mlist in memory
         self.current_frame_index = -1
@@ -190,7 +190,6 @@ class RawDataset(Dataset):
         self.mlist = None   # [N, 7], float  
 
         self._getIndex()
-        self._getAveragemax()
 
     def _getIndex(self) -> None:
         # compute dimension of patch
@@ -287,15 +286,18 @@ class RawDataset(Dataset):
         value to normalize the frame so that the brightest info of each frames
         can be preserved.
         This function will be called when initialize the dataset.
+
+        Return:
+            self.averagemax (float): Average of all frames' max value.
         """
-        self.averagemax = 0
+        averagemax = 0
         for index in tqdm.tqdm(
             range(len(self.frames_list)//10), unit="frame", leave=False
         ):
-            self.averagemax += torch.from_numpy(tifffile.imread(
+            averagemax += torch.from_numpy(tifffile.imread(
                 os.path.join(self.frames_load_fold, self.frames_list[index])
             )).max().float()
-        self.averagemax /= len(self.frames_list)
+        return averagemax / len(self.frames_list)
 
     # TODO: how to add brightness info, now we use peak
     def __getitem__(self, index: int) -> Union[Tensor, Tuple[Tensor, Tensor]]:
