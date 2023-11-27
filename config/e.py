@@ -1,6 +1,6 @@
 from config.default import *
 
-__all__ = ["e08", "e08_4", "e16"]
+__all__ = ["e08_4", "e08_8", "e09_8", "e10_8", "e11_8"]
 
 
 """
@@ -23,66 +23,63 @@ class e16(TrainerConfig):
 
 
 """
+features number : [1, 16, 32, 64, 128, 256, 512]
+Trainable paras : 
+Training   speed:      steps /s ( 10 iterations/step)
+Validation speed:      steps /s ( 10 iterations/step)
+Evaluation speed:      frames/s ( 16 subframes/frame)
 """
 
 
-# run on server
-class e14(TrainerConfig):
+# run on local
+class e11_8(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
-        self.SimDataset["scale_list"] = [4, 8, 16]
-        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
-        self.ResAttUNet["use_res"] = True
-        self.ckpt_load_path = self.ckpt_disk + "e08/200"
-        self.lr = 1e-6
+        self.RawDataset["scale"] = [4, 8, 8]
+        self.ckpt_load_path = self.ckpt_disk + "e11/340"
 
 
-# run on server
-class e13(TrainerConfig):
-    def __init__(self) -> None:
-        super().__init__()
-        self.SimDataset["scale_list"] = [8, 16]
-        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
-        self.ResAttUNet["use_res"] = True
-        self.ckpt_load_path = self.ckpt_disk + "e08/200"
-        self.lr = 1e-6
-
-
-# run on server
-class e12(TrainerConfig):
-    def __init__(self) -> None:
-        super().__init__()
-        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
-        self.ResAttUNet["use_res"] = True
-        self.ckpt_load_path = self.ckpt_disk + "e08/200"
-        self.lr = 1e-6
-
-
-# run on server
 class e11(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
         self.SimDataset["scale_list"] = [4, 8, 16]
         self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
+        self.max_epoch = 340
         self.ckpt_load_path = self.ckpt_disk + "e08/200"
         self.lr = 1e-6
 
 
-# run on server
+# run on local
+class e10_8(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.RawDataset["scale"] = [4, 8, 8]
+        self.ckpt_load_path = self.ckpt_disk + "e10/340"
+
+
 class e10(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
         self.SimDataset["scale_list"] = [8, 16]
         self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
+        self.max_epoch = 340
         self.ckpt_load_path = self.ckpt_disk + "e08/200"
         self.lr = 1e-6
 
 
-# run on server
+# run on local
+class e09_8(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.RawDataset["scale"] = [4, 8, 8]
+        self.ckpt_load_path = self.ckpt_disk + "e09/340"
+
+
 class e09(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
         self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
+        self.max_epoch = 340
         self.ckpt_load_path = self.ckpt_disk + "e08/200"
         self.lr = 1e-6
 
@@ -107,13 +104,21 @@ Evaluation speed: 2.92 frames/s ( 16 subframes/frame)
 """
 
 
+# run on local
+class e08_8(EvaluerConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.RawDataset["scale"] = [4, 8, 8]
+        self.ckpt_load_path = self.ckpt_disk + "e08/340"
+
+
+# run on local
 class e08_4(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
-        self.ckpt_load_path = self.ckpt_disk + "e08/200"
+        self.ckpt_load_path = self.ckpt_disk + "e08/340"
 
 
-# run on server
 class e08(TrainerConfig):
     def __init__(self) -> None:
         super().__init__()
@@ -129,6 +134,7 @@ class e08(TrainerConfig):
         self.lr = 5e-6
         """
 
+        self.max_epoch = 340
         self.ckpt_load_path = self.ckpt_disk + "e08/200"
         self.lr = 1e-6
 
