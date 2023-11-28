@@ -24,7 +24,7 @@ def set_seed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)  # python hash seed
 
 
-class result(config.ConfigEvaluer):
+class temp(config.ConfigEvaluer):
     def __init__(self) -> None:
         super().__init__()
         # get three necessary arguments we need
@@ -59,6 +59,6 @@ class result(config.ConfigEvaluer):
 
 if __name__ == "__main__":
     set_seed(42)
-    cfg = result()
+    cfg = temp()
     if isinstance(cfg, config.ConfigTrainer): sml.Trainer(cfg).fit()
     if isinstance(cfg, config.ConfigEvaluer): sml.Evaluer(cfg).fit()

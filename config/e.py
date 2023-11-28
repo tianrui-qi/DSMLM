@@ -85,6 +85,7 @@ Trainable paras : 1,326,001
 Training   speed:      steps /s ( 10 iterations/step)
 Validation speed:      steps /s ( 10 iterations/step)
 Evaluation speed: 2.92 frames/s ( 16 subframes/frame)
+                  4.55 s/frame ( 225 subframes/frame)
 """
 
 
