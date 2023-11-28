@@ -1,41 +1,22 @@
 from config.default import *
 
-__all__ = ["e08_4", "e08_8", "e09_8", "e10_8", "e11_8"]
-
-
-"""
-features number : [1, 32, 64, 128, 256, 512, 1024]
-Trainable paras : 85,591,649
-Training   speed: 0.58 steps /s ( 10 iterations/step)
-Validation speed: 0.91 steps /s ( 10 iterations/step)
-Evaluation speed:      frames/s ( 64 subframes/frame)
-"""
-
-
-class e16(TrainerConfig):
-    def __init__(self) -> None:
-        super().__init__()
-        self.SimDataset["lum_info"] = False
-        self.RawDataset["lum_info"] = False
-        self.ResAttUNet["feats"] = [1, 32, 64, 128, 256]
-        self.max_epoch = 160
-        self.ckpt_load_path = self.ckpt_disk + "d02/140"
+__all__ = ["e08_4"]
 
 
 """
 features number : [1, 16, 32, 64, 128, 256, 512]
-Trainable paras : 
+Trainable paras : 21,401,393
 Training   speed:      steps /s ( 10 iterations/step)
 Validation speed:      steps /s ( 10 iterations/step)
-Evaluation speed:      frames/s ( 16 subframes/frame)
+Evaluation speed: 2.86 frames/s ( 16 subframes/frame)
 """
 
 
-# run on local
 class e11_8(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
         self.RawDataset["scale"] = [4, 8, 8]
+        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
         self.ckpt_load_path = self.ckpt_disk + "e11/340"
 
 
@@ -49,11 +30,11 @@ class e11(TrainerConfig):
         self.lr = 1e-6
 
 
-# run on local
 class e10_8(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
         self.RawDataset["scale"] = [4, 8, 8]
+        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
         self.ckpt_load_path = self.ckpt_disk + "e10/340"
 
 
@@ -67,11 +48,11 @@ class e10(TrainerConfig):
         self.lr = 1e-6
 
 
-# run on local
 class e09_8(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
         self.RawDataset["scale"] = [4, 8, 8]
+        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
         self.ckpt_load_path = self.ckpt_disk + "e09/340"
 
 
@@ -104,7 +85,6 @@ Evaluation speed: 2.92 frames/s ( 16 subframes/frame)
 """
 
 
-# run on local
 class e08_8(EvaluerConfig):
     def __init__(self) -> None:
         super().__init__()
