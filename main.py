@@ -4,8 +4,9 @@ import numpy as np
 import random
 import os
 
-import sml
-import config
+import argparse
+
+import config, sml
 
 
 torch.backends.cudnn.enabled   = True
@@ -23,10 +24,41 @@ def set_seed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)  # python hash seed
 
 
+class result(config.ConfigEvaluer):
+    def __init__(self) -> None:
+        super().__init__()
+        # get three necessary arguments we need
+        parser = argparse.ArgumentParser(
+            description="Run script with command line arguments."
+        )
+        parser.add_argument(
+            "-p", type=str, required=True, dest="frames_load_fold",
+            help="Path to the frames load folder."
+        )
+        parser.add_argument(
+            "-s", type=int, required=True, dest="scale",
+            help="Scale up factor, 4 or 8."
+        )
+        parser.add_argument(
+            "-b", type=int, required=True, dest="batch_size",
+            help="Batch size, num_sub_user_prod must divisible by batch_size."
+        )
+        args = parser.parse_args()
+        # set configuration
+        self.RawDataset["frames_load_fold"] = args.frames_load_fold
+        if args.scale not in [4, 8]:
+            raise ValueError("scale must be 4 or 8")
+        if args.scale == 4:
+            self.ckpt_load_path = self.ckpt_disk + "e08/340"
+        if args.scale == 8:
+            self.RawDataset["scale"] = [4, 8, 8]
+            self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
+            self.ckpt_load_path = self.ckpt_disk + "e10/340"
+        self.batch_size = args.batch_size
+
+
 if __name__ == "__main__":
     set_seed(42)
-    for cfg in (
-        config.e08_4()
-    ):
-        if isinstance(cfg, config.TrainerConfig): sml.Trainer(cfg).fit()
-        if isinstance(cfg, config.EvaluerConfig): sml.Evaluer(cfg).fit()
+    cfg = result()
+    if isinstance(cfg, config.ConfigTrainer): sml.Trainer(cfg).fit()
+    if isinstance(cfg, config.ConfigEvaluer): sml.Evaluer(cfg).fit()

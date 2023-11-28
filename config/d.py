@@ -1,4 +1,4 @@
-from config.default import *
+from .config import *
 
 __all__ = []
 

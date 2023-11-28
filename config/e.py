@@ -1,6 +1,9 @@
-from config.default import *
+from .config import *
 
-__all__ = ["e08_4"]
+__all__ = [
+    "e08", "e08_4", "e08_8", 
+    "e09", "e09_8", "e10", "e10_8", "e11", "e11_8"
+]
 
 
 """
@@ -12,7 +15,7 @@ Evaluation speed: 2.86 frames/s ( 16 subframes/frame)
 """
 
 
-class e11_8(EvaluerConfig):
+class e11_8(ConfigEvaluer):
     def __init__(self) -> None:
         super().__init__()
         self.RawDataset["scale"] = [4, 8, 8]
@@ -20,7 +23,7 @@ class e11_8(EvaluerConfig):
         self.ckpt_load_path = self.ckpt_disk + "e11/340"
 
 
-class e11(TrainerConfig):
+class e11(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         self.SimDataset["scale_list"] = [4, 8, 16]
@@ -30,7 +33,7 @@ class e11(TrainerConfig):
         self.lr = 1e-6
 
 
-class e10_8(EvaluerConfig):
+class e10_8(ConfigEvaluer):
     def __init__(self) -> None:
         super().__init__()
         self.RawDataset["scale"] = [4, 8, 8]
@@ -38,7 +41,7 @@ class e10_8(EvaluerConfig):
         self.ckpt_load_path = self.ckpt_disk + "e10/340"
 
 
-class e10(TrainerConfig):
+class e10(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         self.SimDataset["scale_list"] = [8, 16]
@@ -48,7 +51,7 @@ class e10(TrainerConfig):
         self.lr = 1e-6
 
 
-class e09_8(EvaluerConfig):
+class e09_8(ConfigEvaluer):
     def __init__(self) -> None:
         super().__init__()
         self.RawDataset["scale"] = [4, 8, 8]
@@ -56,7 +59,7 @@ class e09_8(EvaluerConfig):
         self.ckpt_load_path = self.ckpt_disk + "e09/340"
 
 
-class e09(TrainerConfig):
+class e09(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
@@ -85,21 +88,20 @@ Evaluation speed: 2.92 frames/s ( 16 subframes/frame)
 """
 
 
-class e08_8(EvaluerConfig):
+class e08_8(ConfigEvaluer):
     def __init__(self) -> None:
         super().__init__()
         self.RawDataset["scale"] = [4, 8, 8]
         self.ckpt_load_path = self.ckpt_disk + "e08/340"
 
 
-# run on local
-class e08_4(EvaluerConfig):
+class e08_4(ConfigEvaluer):
     def __init__(self) -> None:
         super().__init__()
         self.ckpt_load_path = self.ckpt_disk + "e08/340"
 
 
-class e08(TrainerConfig):
+class e08(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         """
@@ -144,7 +146,7 @@ Evaluation speed: 3.52 frames/s ( 16 subframes/frame)
 """
 
 
-class e07_8(EvaluerConfig):
+class e07_8(ConfigEvaluer):
     def __init__(self) -> None:
         super().__init__()
         ## data
@@ -155,7 +157,7 @@ class e07_8(EvaluerConfig):
         self.ckpt_load_path = self.ckpt_disk + "e07/320"
 
 
-class e07_4(EvaluerConfig):
+class e07_4(ConfigEvaluer):
     def __init__(self) -> None:
         super().__init__()
         ## model
@@ -164,7 +166,7 @@ class e07_4(EvaluerConfig):
         self.ckpt_load_path = self.ckpt_disk + "e07/320"
 
 
-class e07(TrainerConfig):
+class e07(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         ## model
@@ -174,7 +176,7 @@ class e07(TrainerConfig):
         self.lr = 1e-4
 
 
-class e06(TrainerConfig):
+class e06(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         ## data
@@ -210,7 +212,7 @@ Evaluation speed: 2.95 frames/s ( 16 subframes/frame)
 """
 
 
-class e05_4(EvaluerConfig):
+class e05_4(ConfigEvaluer):
     def __init__(self) -> None:
         super().__init__()
         ## data
@@ -219,7 +221,7 @@ class e05_4(EvaluerConfig):
         self.ckpt_load_path = self.ckpt_disk + "e05/90"
 
 
-class e05(TrainerConfig):
+class e05(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         ## data
@@ -229,7 +231,7 @@ class e05(TrainerConfig):
         self.ckpt_load_lr   = True
 
 
-class e04_4(EvaluerConfig):
+class e04_4(ConfigEvaluer):
     def __init__(self) -> None:
         super().__init__()
         ## data
@@ -238,7 +240,7 @@ class e04_4(EvaluerConfig):
         self.ckpt_load_path = self.ckpt_disk + "e04/80"
 
 
-class e04(TrainerConfig):
+class e04(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         ## SimDataset & RawDataset
@@ -249,7 +251,7 @@ class e04(TrainerConfig):
         self.ckpt_load_lr   = True
 
 
-class e03(TrainerConfig):
+class e03(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         ## SimDataset & RawDataset
@@ -282,7 +284,7 @@ Evaluation speed: 3.63 frames/s ( 16 subframes/frame)
 """
 
 
-class e02_4(EvaluerConfig):
+class e02_4(ConfigEvaluer):
     def __init__(self) -> None:
         super().__init__()
         ## data
@@ -293,7 +295,7 @@ class e02_4(EvaluerConfig):
         self.ckpt_load_path = self.ckpt_disk + "e02/210" 
 
 
-class e02(TrainerConfig):
+class e02(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         ## data
@@ -304,7 +306,7 @@ class e02(TrainerConfig):
         self.ckpt_load_path = self.ckpt_disk + "e01/150"
 
 
-class e01(TrainerConfig):
+class e01(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         ## data

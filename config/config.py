@@ -1,21 +1,16 @@
-import socket
-from typing import List
-
-__all__ = ["Config", "TrainerConfig", "EvaluerConfig"]
+__all__ = ["Config", "ConfigTrainer", "ConfigEvaluer"]
 
 
 class Config:
     def __init__(self) -> None:
-        self.ckpt_disk: str = None
-        self.data_disk: str = None
-        self._setDisk()
-
+        self.ckpt_disk: str = "ckpt/"
+        self.data_disk: str = "data/"
         self.SimDataset = {
             "lum_info": True,  
             "dim_dst" : [160, 160, 160],
 
             "scale_list": [4, 8],
-            "std_src": [     # std range
+            "std_src": [          # std range
                 [1.0, 1.0, 1.0],  # minimum std, [C, H, W], by pixel
                 [3.0, 2.5, 2.5],  # maximum std, [C, H, W], by pixel
             ],
@@ -35,19 +30,8 @@ class Config:
             "use_res" : False,
         }
 
-    def _setDisk(self):
-        hostname = socket.gethostname()
-        if hostname not in ["tianrui-win", "admin"]:
-            raise ValueError("Please set your disk path in sml/config.py")
-        elif hostname == "tianrui-win": 
-            self.ckpt_disk = "ckpt/"
-            self.data_disk = "data/"
-        elif hostname == "admin":
-            self.ckpt_disk = "/data/nanomega/SMLFM/ckpt/"
-            self.data_disk = "/data/nanomega/SMLFM/data/"
 
-
-class TrainerConfig(Config):
+class ConfigTrainer(Config):
     def __init__(self) -> None:
         super().__init__()
         ## Trainer
@@ -58,14 +42,15 @@ class TrainerConfig(Config):
         self.ckpt_load_path: str  = ""        # path without .ckpt
         self.ckpt_load_lr  : bool = False     # load lr from ckpt
         # dataloader
-        self.num: List[int] = [10000, 5000]   # train and valid
+        self.num_train : int = 10000
+        self.num_valid : int = 5000
         self.batch_size: int = 1
         # optimizer
         self.lr   : float = 1e-5    # initial learning rate (lr)
         self.gamma: float = 0.95    # decay rate of lr
 
 
-class EvaluerConfig(Config):
+class ConfigEvaluer(Config):
     def __init__(self) -> None:
         super().__init__()
         ## Evaluer

@@ -1,3 +1,3 @@
-from config.default import *
+from config.config import *
 from config.d import *
 from config.e import *

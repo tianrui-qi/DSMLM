@@ -27,15 +27,13 @@ class Trainer:
 
         # dataloader
         self.trainloader = DataLoader(
-            sml.data.SimDataset(num=config.num[0], **config.SimDataset),
+            sml.data.SimDataset(num=config.num_train, **config.SimDataset),
             batch_size=config.batch_size,
             num_workers=config.batch_size, 
             pin_memory=True
         )
         self.validloader = DataLoader(
-            sml.data.RawDataset(
-                num=config.num[1], mode="train", **config.RawDataset
-            ),
+            sml.data.RawDataset(num=config.num_valid, **config.RawDataset),
             batch_size=config.batch_size, 
             num_workers=config.batch_size, 
             pin_memory=True
@@ -209,9 +207,7 @@ class Evaluer:
         self.data_save_fold = config.data_save_fold
 
         # dataloader
-        self.dataset = sml.data.RawDataset(
-            num=None, mode="evalu", **config.RawDataset
-        )
+        self.dataset = sml.data.RawDataset(num=None, **config.RawDataset)
         self.dataloader = DataLoader(
             self.dataset,
             batch_size=config.batch_size, 

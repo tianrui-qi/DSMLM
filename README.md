@@ -7,13 +7,3 @@ The code is tested with Python == 3.11, PyTorch == 2.0, and CUDA == 11.8. We rec
 conda env create -f environment.yml
 conda activate SMLFM
 ```
-
-## Data
-
-
-
-## Evaluation
-
-
-
-## Training

@@ -4,12 +4,13 @@ from torch import Tensor
 
 from typing import List
 
-__all__ = ["ResAttUNet"]
+__all__ = []
 
 
 class ResAttUNet(nn.Module):
     def __init__(
-        self, dim: int, feats: List[int], use_cbam: bool, use_res: bool
+        self, dim: int, feats: List[int], 
+        use_cbam: bool = False, use_res: bool = False
     ) -> None:
         super(ResAttUNet, self).__init__()
         self.dim      = dim

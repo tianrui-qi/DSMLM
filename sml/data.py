@@ -12,13 +12,12 @@ import scipy.io
 import tqdm
 from typing import Tuple, Union, List
 
-__all__ = ["SimDataset", "RawDataset"]
+__all__ = []
 
 
 class SimDataset(Dataset):
     def __init__(
-        self, num: int, 
-        lum_info: bool, dim_dst: List[int], 
+        self, num: int, lum_info: bool, dim_dst: List[int], 
         scale_list: List[int], std_src: List[List[float]]
     ) -> None:
         super(SimDataset, self).__init__()
@@ -147,13 +146,12 @@ class SimDataset(Dataset):
 
 class RawDataset(Dataset):
     def __init__(
-        self, num: int, mode: str,
-        lum_info: bool, dim_dst: List[int], 
+        self, num: int, lum_info: bool, dim_dst: List[int], 
         scale: List[int], frames_load_fold: str, mlists_load_fold: str = None
     ) -> None:
         super(RawDataset, self).__init__()
         self.num  = num
-        self.mode = mode
+        self.mode = "evalu" if num is None else "train"
 
         # luminance/brightness information
         self.lum_info = lum_info
@@ -184,14 +182,15 @@ class RawDataset(Dataset):
             self.mlists_load_fold = mlists_load_fold
             self.mlists_list = os.listdir(self.mlists_load_fold)
         # read option
-        self.averagemax = self._getAveragemax()     # for normalizing all frames
+        self.averagemax = None      # for normalizing all frames
 
         # store the current frame and mlist in memory
         self.current_frame_index = -1
         self.frame = None
-        self.mlist = None   # [N, 7], float  
+        self.mlist = None   # [N, 7], float
 
         self._getIndex()
+        self._getAveragemax()
 
     def _getIndex(self) -> None:
         # compute dimension of patch
@@ -254,10 +253,8 @@ class RawDataset(Dataset):
         ]
         self.rng_sub_user = Tensor(self.rng_sub_user).int().reshape(self.D, 2)
         self.num_sub_user = self.rng_sub_user[:, 1] - self.rng_sub_user[:, 0]
-        if self.num is None:
-            # self.num is not necessary when instantiate in evalu mode
-            # if not given, compute it automatically 
-            self.num = torch.prod(self.num_sub_user) * len(self.frames_list)
+        # compute total number of data automatically
+        self.num = torch.prod(self.num_sub_user) * len(self.frames_list)
 
         # draw selected patch
         """
@@ -296,14 +293,15 @@ class RawDataset(Dataset):
         Return:
             self.averagemax (float): Average of all frames' max value.
         """
-        averagemax = 0
+        self.averagemax = 0
         for index in tqdm.tqdm(
             range(len(self.frames_list)//10), unit="frame", leave=False
         ):
-            averagemax += torch.from_numpy(tifffile.imread(
+            self.averagemax += torch.from_numpy(tifffile.imread(
                 os.path.join(self.frames_load_fold, self.frames_list[index])
             )).max().float()
-        return averagemax / len(self.frames_list)
+        self.averagemax /= len(self.frames_list)
+        return self.averagemax
 
     # TODO: how to add brightness info, now we use peak
     def __getitem__(self, index: int) -> Union[Tensor, Tuple[Tensor, Tensor]]:
