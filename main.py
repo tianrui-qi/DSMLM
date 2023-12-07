@@ -41,7 +41,10 @@ class temp(config.ConfigEvaluer):
         )
         parser.add_argument(
             "-s", type=int, required=True, dest="scale",
-            help="Scale up factor, 4 or 8."
+            help="Scale up factor, 4 or 8. " + 
+            "When scale up by 4 or 8, the code will automatically load the " +
+            "corresponding checkpoint from `ckpt/e04/340.ckpt` or " + 
+            "`ckpt/e08/340.ckpt`."
         )
         parser.add_argument(
             "-b", type=int, required=True, dest="batch_size",
