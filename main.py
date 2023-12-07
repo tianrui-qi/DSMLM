@@ -32,8 +32,12 @@ class temp(config.ConfigEvaluer):
             description="Run script with command line arguments."
         )
         parser.add_argument(
-            "-p", type=str, required=True, dest="frames_load_fold",
+            "-L", type=str, required=True, dest="frames_load_fold",
             help="Path to the frames load folder."
+        )
+        parser.add_argument(
+            "-S", type=str, required=True, dest="data_save_fold",
+            help="Path to the data save folder."
         )
         parser.add_argument(
             "-s", type=int, required=True, dest="scale",
@@ -41,7 +45,7 @@ class temp(config.ConfigEvaluer):
         )
         parser.add_argument(
             "-b", type=int, required=True, dest="batch_size",
-            help="Batch size, num_sub_user_prod must divisible by batch_size."
+            help="Batch size. Set this value according to your GPU memory."
         )
         args = parser.parse_args()
         # set configuration
@@ -54,6 +58,7 @@ class temp(config.ConfigEvaluer):
             self.RawDataset["scale"] = [4, 8, 8]
             self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
             self.ckpt_load_path = self.ckpt_disk + "e10/340"
+        self.data_save_fold = args.data_save_fold
         self.batch_size = args.batch_size
 
 

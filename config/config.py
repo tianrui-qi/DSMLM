@@ -20,8 +20,8 @@ class Config:
             "dim_dst" : [160, 160, 160],
 
             "scale": [4, 4, 4],
-            "frames_load_fold": "D:/hela/frames",
-            "mlists_load_fold": "D:/hela/mlists",
+            "frames_load_fold": "D:/SMLFM/hela/frames",
+            "mlists_load_fold": "D:/SMLFM/hela/mlists",
         }
         self.ResAttUNet = {
             "dim"     : 3,
