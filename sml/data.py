@@ -41,7 +41,6 @@ class SimDataset(Dataset):
         self.vars_set = None    # [N, D], float
         self.peak_set = None    # [N], float   
 
-    # TODO: how to add brightness info, now we use peak
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
         # generate molecular list for current frame
         self._generateMlist()
@@ -303,7 +302,6 @@ class RawDataset(Dataset):
         self.averagemax /= len(self.frames_list)
         return self.averagemax
 
-    # TODO: how to add brightness info, now we use peak
     def __getitem__(self, index: int) -> Union[Tensor, Tuple[Tensor, Tensor]]:
         frame_index = index // torch.prod(self.num_sub_user)    # frame index
         sub_index   = index %  torch.prod(self.num_sub_user)    # subframe index

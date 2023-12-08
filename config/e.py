@@ -2,15 +2,15 @@ from .config import *
 
 __all__ = [
     "e08", "e08_4", "e08_8", 
-    "e09", "e09_8", "e10", "e10_8", "e11", "e11_8"
+    "e09", "e09_8", "e10", "e10_8", "e11", "e11_8",
 ]
 
 
-"""
+""" scale up by 8
 features number : [1, 16, 32, 64, 128, 256, 512]
 Trainable paras : 21,401,393
-Training   speed:      steps /s ( 10 iterations/step)
-Validation speed:      steps /s ( 10 iterations/step)
+Training   speed: 1.07 steps /s ( 10 iterations/step)
+Validation speed: 1.74 steps /s ( 10 iterations/step)
 Evaluation speed: 2.86 frames/s ( 16 subframes/frame)
 """
 
@@ -27,6 +27,7 @@ class e11(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         self.SimDataset["scale_list"] = [4, 8, 16]
+        self.RawDataset["scale"] = [4, 8, 8]
         self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
         self.max_epoch = 340
         self.ckpt_load_path = self.ckpt_disk + "e08/200"
@@ -45,9 +46,15 @@ class e10(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         self.SimDataset["scale_list"] = [8, 16]
+        self.RawDataset["scale"] = [4, 8, 8]
         self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
+        """
         self.max_epoch = 340
         self.ckpt_load_path = self.ckpt_disk + "e08/200"
+        self.lr = 1e-6
+        """
+
+        self.ckpt_load_path = self.ckpt_disk + "e10/340"
         self.lr = 1e-6
 
 
@@ -62,6 +69,7 @@ class e09_8(ConfigEvaluer):
 class e09(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
+        self.RawDataset["scale"] = [4, 8, 8]
         self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
         self.max_epoch = 340
         self.ckpt_load_path = self.ckpt_disk + "e08/200"

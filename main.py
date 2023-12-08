@@ -67,6 +67,6 @@ class temp(config.ConfigEvaluer):
 
 if __name__ == "__main__":
     set_seed(42)
-    cfg = temp()
+    cfg = config.e10()
     if isinstance(cfg, config.ConfigTrainer): sml.Trainer(cfg).fit()
     if isinstance(cfg, config.ConfigEvaluer): sml.Evaluer(cfg).fit()
