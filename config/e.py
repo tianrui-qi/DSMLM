@@ -9,7 +9,7 @@ __all__ = [
 """ scale up by 8
 features number : [1, 16, 32, 64, 128, 256, 512]
 Trainable paras : 21,401,393
-Training   speed: 1.07 steps /s ( 10 iterations/step)
+Training   speed: 1.10 steps /s ( 10 iterations/step)
 Validation speed: 1.74 steps /s ( 10 iterations/step)
 Evaluation speed: 2.86 frames/s ( 16 subframes/frame)
 """
@@ -48,6 +48,7 @@ class e10(Config):
         self.SimDataset["scale_list"] = [8, 16]
         self.RawDataset["scale"] = [4, 8, 8]
         self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
+
         """
         self.Trainer["max_epoch"] = 340
         self.Trainer["ckpt_load_path"] = self.ckpt_disk + "e08/200"
@@ -92,7 +93,7 @@ features number : [1, 16, 32, 64, 128]
 Trainable paras : 1,326,001
 Training   speed:      steps /s ( 10 iterations/step)
 Validation speed:      steps /s ( 10 iterations/step)
-Evaluation speed: 2.92 frames/s ( 16 subframes/frame)
+Evaluation speed: 3.02 frames/s ( 16 subframes/frame)
                   4.55 s/frame ( 225 subframes/frame)
 """
 

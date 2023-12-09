@@ -35,11 +35,11 @@ class Trainer:
         # dataloader
         self.trainloader = DataLoader(
             trainset,
-            batch_size=batch_size,num_workers=batch_size, pin_memory=True
+            batch_size=batch_size, num_workers=4*batch_size, pin_memory=True
         )
         self.validloader = DataLoader(
             validset, 
-            batch_size=batch_size, num_workers=batch_size, pin_memory=True
+            batch_size=batch_size, num_workers=4*batch_size, pin_memory=True
         )
         # model
         self.model = model.to(self.device)
@@ -216,9 +216,7 @@ class Evaluer:
         self.evaluset = evaluset
         self.dataloader = DataLoader(
             self.evaluset,
-            batch_size=batch_size, 
-            num_workers=batch_size, 
-            pin_memory=True
+            batch_size=batch_size, num_workers=4*batch_size, pin_memory=True
         )
         # model
         self.model = model.to(self.device)
