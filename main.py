@@ -1,3 +1,5 @@
+import torch
+import torch.cuda
 import torch.backends.cudnn
 
 import numpy as np
@@ -24,9 +26,9 @@ def set_seed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)  # python hash seed
 
 
-class temp(config.ConfigEvaluer):
+class temp(config.Config):
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__("evalu")
         # get three necessary arguments we need
         parser = argparse.ArgumentParser(
             description="Run script with command line arguments."
@@ -56,17 +58,29 @@ class temp(config.ConfigEvaluer):
         if args.scale not in [4, 8]:
             raise ValueError("scale must be 4 or 8")
         if args.scale == 4:
-            self.ckpt_load_path = self.ckpt_disk + "e08/340"
+            self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e08/340"
         if args.scale == 8:
             self.RawDataset["scale"] = [4, 8, 8]
             self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
-            self.ckpt_load_path = self.ckpt_disk + "e10/340"
-        self.data_save_fold = args.data_save_fold
-        self.batch_size = args.batch_size
+            self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e10/340"
+        self.Evaluer["data_save_fold"] = args.data_save_fold
+        self.Evaluer["batch_size"] = args.batch_size
 
 
 if __name__ == "__main__":
     set_seed(42)
     cfg = config.e10()
-    if isinstance(cfg, config.ConfigTrainer): sml.Trainer(cfg).fit()
-    if isinstance(cfg, config.ConfigEvaluer): sml.Evaluer(cfg).fit()
+    if cfg.mode == "train": 
+        sml.Trainer(
+            **cfg.Trainer,
+            trainset=sml.SimDataset(**cfg.SimDataset), 
+            validset=sml.RawDataset(**cfg.RawDataset), 
+            model=sml.ResAttUNet(**cfg.ResAttUNet), 
+        ).fit()
+    if cfg.mode == "evalu":
+        cfg.RawDataset["num"] = None
+        sml.Evaluer(
+            **cfg.Evaluer,
+            evaluset=sml.RawDataset(**cfg.RawDataset), 
+            model = sml.ResAttUNet(**cfg.ResAttUNet)
+        ).fit()

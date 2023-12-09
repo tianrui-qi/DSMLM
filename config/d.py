@@ -3,6 +3,9 @@ from .config import *
 __all__ = []
 
 
+# All the following configs are no longer maintained
+
+
 """ whole field of view
 Next we generate a field of view frames as a summary of section d-chessboard of test; for section e, we will move on to 8 times super resolution.
 

@@ -12,7 +12,7 @@ import scipy.io
 import tqdm
 from typing import Tuple, Union, List
 
-__all__ = []
+__all__ = ["SimDataset", "RawDataset"]
 
 
 class SimDataset(Dataset):

@@ -1,11 +1,13 @@
-__all__ = ["Config", "ConfigTrainer", "ConfigEvaluer"]
+__all__ = ["Config"]
 
 
 class Config:
-    def __init__(self) -> None:
+    def __init__(self, mode: str) -> None:
+        self.mode: str = mode    # "train" or "evalu"
         self.ckpt_disk: str = "ckpt/"
         self.data_disk: str = "data/"
         self.SimDataset = {
+            "num": 10000,
             "lum_info": True,  
             "dim_dst" : [160, 160, 160],
 
@@ -16,6 +18,7 @@ class Config:
             ],
         }
         self.RawDataset  = {
+            "num": 5000,
             "lum_info": True,
             "dim_dst" : [160, 160, 160],
 
@@ -29,33 +32,21 @@ class Config:
             "use_cbam": False,
             "use_res" : False,
         }
+        self.Trainer = {
+            "max_epoch": 800,
+            "accumu_steps": 10,
+            "batch_size": 1,
 
+            "ckpt_save_fold": self.ckpt_disk + self.__class__.__name__,
+            "ckpt_load_path": "",       # path without .ckpt
+            "ckpt_load_lr"  : False,    # load lr from ckpt
 
-class ConfigTrainer(Config):
-    def __init__(self) -> None:
-        super().__init__()
-        ## Trainer
-        self.max_epoch   : int = 800
-        self.accumu_steps: int = 10
-        # path
-        self.ckpt_save_fold: str  = self.ckpt_disk + self.__class__.__name__
-        self.ckpt_load_path: str  = ""        # path without .ckpt
-        self.ckpt_load_lr  : bool = False     # load lr from ckpt
-        # dataloader
-        self.num_train : int = 10000
-        self.num_valid : int = 5000
-        self.batch_size: int = 1
-        # optimizer
-        self.lr   : float = 1e-5    # initial learning rate (lr)
-        self.gamma: float = 0.95    # decay rate of lr
+            "lr"   : 1e-5,  # initial learning rate (lr)
+            "gamma": 0.95,  # decay rate of lr
+        }
+        self.Evaluer = {
+            "batch_size": 4,
 
-
-class ConfigEvaluer(Config):
-    def __init__(self) -> None:
-        super().__init__()
-        ## Evaluer
-        # path
-        self.ckpt_load_path: str = ""   # path without .ckpts
-        self.data_save_fold: str = self.data_disk + self.__class__.__name__
-        # dataloader
-        self.batch_size: int = 4
+            "ckpt_load_path": "",       # path without .ckpt
+            "data_save_fold": self.data_disk + self.__class__.__name__,
+        }

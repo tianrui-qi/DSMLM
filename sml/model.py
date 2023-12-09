@@ -4,7 +4,7 @@ from torch import Tensor
 
 from typing import List
 
-__all__ = []
+__all__ = ["ResAttUNet"]
 
 
 class ResAttUNet(nn.Module):

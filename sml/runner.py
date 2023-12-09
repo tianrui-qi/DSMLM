@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import torch.cuda.amp as amp
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
@@ -10,43 +11,45 @@ import tifffile
 
 import tqdm
 
-import sml.model, sml.loss, sml.data
+import sml.data, sml.model, sml.loss
 
 __all__ = ["Trainer", "Evaluer"]
 
 
 class Trainer:
-    def __init__(self, config) -> None:
+    def __init__(
+        self, max_epoch: int, accumu_steps: int, batch_size: int,
+        ckpt_save_fold: str, ckpt_load_path: str, ckpt_load_lr: bool,
+        lr: float, gamma: float,
+        trainset: sml.data.SimDataset, validset: sml.data.RawDataset, 
+        model: nn.Module
+    ) -> None:
         self.device = "cuda"
-        self.max_epoch = config.max_epoch
-        self.accumu_steps = config.accumu_steps
+        self.max_epoch = max_epoch
+        self.accumu_steps = accumu_steps
         # path
-        self.ckpt_save_fold = config.ckpt_save_fold
-        self.ckpt_load_path = config.ckpt_load_path
-        self.ckpt_load_lr   = config.ckpt_load_lr
+        self.ckpt_save_fold = ckpt_save_fold
+        self.ckpt_load_path = ckpt_load_path
+        self.ckpt_load_lr   = ckpt_load_lr
 
         # dataloader
         self.trainloader = DataLoader(
-            sml.data.SimDataset(num=config.num_train, **config.SimDataset),
-            batch_size=config.batch_size,
-            num_workers=config.batch_size, 
-            pin_memory=True
+            trainset,
+            batch_size=batch_size,num_workers=batch_size, pin_memory=True
         )
         self.validloader = DataLoader(
-            sml.data.RawDataset(num=config.num_valid, **config.RawDataset),
-            batch_size=config.batch_size, 
-            num_workers=config.batch_size, 
-            pin_memory=True
+            validset, 
+            batch_size=batch_size, num_workers=batch_size, pin_memory=True
         )
         # model
-        self.model = sml.model.ResAttUNet(**config.ResAttUNet).to(self.device)
+        self.model = model.to(self.device)
         # loss
         self.loss  = sml.loss.GaussianBlurLoss().to(self.device)
         # optimizer
         self.scaler    = amp.GradScaler()  # type: ignore
-        self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
         self.scheduler = lr_scheduler.ExponentialLR(
-            self.optimizer, gamma=config.gamma
+            self.optimizer, gamma=gamma
         )
         # recorder
         self.writer = writer.SummaryWriter()
@@ -200,22 +203,25 @@ class Trainer:
 
 
 class Evaluer:
-    def __init__(self, config) -> None:
+    def __init__(
+        self, batch_size: int, ckpt_load_path: str, data_save_fold: str,
+        evaluset: sml.data.RawDataset, model: nn.Module
+    ) -> None:
         self.device = "cuda"
         # path
-        self.ckpt_load_path = config.ckpt_load_path
-        self.data_save_fold = config.data_save_fold
+        self.ckpt_load_path = ckpt_load_path
+        self.data_save_fold = data_save_fold
 
         # dataloader
-        self.dataset = sml.data.RawDataset(num=None, **config.RawDataset)
+        self.evaluset = evaluset
         self.dataloader = DataLoader(
-            self.dataset,
-            batch_size=config.batch_size, 
-            num_workers=config.batch_size, 
+            self.evaluset,
+            batch_size=batch_size, 
+            num_workers=batch_size, 
             pin_memory=True
         )
         # model
-        self.model = sml.model.ResAttUNet(**config.ResAttUNet).to(self.device)
+        self.model = model.to(self.device)
         self.model.load_state_dict(torch.load(
             "{}.ckpt".format(self.ckpt_load_path), 
             map_location=self.device)['model']
@@ -223,9 +229,9 @@ class Evaluer:
         self.model.half()
 
         # dim
-        self.dim_dst_pad = self.dataset.dim_dst_pad     # [D], int
+        self.dim_dst_pad = self.evaluset.dim_dst_pad     # [D], int
         # index
-        self.num_sub_user = self.dataset.num_sub_user   # [D], int
+        self.num_sub_user = self.evaluset.num_sub_user   # [D], int
         self.num_sub_user_prod = torch.prod(self.num_sub_user)
         self.batch_size   = self.dataloader.batch_size
         if self.num_sub_user_prod % self.batch_size != 0: raise ValueError(
@@ -276,7 +282,7 @@ class Evaluer:
             if (frame_index+1) & frame_index == 0 \
             or i == len(self.dataloader) - 1: tifffile.imwrite(
                 "{}/{:05}.tif".format(self.data_save_fold, frame_index+1),
-                self.dataset.combineFrame(
+                self.evaluset.combineFrame(
                     sub_cat
                 ).float().cpu().detach().numpy()
             )
