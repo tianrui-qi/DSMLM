@@ -11,7 +11,7 @@ features number : [1, 16, 32, 64, 128, 256, 512]
 Trainable paras : 21,401,393
 Training   speed: 1.10 steps /s ( 10 iterations/step)
 Validation speed: 1.74 steps /s ( 10 iterations/step)
-Evaluation speed: 2.86 frames/s ( 16 subframes/frame)
+Evaluation speed: 2.90 frames/s ( 16 subframes/frame)
 """
 
 
@@ -39,7 +39,7 @@ class e10_8(Config):
         super().__init__("evalu")
         self.RawDataset["scale"] = [4, 8, 8]
         self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
-        self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e10/340"
+        self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e10/450"
 
 
 class e10(Config):
@@ -55,6 +55,7 @@ class e10(Config):
         self.Trainer["lr"] = 1e-6
         """
 
+        self.Trainer["max_epoch"] = 450
         self.Trainer["ckpt_load_path"] = self.ckpt_disk + "e10/340"
         self.Trainer["lr"] = 1e-6
 

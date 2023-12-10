@@ -35,18 +35,22 @@ class Config:
         self.Trainer = {
             "max_epoch": 800,
             "accumu_steps": 10,
-            "batch_size": 1,
-
+            # path
             "ckpt_save_fold": self.ckpt_disk + self.__class__.__name__,
             "ckpt_load_path": "",       # path without .ckpt
             "ckpt_load_lr"  : False,    # load lr from ckpt
-
+            # data
+            "batch_size": 1,
+            "num_workers": 4,
+            # optimizer
             "lr"   : 1e-5,  # initial learning rate (lr)
             "gamma": 0.95,  # decay rate of lr
         }
         self.Evaluer = {
-            "batch_size": 4,
-
+            # path
             "ckpt_load_path": "",       # path without .ckpt
             "data_save_fold": self.data_disk + self.__class__.__name__,
+            # data
+            "batch_size": 4,
+            "num_workers": 16,
         }

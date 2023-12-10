@@ -26,7 +26,7 @@ def set_seed(seed):
 
 if __name__ == "__main__":
     set_seed(42)
-    cfg = config.temp()
+    cfg = config.r()
     if cfg.mode == "train": 
         sml.Trainer(
             **cfg.Trainer,

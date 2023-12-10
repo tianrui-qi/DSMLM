@@ -18,11 +18,11 @@ __all__ = ["Trainer", "Evaluer"]
 
 class Trainer:
     def __init__(
-        self, max_epoch: int, accumu_steps: int, batch_size: int,
+        self, max_epoch: int, accumu_steps: int, 
         ckpt_save_fold: str, ckpt_load_path: str, ckpt_load_lr: bool,
-        lr: float, gamma: float,
         trainset: sml.data.SimDataset, validset: sml.data.RawDataset, 
-        model: nn.Module
+        batch_size: int, num_workers: int,
+        model: nn.Module, lr: float, gamma: float,
     ) -> None:
         self.device = "cuda"
         self.max_epoch = max_epoch
@@ -32,14 +32,14 @@ class Trainer:
         self.ckpt_load_path = ckpt_load_path
         self.ckpt_load_lr   = ckpt_load_lr
 
-        # dataloader
+        # data
         self.trainloader = DataLoader(
             trainset,
-            batch_size=batch_size, num_workers=4*batch_size, pin_memory=True
+            batch_size=batch_size, num_workers=num_workers, pin_memory=True
         )
         self.validloader = DataLoader(
             validset, 
-            batch_size=batch_size, num_workers=4*batch_size, pin_memory=True
+            batch_size=batch_size, num_workers=num_workers, pin_memory=True
         )
         # model
         self.model = model.to(self.device)
@@ -204,19 +204,20 @@ class Trainer:
 
 class Evaluer:
     def __init__(
-        self, batch_size: int, ckpt_load_path: str, data_save_fold: str,
-        evaluset: sml.data.RawDataset, model: nn.Module
+        self, ckpt_load_path: str, data_save_fold: str,
+        evaluset: sml.data.RawDataset, batch_size: int, num_workers: int,
+        model: nn.Module
     ) -> None:
         self.device = "cuda"
         # path
         self.ckpt_load_path = ckpt_load_path
         self.data_save_fold = data_save_fold
 
-        # dataloader
+        # data
         self.evaluset = evaluset
         self.dataloader = DataLoader(
             self.evaluset,
-            batch_size=batch_size, num_workers=4*batch_size, pin_memory=True
+            batch_size=batch_size, num_workers=num_workers, pin_memory=True
         )
         # model
         self.model = model.to(self.device)
