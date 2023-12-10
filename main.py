@@ -6,7 +6,7 @@ import numpy as np
 import random
 import os
 
-import config, sml
+import cfg, sml
 
 
 torch.backends.cudnn.enabled   = True
@@ -26,18 +26,18 @@ def set_seed(seed):
 
 if __name__ == "__main__":
     set_seed(42)
-    cfg = config.r()
-    if cfg.mode == "train": 
+    config = cfg.r()
+    if config.mode == "train": 
         sml.Trainer(
-            **cfg.Trainer,
-            trainset=sml.SimDataset(**cfg.SimDataset), 
-            validset=sml.RawDataset(**cfg.RawDataset), 
-            model=sml.ResAttUNet(**cfg.ResAttUNet), 
+            **config.Trainer,
+            trainset=sml.SimDataset(**config.SimDataset), 
+            validset=sml.RawDataset(**config.RawDataset), 
+            model=sml.ResAttUNet(**config.ResAttUNet), 
         ).fit()
-    if cfg.mode == "evalu":
-        cfg.RawDataset["num"] = None
+    if config.mode == "evalu":
+        config.RawDataset["num"] = None
         sml.Evaluer(
-            **cfg.Evaluer,
-            evaluset=sml.RawDataset(**cfg.RawDataset), 
-            model = sml.ResAttUNet(**cfg.ResAttUNet)
+            **config.Evaluer,
+            evaluset=sml.RawDataset(**config.RawDataset), 
+            model = sml.ResAttUNet(**config.ResAttUNet)
         ).fit()
