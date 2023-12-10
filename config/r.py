@@ -24,8 +24,8 @@ class r(Config):
             "-s", type=int, required=True, dest="scale",
             help="Scale up factor, 4 or 8. " + 
             "When scale up by 4 or 8, the code will automatically load the " +
-            "corresponding checkpoint from `ckpt/e04/340.ckpt` or " + 
-            "`ckpt/e08/340.ckpt`."
+            "corresponding checkpoint from `ckpt/e08/340.ckpt` or " + 
+            "`ckpt/e10/450.ckpt`."
         )
         parser.add_argument(
             "-b", type=int, required=True, dest="batch_size",
@@ -41,6 +41,6 @@ class r(Config):
         if args.scale == 8:
             self.RawDataset["scale"] = [4, 8, 8]
             self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
-            self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e10/340"
+            self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e10/450"
         self.Evaluer["data_save_fold"] = args.data_save_fold
         self.Evaluer["batch_size"] = args.batch_size
