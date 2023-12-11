@@ -22,18 +22,18 @@ You can check the parameters that must be specified by:
 ```bash
 python main.py --help
 ```
+- `-s`: Scale up factor, 4 or 8. When scale up by 4 or 8, the code will automatically load the corresponding checkpoint from `ckpt/e08/340.ckpt` or `ckpt/e10/450.ckpt`.
 - `-L`: Path to the frames load folder.
 - `-S`: Path to the data save folder.
-- `-s`: Scale up factor, 4 or 8. When scale up by 4 or 8, the code will automatically load the corresponding checkpoint from `ckpt/e08/340.ckpt` or `ckpt/e10/450.ckpt`.
 - `-b`: Batch size. Set this value according to your GPU memory.
 
 For example, for scale up by 4:
 ```bash
-python main.py -L data/frames -S data/dl-444 -s 4 -b 5
+python main.py -s 4 -L data/frames -S data/dl-444 -b 5
 ```
 or for scale up by 8:
 ```bash
-python main.py -L data/frames -S data/dl-488 -s 8 -b 4
+python main.py -s 8 -L data/frames -S data/dl-488 -b 4
 ```
 
 Note that the code will predict all the frames under the folder you specified by `-L`.

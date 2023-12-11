@@ -22,7 +22,7 @@ class Trainer:
         ckpt_save_fold: str, ckpt_load_path: str, ckpt_load_lr: bool,
         trainset: sml.data.SimDataset, validset: sml.data.RawDataset, 
         batch_size: int, num_workers: int,
-        model: nn.Module, lr: float, gamma: float,
+        model: sml.model.ResAttUNet, lr: float, gamma: float,
     ) -> None:
         self.device = "cuda"
         self.max_epoch = max_epoch
@@ -184,9 +184,12 @@ class Trainer:
             'model': self.model.state_dict(),
             'scaler': self.scaler.state_dict(),
             'optimizer': self.optimizer.state_dict(),
-            'scheduler': self.scheduler.state_dict()
-            }, "{}/{}.ckpt".format(self.ckpt_save_fold, self.epoch)
-        )
+            'scheduler': self.scheduler.state_dict(),
+            "dim": self.model.dim,
+            "feats": self.model.feats,
+            "use_cbam": self.model.use_cbam,
+            "use_res": self.model.use_res,
+        }, "{}/{}.ckpt".format(self.ckpt_save_fold, self.epoch))
 
     @torch.no_grad()
     def _load_ckpt(self) -> None:
@@ -204,15 +207,14 @@ class Trainer:
 
 class Evaluer:
     def __init__(
-        self, segpara: int, ckpt_load_path: str, data_save_fold: str,
+        self, segpara: int, data_save_fold: str, ckpt_load_path: str,
         evaluset: sml.data.RawDataset, batch_size: int, num_workers: int,
-        model: nn.Module
     ) -> None:
         self.device = "cuda"
         self.segpara = segpara
         # path
-        self.ckpt_load_path = ckpt_load_path
         self.data_save_fold = data_save_fold
+        self.ckpt_load_path = ckpt_load_path
 
         # data
         self.evaluset = evaluset
@@ -221,11 +223,14 @@ class Evaluer:
             batch_size=batch_size, num_workers=num_workers, pin_memory=True
         )
         # model
-        self.model = model.to(self.device)
-        self.model.load_state_dict(torch.load(
+        ckpt = torch.load(
             "{}.ckpt".format(self.ckpt_load_path), 
-            map_location=self.device)['model']
+            map_location=self.device
         )
+        self.model = sml.model.ResAttUNet(
+            ckpt["dim"], ckpt["feats"], ckpt["use_cbam"], ckpt["use_res"]
+        ).to(self.device)
+        self.model.load_state_dict(ckpt['model'])
         self.model.half()
 
         # dim
@@ -290,6 +295,9 @@ class Evaluer:
                         sub_cat
                     ).detach().cpu().float().numpy(),
                 )
+
+            # TODO: Note that this is a temporary code for testing drift 
+            # correction. We will change to real-time drift correction later
 
             # save after combine segpara num of frames and then reset
             if self.segpara != 0 and (frame_index+1) % self.segpara == 0:

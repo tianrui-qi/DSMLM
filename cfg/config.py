@@ -3,7 +3,7 @@ __all__ = ["Config"]
 
 class Config:
     def __init__(self, mode: str) -> None:
-        self.mode: str = mode    # "train" or "evalu"
+        self.mode: str = mode   # "train" or "evalu"
         self.ckpt_disk: str = "ckpt/"
         self.data_disk: str = "data/"
         self.SimDataset = {
@@ -40,7 +40,7 @@ class Config:
             "ckpt_load_path": "",       # path without .ckpt
             "ckpt_load_lr"  : False,    # load lr from ckpt
             # data
-            "batch_size": 1,
+            "batch_size" : 1,
             "num_workers": 4,
             # optimizer
             "lr"   : 1e-5,              # initial learning rate (lr)
@@ -49,9 +49,9 @@ class Config:
         self.Evaluer = {
             "segpara": 0,               # unit: frames
             # path
-            "ckpt_load_path": "",       # path without .ckpt
             "data_save_fold": self.data_disk + self.__class__.__name__,
+            "ckpt_load_path": "",       # path without .ckpt
             # data
-            "batch_size": 4,
+            "batch_size" : 4,
             "num_workers": 16,
         }

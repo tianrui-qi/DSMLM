@@ -27,17 +27,13 @@ def set_seed(seed):
 if __name__ == "__main__":
     set_seed(42)
     config = cfg.r()
-    if config.mode == "train": 
-        sml.Trainer(
-            **config.Trainer,
-            trainset=sml.SimDataset(**config.SimDataset), 
-            validset=sml.RawDataset(**config.RawDataset), 
-            model=sml.ResAttUNet(**config.ResAttUNet), 
-        ).fit()
-    if config.mode == "evalu":
-        config.RawDataset["num"] = None
-        sml.Evaluer(
-            **config.Evaluer,
-            evaluset=sml.RawDataset(**config.RawDataset), 
-            model = sml.ResAttUNet(**config.ResAttUNet)
-        ).fit()
+    if config.mode == "train": sml.Trainer(
+        **config.Trainer,
+        trainset=sml.SimDataset(**config.SimDataset), 
+        validset=sml.RawDataset(**config.RawDataset), 
+        model=sml.ResAttUNet(**config.ResAttUNet), 
+    ).fit()
+    if config.mode == "evalu": sml.Evaluer(
+        **config.Evaluer,
+        evaluset=sml.RawDataset(**config.RawDataset), 
+    ).fit()
