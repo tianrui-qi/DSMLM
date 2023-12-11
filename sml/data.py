@@ -242,13 +242,13 @@ class RawDataset(Dataset):
         """
 
         # ask user to input sub_range, six number
-        print(
-            "RawDataset: Number of subframe for each dimension is " + 
+        input_string = input(
+            "The number of subframe for each dimension is " + 
             "{}. ".format(self.num_sub.tolist()) + 
-            "Type the subframe start, end index for each dimension. " + 
-            "Six number separated by comma, e.g., '0, 1, 8, 12, 9, 16'. "
+            "Please type six int separated by comma " + 
+            "as the subframe start, end index for each dimension, " + 
+            "e.g., '0, 1, 8, 12, 9, 16': "
         )
-        input_string = input()
         self.rng_sub_user = [
             0, self.num_sub[0], 0, self.num_sub[1], 0, self.num_sub[2]
         ] if input_string == "" else [
