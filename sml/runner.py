@@ -58,10 +58,12 @@ class Trainer:
         self.epoch = 1  # epoch index may update in load_ckpt()
 
         # print model info
+        """
         para_num = sum(
             p.numel() for p in self.model.parameters() if p.requires_grad
         )
         print(f'The model has {para_num:,} trainable parameters')
+        """
 
     def fit(self) -> None:
         self._load_ckpt()
@@ -245,11 +247,20 @@ class Evaluer:
             .format(self.num_sub_user_prod, self.batch_size)
         )
 
+        # store current result in memeory
+        self.sub_cat = torch.zeros(
+            self.num_sub_user_prod, *self.dim_dst_pad, 
+            dtype=torch.float16, device=self.device
+        )
+        self.previous = None
+
         # print model info
+        """
         para_num = sum(
             p.numel() for p in self.model.parameters() if p.requires_grad
         )
         print(f'The model has {para_num:,} trainable parameters')
+        """
 
     @torch.no_grad()
     def fit(self) -> None:
@@ -262,17 +273,12 @@ class Evaluer:
             ), desc=self.data_save_fold, unit="frame"
         )
 
-        sub_cat = torch.zeros(
-            self.num_sub_user_prod, *self.dim_dst_pad, 
-            dtype=torch.float16, device=self.device
-        )
-        previous = None
         for i, frames in enumerate(self.dataloader):
             frame_index = int(i // (self.num_sub_user_prod/self.batch_size))
             sub_index   = int(i  % (self.num_sub_user_prod/self.batch_size))
 
             # prediction of batch_size patches of the current frame
-            sub_cat[
+            self.sub_cat[
                 sub_index * self.batch_size : (sub_index+1) * self.batch_size,
                 :, :, :
             ] += self.model(frames.half().to(self.device))
@@ -292,7 +298,7 @@ class Evaluer:
                         self.data_save_fold, "{:05}.tif".format(frame_index+1)
                     ),
                     self.evaluset.combineFrame(
-                        sub_cat
+                        self.sub_cat
                     ).detach().cpu().float().numpy(),
                 )
 
@@ -305,9 +311,9 @@ class Evaluer:
                 if not os.path.exists(os.path.join(self.data_save_fold, "seg")): 
                     os.makedirs(os.path.join(self.data_save_fold, "seg"))
                 # initialize previous as zeros if it's None
-                if previous is None:
-                    previous = torch.zeros_like(
-                        self.evaluset.combineFrame(sub_cat)
+                if self.previous is None:
+                    self.previous = torch.zeros_like(
+                        self.evaluset.combineFrame(self.sub_cat)
                     ).detach().cpu().numpy()
                 # save as float16 tif
                 tifffile.imwrite(
@@ -316,12 +322,12 @@ class Evaluer:
                         "{:05}.tif".format(frame_index+1)
                     ),
                     self.evaluset.combineFrame(
-                        sub_cat
-                    ).detach().cpu().numpy() - previous,
+                        self.sub_cat
+                    ).detach().cpu().numpy() - self.previous,
                 )
                 # save current frame for next round
-                previous = self.evaluset.combineFrame(
-                    sub_cat
+                self.previous = self.evaluset.combineFrame(
+                    self.self.sub_cat
                 ).detach().cpu().numpy()
 
             pbar.update()  # update progress bar
