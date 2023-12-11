@@ -43,10 +43,11 @@ class Config:
             "batch_size": 1,
             "num_workers": 4,
             # optimizer
-            "lr"   : 1e-5,  # initial learning rate (lr)
-            "gamma": 0.95,  # decay rate of lr
+            "lr"   : 1e-5,              # initial learning rate (lr)
+            "gamma": 0.95,              # decay rate of lr
         }
         self.Evaluer = {
+            "segpara": 0,               # unit: frames
             # path
             "ckpt_load_path": "",       # path without .ckpt
             "data_save_fold": self.data_disk + self.__class__.__name__,

@@ -204,11 +204,12 @@ class Trainer:
 
 class Evaluer:
     def __init__(
-        self, ckpt_load_path: str, data_save_fold: str,
+        self, segpara: int, ckpt_load_path: str, data_save_fold: str,
         evaluset: sml.data.RawDataset, batch_size: int, num_workers: int,
         model: nn.Module
     ) -> None:
         self.device = "cuda"
+        self.segpara = segpara
         # path
         self.ckpt_load_path = ckpt_load_path
         self.data_save_fold = data_save_fold
@@ -229,10 +230,11 @@ class Evaluer:
 
         # dim
         self.dim_dst_pad = self.evaluset.dim_dst_pad     # [D], int
+        self.dim_dst_raw = self.evaluset.dim_dst_raw     # [D], int
         # index
         self.num_sub_user = self.evaluset.num_sub_user   # [D], int
         self.num_sub_user_prod = torch.prod(self.num_sub_user)
-        self.batch_size   = self.dataloader.batch_size
+        self.batch_size = self.dataloader.batch_size
         if self.num_sub_user_prod % self.batch_size != 0: raise ValueError(
             "num_sub_user_prod must divisible by batch_size, but got {} and {}"
             .format(self.num_sub_user_prod, self.batch_size)
@@ -255,14 +257,11 @@ class Evaluer:
             ), desc=self.data_save_fold, unit="frame"
         )
 
-        # create folder
-        if not os.path.exists(self.data_save_fold): 
-            os.makedirs(self.data_save_fold)
-
         sub_cat = torch.zeros(
             self.num_sub_user_prod, *self.dim_dst_pad, 
             dtype=torch.float16, device=self.device
         )
+        previous = None
         for i, frames in enumerate(self.dataloader):
             frame_index = int(i // (self.num_sub_user_prod/self.batch_size))
             sub_index   = int(i  % (self.num_sub_user_prod/self.batch_size))
@@ -278,12 +277,43 @@ class Evaluer:
             if (sub_index+1)*self.batch_size < self.num_sub_user_prod: continue
 
             # save after combine 1, 2, 4, 8, 16... frames
-            if (frame_index+1) & frame_index == 0 \
-            or i == len(self.dataloader) - 1: tifffile.imwrite(
-                "{}/{:05}.tif".format(self.data_save_fold, frame_index+1),
-                self.evaluset.combineFrame(
+            if not (frame_index+1) & frame_index or i == len(self.dataloader)-1:
+                # check if the folder exists every time before saving
+                if not os.path.exists(self.data_save_fold): 
+                    os.makedirs(self.data_save_fold)
+                # save as float32 tif
+                tifffile.imwrite(
+                    os.path.join(
+                        self.data_save_fold, "{:05}.tif".format(frame_index+1)
+                    ),
+                    self.evaluset.combineFrame(
+                        sub_cat
+                    ).detach().cpu().float().numpy(),
+                )
+
+            # save after combine segpara num of frames and then reset
+            if self.segpara != 0 and (frame_index+1) % self.segpara == 0:
+                # check if the folder exists every time before saving
+                if not os.path.exists(os.path.join(self.data_save_fold, "seg")): 
+                    os.makedirs(os.path.join(self.data_save_fold, "seg"))
+                # initialize previous as zeros if it's None
+                if previous is None:
+                    previous = torch.zeros_like(
+                        self.evaluset.combineFrame(sub_cat)
+                    ).detach().cpu().numpy()
+                # save as float16 tif
+                tifffile.imwrite(
+                    os.path.join(
+                        self.data_save_fold, "seg",
+                        "{:05}.tif".format(frame_index+1)
+                    ),
+                    self.evaluset.combineFrame(
+                        sub_cat
+                    ).detach().cpu().numpy() - previous,
+                )
+                # save current frame for next round
+                previous = self.evaluset.combineFrame(
                     sub_cat
-                ).float().cpu().detach().numpy()
-            )
+                ).detach().cpu().numpy()
 
             pbar.update()  # update progress bar
