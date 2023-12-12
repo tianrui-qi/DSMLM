@@ -13,16 +13,143 @@ import tqdm
 
 import sml.data, sml.model, sml.loss
 
-__all__ = ["Trainer", "Evaluer"]
+__all__ = ["Evaluer", "Trainer"]
+
+
+class Evaluer:
+    def __init__(
+        self, segpara: int, 
+        data_save_fold: str, ckpt_load_path: str,
+        batch_size: int, 
+        evaluset: sml.data.RawDataset, 
+    ) -> None:
+        self.device = "cuda"
+        self.segpara = segpara
+        # path
+        self.data_save_fold = data_save_fold
+        self.ckpt_load_path = ckpt_load_path
+
+        # data
+        self.evaluset = evaluset
+        self.dataloader = DataLoader(
+            dataset=self.evaluset,
+            batch_size=batch_size, num_workers=batch_size*4, pin_memory=True
+        )
+        # model
+        ckpt = torch.load(
+            "{}.ckpt".format(self.ckpt_load_path), map_location=self.device
+        )
+        self.model = sml.model.ResAttUNet(
+            ckpt["dim"], ckpt["feats"], ckpt["use_cbam"], ckpt["use_res"]
+        ).to(self.device)
+        self.model.load_state_dict(ckpt['model'])
+        self.model.half()
+
+        # dim
+        self.dim_dst_pad = self.evaluset.dim_dst_pad     # [D], int
+        self.dim_dst_raw = self.evaluset.dim_dst_raw     # [D], int
+        # index
+        self.num_sub_user = self.evaluset.num_sub_user   # [D], int
+        self.num_sub_user_prod = torch.prod(self.num_sub_user)
+        self.batch_size = self.dataloader.batch_size
+        if self.num_sub_user_prod % self.batch_size != 0: raise ValueError(
+            "num_sub_user_prod must divisible by batch_size, but got {} and {}"
+            .format(self.num_sub_user_prod, self.batch_size)
+        )
+
+        # store current result in memeory
+        self.sub_cat = torch.zeros(
+            self.num_sub_user_prod, *self.dim_dst_pad, 
+            dtype=torch.float16, device=self.device
+        )
+        self.previous = None
+
+        # print model info
+        """
+        para_num = sum(
+            p.numel() for p in self.model.parameters() if p.requires_grad
+        )
+        print(f'The model has {para_num:,} trainable parameters')
+        """
+
+    @torch.no_grad()
+    def fit(self) -> None:
+        self.model.eval()
+
+        # record: progress bar
+        pbar = tqdm.tqdm(
+            total=int(
+                len(self.dataloader)*self.batch_size/self.num_sub_user_prod
+            ), desc=self.data_save_fold, unit="frame"
+        )
+
+        for i, frames in enumerate(self.dataloader):
+            frame_index = int(i // (self.num_sub_user_prod/self.batch_size))
+            sub_index   = int(i  % (self.num_sub_user_prod/self.batch_size))
+
+            # prediction of batch_size patches of the current frame
+            self.sub_cat[
+                sub_index * self.batch_size : (sub_index+1) * self.batch_size,
+                :, :, :
+            ] += self.model(frames.half().to(self.device))
+
+            # continue if we haven't complete the prediction of all patches of
+            # the current frame
+            if (sub_index+1)*self.batch_size < self.num_sub_user_prod: continue
+
+            # save after combine 1, 2, 4, 8, 16... frames
+            if not (frame_index+1) & frame_index or i == len(self.dataloader)-1:
+                # check if the folder exists every time before saving
+                if not os.path.exists(self.data_save_fold): 
+                    os.makedirs(self.data_save_fold)
+                # save as float32 tif
+                tifffile.imwrite(
+                    os.path.join(
+                        self.data_save_fold, "{:05}.tif".format(frame_index+1)
+                    ),
+                    self.evaluset.combineFrame(
+                        self.sub_cat
+                    ).detach().cpu().float().numpy(),
+                )
+
+            # TODO: Note that this is a temporary code for testing drift 
+            # correction. We will change to real-time drift correction later
+
+            # save after combine segpara num of frames and then reset
+            if self.segpara != 0 and (frame_index+1) % self.segpara == 0:
+                # check if the folder exists every time before saving
+                if not os.path.exists(os.path.join(self.data_save_fold, "seg")): 
+                    os.makedirs(os.path.join(self.data_save_fold, "seg"))
+                # initialize previous as zeros if it's None
+                if self.previous is None:
+                    self.previous = torch.zeros_like(
+                        self.evaluset.combineFrame(self.sub_cat)
+                    ).detach().cpu().numpy()
+                # save as float16 tif
+                tifffile.imwrite(
+                    os.path.join(
+                        self.data_save_fold, "seg",
+                        "{:05}.tif".format(frame_index+1)
+                    ),
+                    self.evaluset.combineFrame(
+                        self.sub_cat
+                    ).detach().cpu().numpy() - self.previous,
+                )
+                # save current frame for next round
+                self.previous = self.evaluset.combineFrame(
+                    self.self.sub_cat
+                ).detach().cpu().numpy()
+
+            pbar.update()  # update progress bar
 
 
 class Trainer:
     def __init__(
         self, max_epoch: int, accumu_steps: int, 
         ckpt_save_fold: str, ckpt_load_path: str, ckpt_load_lr: bool,
+        batch_size: int, lr: float,
         trainset: sml.data.SimDataset, validset: sml.data.RawDataset, 
-        batch_size: int, num_workers: int,
-        model: sml.model.ResAttUNet, lr: float, gamma: float,
+        model: sml.model.ResAttUNet,
     ) -> None:
         self.device = "cuda"
         self.max_epoch = max_epoch
@@ -34,23 +161,21 @@ class Trainer:
 
         # data
         self.trainloader = DataLoader(
-            trainset,
-            batch_size=batch_size, num_workers=num_workers, pin_memory=True
+            dataset=trainset,
+            batch_size=batch_size, num_workers=batch_size*4, pin_memory=True
         )
         self.validloader = DataLoader(
-            validset, 
-            batch_size=batch_size, num_workers=num_workers, pin_memory=True
+            dataset=validset, 
+            batch_size=batch_size, num_workers=batch_size*4, pin_memory=True
         )
         # model
         self.model = model.to(self.device)
         # loss
         self.loss  = sml.loss.GaussianBlurLoss().to(self.device)
         # optimizer
-        self.scaler    = amp.GradScaler()  # type: ignore
+        self.scaler    = amp.GradScaler()
         self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
-        self.scheduler = lr_scheduler.ExponentialLR(
-            self.optimizer, gamma=gamma
-        )
+        self.scheduler = lr_scheduler.ExponentialLR(self.optimizer, gamma=0.95)
         # recorder
         self.writer = writer.SummaryWriter()
 
@@ -205,129 +330,3 @@ class Trainer:
         if not self.ckpt_load_lr: return
         self.optimizer.load_state_dict(ckpt['optimizer'])
         self.scheduler.load_state_dict(ckpt['scheduler'])
-
-
-class Evaluer:
-    def __init__(
-        self, segpara: int, data_save_fold: str, ckpt_load_path: str,
-        evaluset: sml.data.RawDataset, batch_size: int, num_workers: int,
-    ) -> None:
-        self.device = "cuda"
-        self.segpara = segpara
-        # path
-        self.data_save_fold = data_save_fold
-        self.ckpt_load_path = ckpt_load_path
-
-        # data
-        self.evaluset = evaluset
-        self.dataloader = DataLoader(
-            self.evaluset,
-            batch_size=batch_size, num_workers=num_workers, pin_memory=True
-        )
-        # model
-        ckpt = torch.load(
-            "{}.ckpt".format(self.ckpt_load_path), 
-            map_location=self.device
-        )
-        self.model = sml.model.ResAttUNet(
-            ckpt["dim"], ckpt["feats"], ckpt["use_cbam"], ckpt["use_res"]
-        ).to(self.device)
-        self.model.load_state_dict(ckpt['model'])
-        self.model.half()
-
-        # dim
-        self.dim_dst_pad = self.evaluset.dim_dst_pad     # [D], int
-        self.dim_dst_raw = self.evaluset.dim_dst_raw     # [D], int
-        # index
-        self.num_sub_user = self.evaluset.num_sub_user   # [D], int
-        self.num_sub_user_prod = torch.prod(self.num_sub_user)
-        self.batch_size = self.dataloader.batch_size
-        if self.num_sub_user_prod % self.batch_size != 0: raise ValueError(
-            "num_sub_user_prod must divisible by batch_size, but got {} and {}"
-            .format(self.num_sub_user_prod, self.batch_size)
-        )
-
-        # store current result in memeory
-        self.sub_cat = torch.zeros(
-            self.num_sub_user_prod, *self.dim_dst_pad, 
-            dtype=torch.float16, device=self.device
-        )
-        self.previous = None
-
-        # print model info
-        """
-        para_num = sum(
-            p.numel() for p in self.model.parameters() if p.requires_grad
-        )
-        print(f'The model has {para_num:,} trainable parameters')
-        """
-
-    @torch.no_grad()
-    def fit(self) -> None:
-        self.model.eval()
-
-        # record: progress bar
-        pbar = tqdm.tqdm(
-            total=int(
-                len(self.dataloader)*self.batch_size/self.num_sub_user_prod
-            ), desc=self.data_save_fold, unit="frame"
-        )
-
-        for i, frames in enumerate(self.dataloader):
-            frame_index = int(i // (self.num_sub_user_prod/self.batch_size))
-            sub_index   = int(i  % (self.num_sub_user_prod/self.batch_size))
-
-            # prediction of batch_size patches of the current frame
-            self.sub_cat[
-                sub_index * self.batch_size : (sub_index+1) * self.batch_size,
-                :, :, :
-            ] += self.model(frames.half().to(self.device))
-
-            # continue if we haven't complete the prediction of all patches of
-            # the current frame
-            if (sub_index+1)*self.batch_size < self.num_sub_user_prod: continue
-
-            # save after combine 1, 2, 4, 8, 16... frames
-            if not (frame_index+1) & frame_index or i == len(self.dataloader)-1:
-                # check if the folder exists every time before saving
-                if not os.path.exists(self.data_save_fold): 
-                    os.makedirs(self.data_save_fold)
-                # save as float32 tif
-                tifffile.imwrite(
-                    os.path.join(
-                        self.data_save_fold, "{:05}.tif".format(frame_index+1)
-                    ),
-                    self.evaluset.combineFrame(
-                        self.sub_cat
-                    ).detach().cpu().float().numpy(),
-                )
-
-            # TODO: Note that this is a temporary code for testing drift 
-            # correction. We will change to real-time drift correction later
-
-            # save after combine segpara num of frames and then reset
-            if self.segpara != 0 and (frame_index+1) % self.segpara == 0:
-                # check if the folder exists every time before saving
-                if not os.path.exists(os.path.join(self.data_save_fold, "seg")): 
-                    os.makedirs(os.path.join(self.data_save_fold, "seg"))
-                # initialize previous as zeros if it's None
-                if self.previous is None:
-                    self.previous = torch.zeros_like(
-                        self.evaluset.combineFrame(self.sub_cat)
-                    ).detach().cpu().numpy()
-                # save as float16 tif
-                tifffile.imwrite(
-                    os.path.join(
-                        self.data_save_fold, "seg",
-                        "{:05}.tif".format(frame_index+1)
-                    ),
-                    self.evaluset.combineFrame(
-                        self.sub_cat
-                    ).detach().cpu().numpy() - self.previous,
-                )
-                # save current frame for next round
-                self.previous = self.evaluset.combineFrame(
-                    self.self.sub_cat
-                ).detach().cpu().numpy()
-
-            pbar.update()  # update progress bar

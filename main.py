@@ -26,14 +26,14 @@ def set_seed(seed):
 
 if __name__ == "__main__":
     set_seed(42)
-    config = cfg.r()
-    if config.mode == "train": sml.Trainer(
-        **config.Trainer,
-        trainset=sml.SimDataset(**config.SimDataset), 
-        validset=sml.RawDataset(**config.RawDataset), 
-        model=sml.ResAttUNet(**config.ResAttUNet), 
+    config = cfg.ConfigEvaluer()
+    if isinstance(config, cfg.ConfigEvaluer): sml.Evaluer(
+        **config.runner,
+        evaluset=sml.RawDataset(**config.evaluset), 
     ).fit()
-    if config.mode == "evalu": sml.Evaluer(
-        **config.Evaluer,
-        evaluset=sml.RawDataset(**config.RawDataset), 
+    if isinstance(config, cfg.ConfigTrainer): sml.Trainer(
+        **config.runner,
+        trainset=sml.SimDataset(**config.trainset), 
+        validset=sml.RawDataset(**config.validset), 
+        model=sml.ResAttUNet(**config.model), 
     ).fit()

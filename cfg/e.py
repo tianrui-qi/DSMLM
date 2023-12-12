@@ -1,9 +1,6 @@
 from .config import *
 
-__all__ = [
-    "e08", "e08_4", "e08_8", 
-    "e09", "e09_8", "e10", "e10_8", "e11", "e11_8",
-]
+__all__ = ["e08", "e09", "e10", "e11",]
 
 
 """ scale up by 8
@@ -15,64 +12,43 @@ Evaluation speed: 2.90 frames/s ( 16 subframes/frame)
 """
 
 
-class e11_8(Config):
-    def __init__(self) -> None:
-        super().__init__("evalu")
-        self.RawDataset["scale"] = [4, 8, 8]
-        self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e11/340"
-
-
-class e11(Config):
+class e11(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__("train")
-        self.SimDataset["scale_list"] = [4, 8, 16]
-        self.RawDataset["scale"] = [4, 8, 8]
-        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
-        self.Trainer["max_epoch"] = 340
-        self.Trainer["ckpt_load_path"] = self.ckpt_disk + "e08/200"
-        self.Trainer["lr"] = 1e-6
+        self.trainset["scale_list"] = [4, 8, 16]
+        self.validset["scale"] = [4, 8, 8]
+        self.model["feats"] = [1, 16, 32, 64, 128, 256, 512]
+        self.runner["max_epoch"] = 340
+        self.runner["ckpt_load_path"] = "ckpt/e08/200"
+        self.runner["lr"] = 1e-6
 
 
-class e10_8(Config):
-    def __init__(self) -> None:
-        super().__init__("evalu")
-        self.RawDataset["scale"] = [4, 8, 8]
-        self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e10/450"
-
-
-class e10(Config):
+class e10(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__("train")
-        self.SimDataset["scale_list"] = [8, 16]
-        self.RawDataset["scale"] = [4, 8, 8]
-        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
+        self.trainset["scale_list"] = [8, 16]
+        self.validset["scale"] = [4, 8, 8]
+        self.model["feats"] = [1, 16, 32, 64, 128, 256, 512]
 
         """
-        self.Trainer["max_epoch"] = 340
-        self.Trainer["ckpt_load_path"] = self.ckpt_disk + "e08/200"
-        self.Trainer["lr"] = 1e-6
+        self.runner["max_epoch"] = 340
+        self.runner["ckpt_load_path"] = "ckpt/e08/200"
+        self.runner["lr"] = 1e-6
         """
 
-        self.Trainer["max_epoch"] = 450
-        self.Trainer["ckpt_load_path"] = self.ckpt_disk + "e10/340"
-        self.Trainer["lr"] = 1e-6
+        self.runner["max_epoch"] = 450
+        self.runner["ckpt_load_path"] = "ckpt/e10/340"
+        self.runner["lr"] = 1e-6
 
 
-class e09_8(Config):
-    def __init__(self) -> None:
-        super().__init__("evalu")
-        self.RawDataset["scale"] = [4, 8, 8]
-        self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e09/340"
-
-
-class e09(Config):
+class e09(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__("train")
-        self.RawDataset["scale"] = [4, 8, 8]
-        self.ResAttUNet["feats"] = [1, 16, 32, 64, 128, 256, 512]
-        self.Trainer["max_epoch"] = 340
-        self.Trainer["ckpt_load_path"] = self.ckpt_disk + "e08/200"
-        self.Trainer["lr"] = 1e-6
+        self.validset["scale"] = [4, 8, 8]
+        self.model["feats"] = [1, 16, 32, 64, 128, 256, 512]
+        self.runner["max_epoch"] = 340
+        self.runner["ckpt_load_path"] = "ckpt/e08/200"
+        self.runner["lr"] = 1e-6
 
 
 """ combine reduce scale up list and increase features number
@@ -96,37 +72,24 @@ Evaluation speed: 3.02 frames/s ( 16 subframes/frame)
 """
 
 
-class e08_8(Config):
-    def __init__(self) -> None:
-        super().__init__("evalu")
-        self.RawDataset["scale"] = [4, 8, 8]
-        self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e08/340"
-
-
-class e08_4(Config):
-    def __init__(self) -> None:
-        super().__init__("evalu")
-        self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e08/340"
-
-
-class e08(Config):
+class e08(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__("train")
         """
-        self.Trainer["max_epoch"] = 100
-        self.Trainer["ckpt_load_path"] = self.ckpt_disk + "e03/10"
-        self.Trainer["ckpt_load_lr"] = True
+        self.runner["max_epoch"] = 100
+        self.runner["ckpt_load_path"] = "ckpt/e03/10"
+        self.runner["ckpt_load_lr"] = True
         """
 
         """
-        self.Trainer["max_epoch"] = 200
-        self.Trainer["ckpt_load_path"] = self.ckpt_disk + "e08/100"
-        self.Trainer["lr"] = 5e-6
+        self.runner["max_epoch"] = 200
+        self.runner["ckpt_load_path"] = "ckpt/e08/100"
+        self.runner["lr"] = 5e-6
         """
 
-        self.Trainer["max_epoch"] = 340
-        self.Trainer["ckpt_load_path"] = self.ckpt_disk + "e08/200"
-        self.Trainer["lr"] = 1e-6
+        self.runner["max_epoch"] = 340
+        self.runner["ckpt_load_path"] = "ckpt/e08/200"
+        self.runner["lr"] = 1e-6
 
 
 # All the following configs are no longer maintained
@@ -154,35 +117,22 @@ Evaluation speed: 3.52 frames/s ( 16 subframes/frame)
 """
 
 
-class e07_8(Config):
-    def __init__(self) -> None:
-        super().__init__("evalu")
-        self.RawDataset["scale"] = [4, 8, 8]
-        self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e07/320"
-
-
-class e07_4(Config):
-    def __init__(self) -> None:
-        super().__init__("evalu")
-        self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e07/320"
-
-
-class e07(Config):
+class e07(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__("train")
-        self.ResAttUNet["feats"] = [1, 16, 32]
-        self.Trainer["ckpt_load_path"] = self.ckpt_disk + "e06/240"
-        self.Trainer["lr"] = 1e-4
+        self.model["feats"] = [1, 16, 32]
+        self.runner["ckpt_load_path"] = "ckpt/e06/240"
+        self.runner["lr"] = 1e-4
 
 
-class e06(Config):
+class e06(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__("train")
-        self.SimDataset["lum_info"] = False
-        self.RawDataset["lum_info"] = False
-        self.ResAttUNet["feats"] = [1, 16, 32]
-        self.Trainer["ckpt_load_path"] = self.ckpt_disk + "d04/140"
-        self.Trainer["lr"] = 1e-4
+        self.trainset["lum_info"] = False
+        self.validset["lum_info"] = False
+        self.model["feats"] = [1, 16, 32]
+        self.runner["ckpt_load_path"] = "ckpt/d04/140"
+        self.runner["lr"] = 1e-4
 
 
 """ increase feature number
@@ -209,47 +159,31 @@ Evaluation speed: 2.95 frames/s ( 16 subframes/frame)
 """
 
 
-class e05_4(Config):
-    def __init__(self) -> None:
-        super().__init__("evalu")
-        self.SimDataset["lum_info"] = False
-        self.RawDataset["lum_info"] = False
-        self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e05/90"
-
-
-class e05(Config):
+class e05(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__("train")
-        self.SimDataset["scale_list"] = [2, 4, 8, 16]
-        self.Trainer["ckpt_load_path"] = self.ckpt_disk + "e04/80"
-        self.Trainer["ckpt_load_lr"]   = True
+        self.trainset["scale_list"] = [2, 4, 8, 16]
+        self.runner["ckpt_load_path"] = "ckpt/e04/80"
+        self.runner["ckpt_load_lr"]   = True
 
 
-class e04_4(Config):
-    def __init__(self) -> None:
-        super().__init__("evalu")
-        self.SimDataset["lum_info"] = False
-        self.RawDataset["lum_info"] = False
-        self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e04/80"
-
-
-class e04(Config):
+class e04(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__("train")
-        self.SimDataset["lum_info"] = False
-        self.SimDataset["scale_list"] = [2, 4, 8, 16]
-        self.RawDataset["lum_info"] = False
-        self.Trainer["ckpt_load_path"] = self.ckpt_disk + "e03/10"
-        self.Trainer["ckpt_load_lr"]   = True
+        self.trainset["lum_info"] = False
+        self.trainset["scale_list"] = [2, 4, 8, 16]
+        self.validset["lum_info"] = False
+        self.runner["ckpt_load_path"] = "ckpt/e03/10"
+        self.runner["ckpt_load_lr"]   = True
 
 
-class e03(Config):
+class e03(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__("train")
-        self.SimDataset["lum_info"] = False
-        self.SimDataset["scale_list"] = [4]
-        self.RawDataset["lum_info"] = False
-        self.Trainer["lr"] = 5e-5
+        self.trainset["lum_info"] = False
+        self.trainset["scale_list"] = [4]
+        self.validset["lum_info"] = False
+        self.runner["lr"] = 5e-5
 
 
 """ new architecture
@@ -275,24 +209,18 @@ Evaluation speed: 3.63 frames/s ( 16 subframes/frame)
 """
 
 
-class e02_4(Config):
-    def __init__(self) -> None:
-        super().__init__("evalu")
-        self.Evaluer["ckpt_load_path"] = self.ckpt_disk + "e02/210" 
-
-
-class e02(Config):
+class e02(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__("train")
-        self.SimDataset["scale_list"] = [2, 4, 8, 16]
-        self.ResAttUNet["feats"] = [1, 16, 32]
-        self.Trainer["ckpt_load_path"] = self.ckpt_disk + "e01/150"
+        self.trainset["scale_list"] = [2, 4, 8, 16]
+        self.model["feats"] = [1, 16, 32]
+        self.runner["ckpt_load_path"] = "ckpt/e01/150"
 
 
-class e01(Config):
+class e01(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__("train")
-        self.SimDataset["scale_list"] = [2, 4, 8, 16]
-        self.ResAttUNet["feats"] = [1, 16, 32]
-        self.Trainer["ckpt_load_path"] = self.ckpt_disk + "d04/140"
-        self.Trainer["lr"] = 1e-4
+        self.trainset["scale_list"] = [2, 4, 8, 16]
+        self.model["feats"] = [1, 16, 32]
+        self.runner["ckpt_load_path"] = "ckpt/d04/140"
+        self.runner["lr"] = 1e-4

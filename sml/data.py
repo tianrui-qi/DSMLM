@@ -12,141 +12,13 @@ import scipy.io
 import tqdm
 from typing import Tuple, Union, List
 
-__all__ = ["SimDataset", "RawDataset"]
-
-
-class SimDataset(Dataset):
-    def __init__(
-        self, num: int, lum_info: bool, dim_dst: List[int], 
-        scale_list: List[int], std_src: List[List[float]]
-    ) -> None:
-        super(SimDataset, self).__init__()
-        self.num = num
-
-        # luminance/brightness information
-        self.lum_info = lum_info
-        # dimension
-        self.D = len(dim_dst)                   # # of dimension 
-        self.dim_src = None                     # [D], int
-        self.dim_dst = Tensor(dim_dst).int()    # [D], int
-        # scale up factor 
-        self.scale_list = Tensor(scale_list).int()          
-        self.scale      = None                  # [D], int
-        # molecular profile
-        self.std_src = Tensor(std_src)          # [2, D], float
-
-        # store molecular list for current frame
-        self.N        = None    # # of molecula    
-        self.mean_set = None    # [N, D], float
-        self.vars_set = None    # [N, D], float
-        self.peak_set = None    # [N], float   
-
-    def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
-        # generate molecular list for current frame
-        self._generateMlist()
-
-        frame = torch.zeros(self.dim_src.tolist())
-        label = torch.zeros(self.dim_dst.tolist())
-        for m in range(self.N):
-            ## mlist
-            mean = self.mean_set[m]     # [D], float
-            vars = self.vars_set[m]     # [D], float
-            peak = self.peak_set[m]     # float
-
-            ## frame
-            # take a slice around the mean where the radia is std*4
-            ra = torch.ceil(torch.sqrt(vars)*4).int()   # radius, [D]
-            lo = torch.maximum(torch.round(mean)-ra, torch.zeros(self.D)).int()
-            up = torch.minimum(torch.round(mean)+ra, self.dim_src-1).int()
-            # build coordinate system of the slice
-            index = [torch.arange(l, u+1) for l, u in zip(lo, up)]
-            grid  = torch.meshgrid(*index, indexing='ij')
-            coord = torch.stack([c.ravel() for c in grid], dim=1)
-            # compute the probability density for each point/pixel in slice
-            distribution = MultivariateNormal(mean, torch.diag(vars))
-            pdf  = torch.exp(distribution.log_prob(coord))
-            pdf /= torch.max(pdf)  # normalized
-            # set the luminate, peak of the gaussian/molecular
-            pdf *= peak
-            # put the slice back to whole frame
-            frame[tuple(coord.int().T)] += pdf
-
-            ## label
-            # dim_src -> dim_dst
-            mean = torch.round((mean + 0.5) * self.scale - 0.5)
-            # set the brightness to the peak of gaussian/molecular
-            label[tuple(mean.int())] += peak if self.lum_info else 1
-
-        # add noise
-        save_bit = 2**(3+torch.randint(0, 3, (1,)))     # 8, 16, or 32 bit
-        frame = self._generateNoise(frame, save_bit=save_bit)
-        # dim_src -> dim_dst
-        frame = F.interpolate(
-            frame.unsqueeze(0).unsqueeze(0),
-            scale_factor=self.scale.tolist()
-        ).squeeze(0).squeeze(0)
-
-        return torch.clip(frame, 0, 1), torch.clip(label, 0, 1)
-
-    def _generateMlist(self) -> None:
-        # random scale up factor
-        self.scale = torch.randint(0, len(self.scale_list), (self.D,))
-        self.scale = self.scale_list[self.scale]            # [D], int
-
-        # pixel number of source frame
-        self.dim_src = (self.dim_dst / self.scale).int()    # [D], int
-
-        # number of molecular
-        self.N = torch.sum(self.dim_src).int()      # max possible # of mol
-        self.N = torch.randint(0, self.N+1, (1,))   # random mol # from 0 to max
-
-        # generate parameters in source dimension
-        # moleculars' mean, [N, D]
-        self.mean_set  = torch.rand(self.N, self.D) * (self.dim_src - 1)
-        # moleculars' variance, [N, D]
-        self.vars_set  = torch.rand(self.N, self.D)
-        self.vars_set *= self.std_src[1] - self.std_src[0]
-        self.vars_set += self.std_src[0]
-        self.vars_set  = self.vars_set ** 2
-        # moleculars' peak, [N]
-        self.peak_set  = torch.rand(self.N)
-
-    def _generateNoise(
-        self, frame: Tensor,
-        save_bit: int = 16, camera_bit: int = 16, 
-        qe: float = 0.82, sensitivity: float = 5.88, dark_noise: float = 2.29
-    ) -> Tensor:
-        ## camera noise
-        frame *= 2**camera_bit-1    # clean    -> gray
-        frame /= sensitivity        # gray     -> electons
-        frame /= qe                 # electons -> photons
-        # shot noise / poisson noise
-        frame  = torch.poisson(frame)
-        frame *= qe                 # photons  -> electons
-        # dark noise / gaussian noise
-        frame += torch.normal(0.0, dark_noise, size=frame.shape)
-        frame *= sensitivity        # electons -> gray
-        frame /= 2**camera_bit-1    # gray     -> noised
-
-        ## noise casue by limit bitdepth when store data
-        frame *= 2**save_bit-1      # clean    -> gray
-        frame  = torch.round(frame)
-        frame /= 2**save_bit-1      # gray     -> noised
-
-        return frame
-
-    def __len__(self) -> int:
-        """
-        Return: 
-            self.num (int): Total number of data.
-        """
-        return self.num
+__all__ = ["RawDataset", "SimDataset"]
 
 
 class RawDataset(Dataset):
     def __init__(
         self, num: int, lum_info: bool, dim_dst: List[int], 
-        scale: List[int], frames_load_fold: str, mlists_load_fold: str = None
+        scale: List[int], frames_load_fold: str, mlists_load_fold: str
     ) -> None:
         super(RawDataset, self).__init__()
         self.num  = num
@@ -443,6 +315,134 @@ class RawDataset(Dataset):
             frame = frame[:, :-exceed_dst[1], :]
         if self.rng_sub_user[2][1] == self.num_sub[2]:
             frame = frame[:, :, :-exceed_dst[2]]
+
+        return frame
+
+    def __len__(self) -> int:
+        """
+        Return: 
+            self.num (int): Total number of data.
+        """
+        return self.num
+
+
+class SimDataset(Dataset):
+    def __init__(
+        self, num: int, lum_info: bool, dim_dst: List[int], 
+        scale_list: List[int], std_src: List[List[float]]
+    ) -> None:
+        super(SimDataset, self).__init__()
+        self.num = num
+
+        # luminance/brightness information
+        self.lum_info = lum_info
+        # dimension
+        self.D = len(dim_dst)                   # # of dimension 
+        self.dim_src = None                     # [D], int
+        self.dim_dst = Tensor(dim_dst).int()    # [D], int
+        # scale up factor 
+        self.scale_list = Tensor(scale_list).int()          
+        self.scale      = None                  # [D], int
+        # molecular profile
+        self.std_src = Tensor(std_src)          # [2, D], float
+
+        # store molecular list for current frame
+        self.N        = None    # # of molecula    
+        self.mean_set = None    # [N, D], float
+        self.vars_set = None    # [N, D], float
+        self.peak_set = None    # [N], float   
+
+    def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
+        # generate molecular list for current frame
+        self._generateMlist()
+
+        frame = torch.zeros(self.dim_src.tolist())
+        label = torch.zeros(self.dim_dst.tolist())
+        for m in range(self.N):
+            ## mlist
+            mean = self.mean_set[m]     # [D], float
+            vars = self.vars_set[m]     # [D], float
+            peak = self.peak_set[m]     # float
+
+            ## frame
+            # take a slice around the mean where the radia is std*4
+            ra = torch.ceil(torch.sqrt(vars)*4).int()   # radius, [D]
+            lo = torch.maximum(torch.round(mean)-ra, torch.zeros(self.D)).int()
+            up = torch.minimum(torch.round(mean)+ra, self.dim_src-1).int()
+            # build coordinate system of the slice
+            index = [torch.arange(l, u+1) for l, u in zip(lo, up)]
+            grid  = torch.meshgrid(*index, indexing='ij')
+            coord = torch.stack([c.ravel() for c in grid], dim=1)
+            # compute the probability density for each point/pixel in slice
+            distribution = MultivariateNormal(mean, torch.diag(vars))
+            pdf  = torch.exp(distribution.log_prob(coord))
+            pdf /= torch.max(pdf)  # normalized
+            # set the luminate, peak of the gaussian/molecular
+            pdf *= peak
+            # put the slice back to whole frame
+            frame[tuple(coord.int().T)] += pdf
+
+            ## label
+            # dim_src -> dim_dst
+            mean = torch.round((mean + 0.5) * self.scale - 0.5)
+            # set the brightness to the peak of gaussian/molecular
+            label[tuple(mean.int())] += peak if self.lum_info else 1
+
+        # add noise
+        save_bit = 2**(3+torch.randint(0, 3, (1,)))     # 8, 16, or 32 bit
+        frame = self._generateNoise(frame, save_bit=save_bit)
+        # dim_src -> dim_dst
+        frame = F.interpolate(
+            frame.unsqueeze(0).unsqueeze(0),
+            scale_factor=self.scale.tolist()
+        ).squeeze(0).squeeze(0)
+
+        return torch.clip(frame, 0, 1), torch.clip(label, 0, 1)
+
+    def _generateMlist(self) -> None:
+        # random scale up factor
+        self.scale = torch.randint(0, len(self.scale_list), (self.D,))
+        self.scale = self.scale_list[self.scale]            # [D], int
+
+        # pixel number of source frame
+        self.dim_src = (self.dim_dst / self.scale).int()    # [D], int
+
+        # number of molecular
+        self.N = torch.sum(self.dim_src).int()      # max possible # of mol
+        self.N = torch.randint(0, self.N+1, (1,))   # random mol # from 0 to max
+
+        # generate parameters in source dimension
+        # moleculars' mean, [N, D]
+        self.mean_set  = torch.rand(self.N, self.D) * (self.dim_src - 1)
+        # moleculars' variance, [N, D]
+        self.vars_set  = torch.rand(self.N, self.D)
+        self.vars_set *= self.std_src[1] - self.std_src[0]
+        self.vars_set += self.std_src[0]
+        self.vars_set  = self.vars_set ** 2
+        # moleculars' peak, [N]
+        self.peak_set  = torch.rand(self.N)
+
+    def _generateNoise(
+        self, frame: Tensor,
+        save_bit: int = 16, camera_bit: int = 16, 
+        qe: float = 0.82, sensitivity: float = 5.88, dark_noise: float = 2.29
+    ) -> Tensor:
+        ## camera noise
+        frame *= 2**camera_bit-1    # clean    -> gray
+        frame /= sensitivity        # gray     -> electons
+        frame /= qe                 # electons -> photons
+        # shot noise / poisson noise
+        frame  = torch.poisson(frame)
+        frame *= qe                 # photons  -> electons
+        # dark noise / gaussian noise
+        frame += torch.normal(0.0, dark_noise, size=frame.shape)
+        frame *= sensitivity        # electons -> gray
+        frame /= 2**camera_bit-1    # gray     -> noised
+
+        ## noise casue by limit bitdepth when store data
+        frame *= 2**save_bit-1      # clean    -> gray
+        frame  = torch.round(frame)
+        frame /= 2**save_bit-1      # gray     -> noised
 
         return frame
 

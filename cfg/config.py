@@ -1,23 +1,74 @@
-__all__ = ["Config"]
+import argparse
+
+__all__ = ["ConfigEvaluer", "ConfigTrainer"]
 
 
-class Config:
-    def __init__(self, mode: str) -> None:
-        self.mode: str = mode   # "train" or "evalu"
-        self.ckpt_disk: str = "ckpt/"
-        self.data_disk: str = "data/"
-        self.SimDataset = {
+class ConfigEvaluer:
+    def __init__(self) -> None:
+        args = self._getArgument()
+        self.evaluset = {
+            "num": None,    # must be None
+            "lum_info": True,
+            "dim_dst" : [160, 160, 160],
+
+            "scale": [4, args.scale, args.scale],
+            "frames_load_fold": args.frames_load_fold,
+            "mlists_load_fold": None,   # not used
+        }
+        self.runner = {
+            "segpara": 0,   # unit: frames
+            # path
+            "data_save_fold": args.data_save_fold,
+            "ckpt_load_path": args.ckpt_load_path,  # path without .ckpt
+            # data
+            "batch_size": args.batch_size,
+        }
+
+    def _getArgument(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "-s", type=int, required=True, dest="scale", choices=[4, 8],
+            help="Scale up factor, 4 or 8."
+        )
+        parser.add_argument(
+            "-L", type=str, required=True, dest="frames_load_fold",
+            help="Path to the frames load folder."
+        )
+        parser.add_argument(
+            "-S", type=str, required=True, dest="data_save_fold",
+            help="Path to the data save folder."
+        )
+        parser.add_argument(
+            "-C", type=str, required=False, dest="ckpt_load_path",
+            help="Path to the checkpoint load file without .ckpt, optional. " +
+            "When not given where scale up by 4 or 8, automatically set to " +
+            "'ckpt/e08/340.ckpt' or 'ckpt/e10/450.ckpt'."
+        )
+        parser.add_argument(
+            "-b", type=int, required=True, dest="batch_size",
+            help="Batch size. Set this value according to your GPU memory."
+        )
+        args = parser.parse_args()
+        # set default value for ckpt_load_path
+        if args.ckpt_load_path is None:
+            if args.scale == 4: args.ckpt_load_path = "ckpt/e08/340"
+            if args.scale == 8: args.ckpt_load_path = "ckpt/e10/450"
+        return args
+
+
+class ConfigTrainer:
+    def __init__(self) -> None:
+        self.trainset = {
             "num": 10000,
             "lum_info": True,  
             "dim_dst" : [160, 160, 160],
 
             "scale_list": [4, 8],
-            "std_src": [          # std range
-                [1.0, 1.0, 1.0],  # minimum std, [C, H, W], by pixel
-                [3.0, 2.5, 2.5],  # maximum std, [C, H, W], by pixel
+            "std_src": [    # std range, [min, max] std, [C, H, W], by pixel
+                [1.0, 1.0, 1.0], [3.0, 2.5, 2.5]
             ],
         }
-        self.RawDataset  = {
+        self.validset = {
             "num": 5000,
             "lum_info": True,
             "dim_dst" : [160, 160, 160],
@@ -26,32 +77,19 @@ class Config:
             "frames_load_fold": "D:/SMLFM/hela/frames",
             "mlists_load_fold": "D:/SMLFM/hela/mlists",
         }
-        self.ResAttUNet = {
-            "dim"     : 3,
-            "feats"   : [1, 16, 32, 64, 128],
-            "use_cbam": False,
-            "use_res" : False,
+        self.model = {
+            "dim"  : 3,
+            "feats": [1, 16, 32, 64, 128],
         }
-        self.Trainer = {
+        self.runner = {
             "max_epoch": 800,
             "accumu_steps": 10,
             # path
-            "ckpt_save_fold": self.ckpt_disk + self.__class__.__name__,
+            "ckpt_save_fold": "ckpt/" + self.__class__.__name__,
             "ckpt_load_path": "",       # path without .ckpt
             "ckpt_load_lr"  : False,    # load lr from ckpt
             # data
-            "batch_size" : 1,
-            "num_workers": 4,
+            "batch_size": 1,
             # optimizer
-            "lr"   : 1e-5,              # initial learning rate (lr)
-            "gamma": 0.95,              # decay rate of lr
-        }
-        self.Evaluer = {
-            "segpara": 0,               # unit: frames
-            # path
-            "data_save_fold": self.data_disk + self.__class__.__name__,
-            "ckpt_load_path": "",       # path without .ckpt
-            # data
-            "batch_size" : 4,
-            "num_workers": 16,
+            "lr": 1e-5,     # initial learning rate (lr)
         }

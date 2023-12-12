@@ -26,7 +26,7 @@ Evaluation speed: 0.24 frames/s (256 subframes/frame)
 """
 
 
-class d09(Config):
+class d09(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         self.frames_load_fold = "C:/Users/tianrui/Desktop/frames"
@@ -43,10 +43,10 @@ class d09(Config):
         self.num = [40000 * 256]
 
         ## Eval
-        self.ckpt_load_path = self.ckpt_disk + "d07/170"
+        self.ckpt_load_path = "ckpt/d07/170"
 
 
-class d08(Config):
+class d08(ConfigTrainer):
     def train(self) -> None: return NotImplementedError
 
     def eval(self) -> None:
@@ -59,7 +59,7 @@ class d08(Config):
         self.num = [45000 * 256]
 
         ## Eval
-        self.ckpt_load_path = self.ckpt_disk + "d07/170"
+        self.ckpt_load_path = "ckpt/d07/170"
 
 
 """ luminance information
@@ -92,17 +92,17 @@ Evaluation speed: 3.80 frames/s ( 16 subframes/frame)
 """
 
 
-class d07(Config):
+class d07(ConfigTrainer):
     def train(self) -> None:
         super().train()
         ## Train
         self.lr = 1e-5
-        self.ckpt_load_path = self.ckpt_disk + "d04/140"
+        self.ckpt_load_path = "ckpt/d04/140"
 
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path = self.ckpt_disk + "d07/170"
+        self.ckpt_load_path = "ckpt/d07/170"
 
 
 """ threshold
@@ -156,7 +156,7 @@ Evaluation speed: 3.80 frames/s ( 16 subframes/frame)
 """
 
 
-class d06(Config):
+class d06(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         ## Sim&RawDataset
@@ -166,7 +166,7 @@ class d06(Config):
 
     def eval(self) -> None:
         super().eval()
-        self.ckpt_load_path = self.ckpt_disk + "d04/140"
+        self.ckpt_load_path = "ckpt/d04/140"
 
 
 class d06_000(d06):
@@ -256,7 +256,7 @@ Evaluation speed: 3.80 frames/s ( 16 subframes/frame)
 """
 
 
-class d05(Config):
+class d05(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         ## Sim&RawDataset
@@ -268,13 +268,13 @@ class d05(Config):
         self.type_data = ["Raw", "Raw"]
 
         ## Train
-        self.ckpt_load_path = self.ckpt_disk + "d04/140"
+        self.ckpt_load_path = "ckpt/d04/140"
         self.ckpt_load_lr   = True
 
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path = self.ckpt_disk + "d05/150"
+        self.ckpt_load_path = "ckpt/d05/150"
 
 
 """ reduce features number
@@ -302,7 +302,7 @@ Evaluation speed: 3.80 frames/s ( 16 subframes/frame)
 """
 
 
-class d04(Config):
+class d04(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         ## Sim&RawDataset
@@ -316,10 +316,10 @@ class d04(Config):
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path = self.ckpt_disk + "d04/140"
+        self.ckpt_load_path = "ckpt/d04/140"
 
 
-class d03(Config):
+class d03(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         ## Sim&RawDataset
@@ -360,7 +360,7 @@ Evaluation speed:      frames/s
 """
 
 
-class d02(Config):
+class d02(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         ## ResAttUNet
@@ -373,7 +373,7 @@ class d02(Config):
         super().train()
         ## Train
         self.lr = 1e-5
-        self.ckpt_load_path = self.ckpt_disk + "d01/8"
+        self.ckpt_load_path = "ckpt/d01/8"
 
     def eval(self) -> None:
         super().eval()
@@ -382,10 +382,10 @@ class d02(Config):
         self.num_workers = 2
         
         ## Eval
-        self.ckpt_load_path = self.ckpt_disk + "d02/140"
+        self.ckpt_load_path = "ckpt/d02/140"
 
 
-class d01(Config):
+class d01(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         ## ResAttUNet
@@ -405,4 +405,4 @@ class d01(Config):
         self.num_workers = 2
 
         ## Eval
-        self.ckpt_load_path = self.ckpt_disk + "d01/8"
+        self.ckpt_load_path = "ckpt/d01/8"
