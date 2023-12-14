@@ -42,7 +42,7 @@ class ConfigEvaluer:
             "-C", type=str, required=False, dest="ckpt_load_path",
             help="Path to the checkpoint load file without .ckpt, optional. " +
             "When not given where scale up by 4 or 8, automatically set to " +
-            "'ckpt/e08/340.ckpt' or 'ckpt/e10/450.ckpt'."
+            "`ckpt/e08/340.ckpt` or `ckpt/e10/450.ckpt`."
         )
         parser.add_argument(
             "-b", type=int, required=True, dest="batch_size",

@@ -12,7 +12,7 @@ conda activate SMLFM
 
 ### Checkpoints
 
-Please down load the checkpoints from [iCloud](https://www.icloud.com/iclouddrive/012TPd7Lh0VcCFtAog-6d3gYQ#340) for scale up by 4 or [iCloud](https://www.icloud.com/iclouddrive/027xviawbF_oLcFHSc6LvUQFQ#450) for 8. 
+Please down load the checkpoints from [iCloud](https://www.icloud.com/iclouddrive/05cFlVujbb2TkrWANiT04tdgQ#340) for scale up by 4 or [iCloud](https://www.icloud.com/iclouddrive/0e6maAxyFbHaA3MIGSYuivcOw#450) for 8. 
 Put the checkpoints under the folder `ckpt/e08/` or `ckpt/e10/`.
 Note that `e08` and `e10` match the name in [config/e.py](https://github.com/tianrui-qi/SMLFM/blob/main/config/e.py) so that you can check the training configuration for each checkpoint.
 
@@ -22,18 +22,19 @@ You can check the parameters that must be specified by:
 ```bash
 python main.py --help
 ```
-- `-s`: Scale up factor, 4 or 8. When scale up by 4 or 8, the code will automatically load the corresponding checkpoint from `ckpt/e08/340.ckpt` or `ckpt/e10/450.ckpt`.
+- `-s`: Scale up factor, 4 or 8.
 - `-L`: Path to the frames load folder.
 - `-S`: Path to the data save folder.
+- `-C`: Path to the checkpoint load file without .ckpt, optional. When not given where scale up by 4 or 8, automatically set to `ckpt/e08/340.ckpt` or `ckpt/e10/450.ckpt`.
 - `-b`: Batch size. Set this value according to your GPU memory.
 
 For example, for scale up by 4:
 ```bash
-python main.py -s 4 -L data/frames -S data/dl-444 -b 5
+python main.py -s 4 -L data/frames -S data/dl-444 [-C ckpt/e08/340] -b 5
 ```
 or for scale up by 8:
 ```bash
-python main.py -s 8 -L data/frames -S data/dl-488 -b 4
+python main.py -s 8 -L data/frames -S data/dl-488 [-C ckpt/e10/450] -b 4
 ```
 
 Note that the code will predict all the frames under the folder you specified by `-L`.
