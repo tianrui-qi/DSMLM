@@ -4,6 +4,14 @@ __all__ = ["e08", "e09", "e10", "e11",]
 
 
 """ scale up by 8
+Follow the same strategy in e08, we load the ckpt from e08 and continue to train
+it with scale up factor 8 and more features. In e09, e10, e11, we try three
+different scale up list [4, 8], [8, 16], [4, 8, 16] to see how the scale up list
+affect the result. 
+
+Result:
+In e09, e11 the checkbox is still exist. In e10, the checkbox is weeker. 
+
 features number : [1, 16, 32, 64, 128, 256, 512]
 Trainable paras : 21,401,393
 Training   speed: 1.10 steps /s ( 10 iterations/step)
@@ -14,7 +22,7 @@ Evaluation speed: 2.90 frames/s ( 16 subframes/frame)
 
 class e11(ConfigTrainer):
     def __init__(self) -> None:
-        super().__init__("train")
+        super().__init__()
         self.trainset["scale_list"] = [4, 8, 16]
         self.validset["scale"] = [4, 8, 8]
         self.model["feats"] = [1, 16, 32, 64, 128, 256, 512]
@@ -25,7 +33,7 @@ class e11(ConfigTrainer):
 
 class e10(ConfigTrainer):
     def __init__(self) -> None:
-        super().__init__("train")
+        super().__init__()
         self.trainset["scale_list"] = [8, 16]
         self.validset["scale"] = [4, 8, 8]
         self.model["feats"] = [1, 16, 32, 64, 128, 256, 512]
@@ -43,7 +51,7 @@ class e10(ConfigTrainer):
 
 class e09(ConfigTrainer):
     def __init__(self) -> None:
-        super().__init__("train")
+        super().__init__()
         self.validset["scale"] = [4, 8, 8]
         self.model["feats"] = [1, 16, 32, 64, 128, 256, 512]
         self.runner["max_epoch"] = 340
@@ -74,7 +82,7 @@ Evaluation speed: 3.02 frames/s ( 16 subframes/frame)
 
 class e08(ConfigTrainer):
     def __init__(self) -> None:
-        super().__init__("train")
+        super().__init__()
         """
         self.runner["max_epoch"] = 100
         self.runner["ckpt_load_path"] = "ckpt/e03/10"
@@ -119,7 +127,7 @@ Evaluation speed: 3.52 frames/s ( 16 subframes/frame)
 
 class e07(ConfigTrainer):
     def __init__(self) -> None:
-        super().__init__("train")
+        super().__init__()
         self.model["feats"] = [1, 16, 32]
         self.runner["ckpt_load_path"] = "ckpt/e06/240"
         self.runner["lr"] = 1e-4
@@ -127,7 +135,7 @@ class e07(ConfigTrainer):
 
 class e06(ConfigTrainer):
     def __init__(self) -> None:
-        super().__init__("train")
+        super().__init__()
         self.trainset["lum_info"] = False
         self.validset["lum_info"] = False
         self.model["feats"] = [1, 16, 32]
@@ -161,7 +169,7 @@ Evaluation speed: 2.95 frames/s ( 16 subframes/frame)
 
 class e05(ConfigTrainer):
     def __init__(self) -> None:
-        super().__init__("train")
+        super().__init__()
         self.trainset["scale_list"] = [2, 4, 8, 16]
         self.runner["ckpt_load_path"] = "ckpt/e04/80"
         self.runner["ckpt_load_lr"]   = True
@@ -169,7 +177,7 @@ class e05(ConfigTrainer):
 
 class e04(ConfigTrainer):
     def __init__(self) -> None:
-        super().__init__("train")
+        super().__init__()
         self.trainset["lum_info"] = False
         self.trainset["scale_list"] = [2, 4, 8, 16]
         self.validset["lum_info"] = False
@@ -179,7 +187,7 @@ class e04(ConfigTrainer):
 
 class e03(ConfigTrainer):
     def __init__(self) -> None:
-        super().__init__("train")
+        super().__init__()
         self.trainset["lum_info"] = False
         self.trainset["scale_list"] = [4]
         self.validset["lum_info"] = False
@@ -211,7 +219,7 @@ Evaluation speed: 3.63 frames/s ( 16 subframes/frame)
 
 class e02(ConfigTrainer):
     def __init__(self) -> None:
-        super().__init__("train")
+        super().__init__()
         self.trainset["scale_list"] = [2, 4, 8, 16]
         self.model["feats"] = [1, 16, 32]
         self.runner["ckpt_load_path"] = "ckpt/e01/150"
@@ -219,7 +227,7 @@ class e02(ConfigTrainer):
 
 class e01(ConfigTrainer):
     def __init__(self) -> None:
-        super().__init__("train")
+        super().__init__()
         self.trainset["scale_list"] = [2, 4, 8, 16]
         self.model["feats"] = [1, 16, 32]
         self.runner["ckpt_load_path"] = "ckpt/d04/140"
