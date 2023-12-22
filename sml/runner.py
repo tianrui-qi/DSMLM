@@ -8,7 +8,6 @@ from torch.utils.data import DataLoader
 
 import os
 import tifffile
-
 import tqdm
 
 import sml.data, sml.model, sml.loss
