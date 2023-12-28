@@ -16,10 +16,12 @@ class ConfigEvaluer:
             "mlists_load_fold": None,   # not used
         }
         self.runner = {
-            "segpara": 0,   # unit: frames
             # path
             "data_save_fold": args.data_save_fold,
             "ckpt_load_path": args.ckpt_load_path,  # path without .ckpt
+            # drift
+            "step"  : 0,    # unit: frames
+            "window": 0,    # unit: frames
             # data
             "batch_size": args.batch_size,
         }
@@ -82,9 +84,10 @@ class ConfigTrainer:
             "feats": [1, 16, 32, 64, 128],
         }
         self.runner = {
+            # train
             "max_epoch": 800,
             "accumu_steps": 10,
-            # path
+            # checkpoint
             "ckpt_save_fold": "ckpt/" + self.__class__.__name__,
             "ckpt_load_path": "",       # path without .ckpt
             "ckpt_load_lr"  : False,    # load lr from ckpt

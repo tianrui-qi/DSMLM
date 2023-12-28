@@ -17,16 +17,18 @@ __all__ = ["Evaluer", "Trainer"]
 
 class Evaluer:
     def __init__(
-        self, segpara: int, 
-        data_save_fold: str, ckpt_load_path: str,
-        batch_size: int, 
+        self, data_save_fold: str, ckpt_load_path: str,
+        step: int, window: int, batch_size: int,
         evaluset: sml.data.RawDataset, 
     ) -> None:
+        # evalu
         self.device = "cuda"
-        self.segpara = segpara
         # path
         self.data_save_fold = data_save_fold
         self.ckpt_load_path = ckpt_load_path
+        # drift
+        self.step = step
+        self.window = window
 
         # data
         self.evaluset = evaluset
@@ -43,25 +45,27 @@ class Evaluer:
         ).to(self.device)
         self.model.load_state_dict(ckpt['model'])
         self.model.half()
+        self.model.eval()
 
         # dim
         self.dim_dst_pad = self.evaluset.dim_dst_pad     # [D], int
         self.dim_dst_raw = self.evaluset.dim_dst_raw     # [D], int
         # index
-        self.num_sub_user = self.evaluset.num_sub_user   # [D], int
-        self.num_sub_user_prod = torch.prod(self.num_sub_user)
+        # number of subframes of each frame
+        self.num_sub_user = torch.prod(self.evaluset.num_sub_user)
+        # number of subframes of each batch of prediction
         self.batch_size = self.dataloader.batch_size
-        if self.num_sub_user_prod % self.batch_size != 0: raise ValueError(
+        if self.num_sub_user % self.batch_size != 0: raise ValueError(
             "num_sub_user_prod must divisible by batch_size, but got {} and {}"
-            .format(self.num_sub_user_prod, self.batch_size)
+            .format(self.num_sub_user, self.batch_size)
         )
 
         # store current result in memeory
         self.sub_cat = torch.zeros(
-            self.num_sub_user_prod, *self.dim_dst_pad, 
+            self.num_sub_user, *self.dim_dst_pad, 
             dtype=torch.float16, device=self.device
         )
-        self.previous = None
+        self.previous = None    # for self._saveDrift
 
         # print model info
         """
@@ -73,18 +77,14 @@ class Evaluer:
 
     @torch.no_grad()
     def fit(self) -> None:
-        self.model.eval()
-
-        # record: progress bar
-        pbar = tqdm.tqdm(
-            total=int(
-                len(self.dataloader)*self.batch_size/self.num_sub_user_prod
-            ), desc=self.data_save_fold, unit="frame"
-        )
-
-        for i, frames in enumerate(self.dataloader):
-            frame_index = int(i // (self.num_sub_user_prod/self.batch_size))
-            sub_index   = int(i  % (self.num_sub_user_prod/self.batch_size))
+        for i, frames in tqdm.tqdm(
+            enumerate(self.dataloader), desc=self.data_save_fold,
+            total = len(self.dataloader), unit="frame", 
+            unit_scale=float(1/(self.num_sub_user/self.batch_size)),
+            dynamic_ncols=True,
+        ):
+            frame_index = int(i // (self.num_sub_user/self.batch_size))
+            sub_index   = int(i  % (self.num_sub_user/self.batch_size))
 
             # prediction of batch_size patches of the current frame
             self.sub_cat[
@@ -94,52 +94,65 @@ class Evaluer:
 
             # continue if we haven't complete the prediction of all patches of
             # the current frame
-            if (sub_index+1)*self.batch_size < self.num_sub_user_prod: continue
+            if (sub_index+1)*self.batch_size < self.num_sub_user: continue
 
-            # save after combine 1, 2, 4, 8, 16... frames
-            if not (frame_index+1) & frame_index or i == len(self.dataloader)-1:
-                # check if the folder exists every time before saving
-                if not os.path.exists(self.data_save_fold): 
-                    os.makedirs(self.data_save_fold)
-                # save as float32 tif
-                tifffile.imwrite(
-                    os.path.join(
-                        self.data_save_fold, "{:05}.tif".format(frame_index+1)
-                    ),
-                    self.evaluset.combineFrame(
-                        self.sub_cat
-                    ).detach().cpu().float().numpy(),
-                )
+            self._saveAccumulate(frame_index)
+            self._saveStepReset(frame_index)
 
-            # TODO: Note that this is a temporary code for testing drift 
-            # correction. We will change to real-time drift correction later
+    def _saveAccumulate(self, frame_index):
+        """
+        Save after combine 1, 2, 4, 8, 16... frames.
 
-            # save after combine segpara num of frames and then reset
-            if self.segpara != 0 and (frame_index+1) % self.segpara == 0:
-                # check if the folder exists every time before saving
-                if not os.path.exists(os.path.join(self.data_save_fold, "seg")): 
-                    os.makedirs(os.path.join(self.data_save_fold, "seg"))
-                # initialize previous as zeros if it's None
-                if self.previous is None:
-                    self.previous = torch.zeros_like(
-                        self.evaluset.combineFrame(self.sub_cat)
-                    ).detach().cpu().numpy()
-                # save as float16 tif
-                tifffile.imwrite(
-                    os.path.join(
-                        self.data_save_fold, "seg",
-                        "{:05}.tif".format(frame_index+1)
-                    ),
-                    self.evaluset.combineFrame(
-                        self.sub_cat
-                    ).detach().cpu().numpy() - self.previous,
-                )
-                # save current frame for next round
-                self.previous = self.evaluset.combineFrame(
-                    self.self.sub_cat
-                ).detach().cpu().numpy()
+        Args:
+            frame_index (int): The index of the current frame.
+        """
+        total = len(self.dataloader)//(self.num_sub_user/self.batch_size)
+        if (frame_index+1) & frame_index and frame_index != total: return
 
-            pbar.update()  # update progress bar
+        # check if the folder exists every time before saving
+        if not os.path.exists(self.data_save_fold): 
+            os.makedirs(self.data_save_fold)
+        # save as float32 tif
+        tifffile.imwrite(
+            os.path.join(
+                self.data_save_fold, "{:05}.tif".format(frame_index+1)
+            ),
+            self.evaluset.combineFrame(
+                self.sub_cat
+            ).detach().cpu().float().numpy(),
+        )
+
+    def _saveStepReset(self, frame_index):
+        """
+        If self.step is 0, means we don't want to save for drift correction; 
+        else, save after combine self.step num of frames and then reset.
+
+        Args:
+            frame_index (int): The index of the current frame.
+        """
+        if self.step == 0: return
+        if (frame_index+1) % self.step != 0: return
+
+        # check if the folder exists every time before saving
+        if not os.path.exists("cache"): os.makedirs("cache")
+        # initialize previous as zeros if it's None
+        if self.previous is None:
+            self.previous = torch.zeros_like(
+                self.evaluset.combineFrame(self.sub_cat)
+            ).detach().cpu().numpy()
+        # save as float16 tif
+        tifffile.imwrite(
+            os.path.join(
+                "cache", "{:05}.tif".format(frame_index+1)
+            ),
+            self.evaluset.combineFrame(
+                self.sub_cat
+            ).detach().cpu().numpy() - self.previous,
+        )
+        # save current frame for next round
+        self.previous = self.evaluset.combineFrame(
+            self.sub_cat
+        ).detach().cpu().numpy()
 
 
 class Trainer:
@@ -150,10 +163,11 @@ class Trainer:
         trainset: sml.data.SimDataset, validset: sml.data.RawDataset, 
         model: sml.model.ResAttUNet,
     ) -> None:
+        # train
         self.device = "cuda"
         self.max_epoch = max_epoch
         self.accumu_steps = accumu_steps
-        # path
+        # checkpoint
         self.ckpt_save_fold = ckpt_save_fold
         self.ckpt_load_path = ckpt_load_path
         self.ckpt_load_lr   = ckpt_load_lr
@@ -190,24 +204,25 @@ class Trainer:
         """
 
     def fit(self) -> None:
-        self._load_ckpt()
+        self._loadCkpt()
         for self.epoch in tqdm.tqdm(
             range(self.epoch, self.max_epoch+1), 
             total=self.max_epoch, desc=self.ckpt_save_fold, smoothing=0.0,
-            unit="epoch", initial=self.epoch
+            unit="epoch", initial=self.epoch, dynamic_ncols=True,
         ):
-            self._train_epoch()
-            self._valid_epoch()
-            self._update_lr()
-            self._save_ckpt()
+            self._trainEpoch()
+            self._validEpoch()
+            self._updateLr()
+            self._saveCkpt()
 
-    def _train_epoch(self) -> None:
+    def _trainEpoch(self) -> None:
         self.model.train()
 
         # record: progress bar
         pbar = tqdm.tqdm(
             total=int(len(self.trainloader)/self.accumu_steps), 
-            desc='train_epoch', leave=False, unit="steps", smoothing=1.0
+            desc='train_epoch', leave=False, unit="steps", smoothing=1.0, 
+            dynamic_ncols=True,
         )
         # record: tensorboard
         train_loss = []
@@ -251,13 +266,14 @@ class Trainer:
             pbar.update()
 
     @torch.no_grad()
-    def _valid_epoch(self) -> None:
+    def _validEpoch(self) -> None:
         self.model.eval()
 
         # record: progress bar
         pbar = tqdm.tqdm(
             total=int(len(self.validloader)/self.accumu_steps), 
-            desc="valid_epoch", leave=False, unit="steps", smoothing=1.0
+            desc="valid_epoch", leave=False, unit="steps", smoothing=1.0, 
+            dynamic_ncols=True,
         )
         # record: tensorboard
         valid_loss = []
@@ -289,7 +305,7 @@ class Trainer:
         )
 
     @torch.no_grad()
-    def _update_lr(self) -> None:
+    def _updateLr(self) -> None:
         # update learning rate
         if self.scheduler.get_last_lr()[0] > 1e-10: self.scheduler.step()
 
@@ -300,7 +316,7 @@ class Trainer:
         )
 
     @torch.no_grad()
-    def _save_ckpt(self) -> None:
+    def _saveCkpt(self) -> None:
         # file path checking
         if not os.path.exists(self.ckpt_save_fold): 
             os.makedirs(self.ckpt_save_fold)
@@ -318,7 +334,7 @@ class Trainer:
         }, "{}/{}.ckpt".format(self.ckpt_save_fold, self.epoch))
 
     @torch.no_grad()
-    def _load_ckpt(self) -> None:
+    def _loadCkpt(self) -> None:
         if self.ckpt_load_path == "": return
         ckpt = torch.load("{}.ckpt".format(self.ckpt_load_path))
         
