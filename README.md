@@ -22,19 +22,21 @@ You can check the parameters that must be specified by:
 ```bash
 python main.py --help
 ```
-- `-s`: Scale up factor, 4 or 8.
+- `-s`: Scale up factor, 4 or 8. Default: 4.
 - `-L`: Path to the frames load folder.
 - `-S`: Path to the data save folder.
-- `-C`: Path to the checkpoint load file without .ckpt, optional. When not given where scale up by 4 or 8, automatically set to `ckpt/e08/340.ckpt` or `ckpt/e10/450.ckpt`.
+- `-C`: Path to the checkpoint load file without .ckpt. Default: `ckpt/e08/340` or `ckpt/e10/450` when scale up factor is 4 or 8.
+- `-stride`: Step size of the drift corrector, unit frames. Default: 0.
+- `-window`: Number of frames in each window, unit frames. Default: 0.
 - `-b`: Batch size. Set this value according to your GPU memory.
 
-For example, for scale up by 4:
+For example, for scale up by 4 without drift correction:
 ```bash
-python main.py -s 4 -L data/frames -S data/dl-444 [-C ckpt/e08/340] -b 5
+python main.py -s 4 -L data/frames -S data/dl-444 -b 5
 ```
-or for scale up by 8:
+for scale up by 8 without drift correction:
 ```bash
-python main.py -s 8 -L data/frames -S data/dl-488 [-C ckpt/e10/450] -b 4
+python main.py -s 8 -L data/frames -S data/dl-488 -b 4
 ```
 
 Note that the code will predict all the frames under the folder you specified by `-L`.

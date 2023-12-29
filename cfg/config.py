@@ -20,8 +20,8 @@ class ConfigEvaluer:
             "data_save_fold": args.data_save_fold,
             "ckpt_load_path": args.ckpt_load_path,  # path without .ckpt
             # drift
-            "step"  : 0,    # unit: frames
-            "window": 0,    # unit: frames
+            "stride": args.stride,  # unit: frames
+            "window": args.window,  # unit: frames
             # data
             "batch_size": args.batch_size,
         }
@@ -29,8 +29,9 @@ class ConfigEvaluer:
     def _getArgument(self):
         parser = argparse.ArgumentParser()
         parser.add_argument(
-            "-s", type=int, required=True, dest="scale", choices=[4, 8],
-            help="Scale up factor, 4 or 8."
+            "-s", type=int, required=False, dest="scale", 
+            choices=[4, 8], default=4,
+            help="Scale up factor, 4 or 8. Default: 4."
         )
         parser.add_argument(
             "-L", type=str, required=True, dest="frames_load_fold",
@@ -42,9 +43,19 @@ class ConfigEvaluer:
         )
         parser.add_argument(
             "-C", type=str, required=False, dest="ckpt_load_path",
-            help="Path to the checkpoint load file without .ckpt, optional. " +
-            "When not given where scale up by 4 or 8, automatically set to " +
-            "`ckpt/e08/340.ckpt` or `ckpt/e10/450.ckpt`."
+            help="Path to the checkpoint load file without .ckpt. " +
+            "Default: `ckpt/e08/340` or `ckpt/e10/450` " + 
+            "when scale up factor is 4 or 8."
+        )
+        parser.add_argument(
+            "-stride", type=int, required=False, dest="stride", 
+            default=0,
+            help="Step size of the drift corrector, unit frames. Default: 0."
+        )
+        parser.add_argument(
+            "-window", type=int, required=False, dest="window", 
+            default=0,
+            help="Number of frames in each window, unit frames. Default: 0."
         )
         parser.add_argument(
             "-b", type=int, required=True, dest="batch_size",
