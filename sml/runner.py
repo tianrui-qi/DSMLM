@@ -18,7 +18,7 @@ __all__ = ["Evaluer", "Trainer"]
 class Evaluer:
     def __init__(
         self, data_save_fold: str, ckpt_load_path: str,
-        step: int, window: int, batch_size: int,
+        stride: int, window: int, batch_size: int,
         evaluset: sml.data.RawDataset, 
     ) -> None:
         # evalu
@@ -27,7 +27,7 @@ class Evaluer:
         self.data_save_fold = data_save_fold
         self.ckpt_load_path = ckpt_load_path
         # drift
-        self.step = step
+        self.stride = stride
         self.window = window
 
         # data
@@ -75,31 +75,77 @@ class Evaluer:
         print(f'The model has {para_num:,} trainable parameters')
         """
 
-    @torch.no_grad()
     def fit(self) -> None:
-        for i, frames in tqdm.tqdm(
-            enumerate(self.dataloader), desc=self.data_save_fold,
-            total = len(self.dataloader), unit="frame", 
-            unit_scale=float(1/(self.num_sub_user/self.batch_size)),
-            dynamic_ncols=True,
-        ):
-            frame_index = int(i // (self.num_sub_user/self.batch_size))
-            sub_index   = int(i  % (self.num_sub_user/self.batch_size))
+        if self.stride == 0 and self.window == 0:
+            for i, frames in tqdm.tqdm(
+                enumerate(self.dataloader), desc=self.data_save_fold,
+                total = len(self.dataloader), unit="frame", 
+                unit_scale=float(1/(self.num_sub_user/self.batch_size)),
+                dynamic_ncols=True,
+            ):
+                frame_index = int(i // (self.num_sub_user/self.batch_size))
+                sub_index   = int(i  % (self.num_sub_user/self.batch_size))
 
-            # prediction of batch_size patches of the current frame
-            self.sub_cat[
-                sub_index * self.batch_size : (sub_index+1) * self.batch_size,
-                :, :, :
-            ] += self.model(frames.half().to(self.device))
+                # prediction of batch_size patches of the current frame
+                self.sub_cat[
+                    sub_index * self.batch_size : (sub_index+1) * self.batch_size,
+                    :, :, :
+                ] += self.model(frames.half().to(self.device))
 
-            # continue if we haven't complete the prediction of all patches of
-            # the current frame
-            if (sub_index+1)*self.batch_size < self.num_sub_user: continue
+                # continue if we haven't complete the prediction of all patches of
+                # the current frame
+                if (sub_index+1)*self.batch_size < self.num_sub_user: continue
 
-            self._saveAccumulate(frame_index)
-            self._saveStepReset(frame_index)
+                self._saveAccumu(frame_index)
 
-    def _saveAccumulate(self, frame_index):
+        elif self.stride != 0 and self.window == 0:
+            # before evaluation, check if cache exists. If cache exists, 
+            # calculate the stride of the cache and compare with self.stride.
+            if os.path.exists("cache") and len(os.listdir("cache")) >= 2:
+                idx = [int(file.split('.')[0]) for file in os.listdir("cache")]
+                idx.sort()
+                stride = idx[1] - idx[0]
+                if stride == self.stride: print(
+                    "The stride of in `cache/` is the same as given stride. " + 
+                    "Skip evaluation and self._saveStride."
+                )
+                if stride != self.stride: raise ValueError(
+                    "The stride of in `cache/` is diff from given stride. " + 
+                    "Please either delete the `cache/` " +
+                    "to use the given stride or change the given stride " + 
+                    "to the stride in `cache/`."
+                )
+                return
+
+            for i, frames in tqdm.tqdm(
+                enumerate(self.dataloader), desc=self.data_save_fold,
+                total = len(self.dataloader), unit="frame", 
+                unit_scale=float(1/(self.num_sub_user/self.batch_size)),
+                dynamic_ncols=True,
+            ):
+                frame_index = int(i // (self.num_sub_user/self.batch_size))
+                sub_index   = int(i  % (self.num_sub_user/self.batch_size))
+
+                # prediction of batch_size patches of the current frame
+                self.sub_cat[
+                    sub_index * self.batch_size : (sub_index+1) * self.batch_size,
+                    :, :, :
+                ] += self.model(frames.half().to(self.device))
+
+                # continue if we haven't complete the prediction of all patches of
+                # the current frame
+                if (sub_index+1)*self.batch_size < self.num_sub_user: continue
+
+                self._saveAccumu(frame_index)
+                self._saveStride(frame_index)
+
+        elif self.stride == 0 and self.window != 0:
+            pass
+
+        else:
+            pass
+
+    def _saveAccumu(self, frame_index):
         """
         Save after combine 1, 2, 4, 8, 16... frames.
 
@@ -122,16 +168,16 @@ class Evaluer:
             ).detach().cpu().float().numpy(),
         )
 
-    def _saveStepReset(self, frame_index):
+    def _saveStride(self, frame_index):
         """
-        If self.step is 0, means we don't want to save for drift correction; 
-        else, save after combine self.step num of frames and then reset.
+        If self.stride is 0, means we don't want to save for drift correction; 
+        else, save after combine self.stride num of frames and then reset.
 
         Args:
             frame_index (int): The index of the current frame.
         """
-        if self.step == 0: return
-        if (frame_index+1) % self.step != 0: return
+        if self.stride == 0: return
+        if (frame_index+1) % self.stride != 0: return
 
         # check if the folder exists every time before saving
         if not os.path.exists("cache"): os.makedirs("cache")
