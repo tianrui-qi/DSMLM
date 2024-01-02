@@ -7,32 +7,33 @@ import tifffile
 import matplotlib.pyplot as plt
 import tqdm
 
-__all__ = ["DriftCorrector"]
+__all__ = []
 
 
 class DriftCorrector:
-    def __init__(self, total, window, step, crop):
+    def __init__(self, total: int, stride: int, window: int, load_fold: str):
         self.total = total
+        self.stride = stride
         self.window = window
-        self.step = step
-        self.crop = crop
-        self.window_num = (self.total-self.window)//self.step+1
+        self.window_num = (self.total-self.window)//self.stride+1
+        self.crop = [32, 64, 64]
 
-        self.index_src = self.window/2 + np.arange(self.window_num)*self.step
+        self.index_src = self.window/2 + np.arange(self.window_num)*self.stride
         self.index_dst = np.arange(total) + 1
         self.drift_src = None
         self.drift_dst = None
 
         # preload all images to memory
         self.image = [
-            tifffile.imread("D:/drift/{}".format(i)) 
-            for i in os.listdir('D:/drift/')
+            tifffile.imread(os.path.join(load_fold, "{}".format(i))) 
+            for i in os.listdir(load_fold)
         ]
 
     def fit(self):
         self._dcc()
         self._interpolation()
         self._plot()
+        return self.drift_dst
 
     def _dcc(self) -> None:
         drift = []  # [window_num, 3]
@@ -61,6 +62,7 @@ class DriftCorrector:
         drift = np.insert(drift, 0, 0, axis=0)
         self.drift_src = drift
 
+    # TODO: fix optimial parameters not found
     def _mcc(self) -> None:
         # [window_num, window_num-1, 3], will sum to [window_num, 3] when return
         drift = [[] for _ in range(self.window_num)]
@@ -92,9 +94,13 @@ class DriftCorrector:
         drift = np.insert(drift, 0, 0, axis=0)
         self.drift_src = drift
 
+    # TODO: implement RCC
+    def _rcc(self) -> None:
+        pass
+
     def _getWindow(self, index):
         image = self.image[index]
-        for i in range(1, self.window // self.step):
+        for i in range(1, self.window // self.stride):
             image += self.image[index+i]
         return image
 
@@ -157,8 +163,8 @@ class DriftCorrector:
         plt.plot(self.index_dst, self.drift_dst[:, 1], label='Y')
         plt.plot(self.index_dst, self.drift_dst[:, 2], label='X')
         plt.legend()
-        plt.title("total: {}; window: {}; step: {}; crop: {}".format(
-            self.total, self.window, self.step, self.crop
+        plt.title("total: {}; window: {}; stride: {}; crop: {}".format(
+            self.total, self.window, self.stride, self.crop
         ))
         plt.xlabel('window index (frame)')
         plt.ylabel('drift (pixel)')
