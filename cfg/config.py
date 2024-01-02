@@ -19,6 +19,7 @@ class ConfigEvaluer:
             # path
             "data_save_fold": args.data_save_fold,
             "ckpt_load_path": args.ckpt_load_path,  # path without .ckpt
+            "temp_save_fold": args.temp_save_fold,
             # drift
             "stride": args.stride,  # unit: frames
             "window": args.window,  # unit: frames
@@ -48,14 +49,23 @@ class ConfigEvaluer:
             "when scale up factor is 4 or 8."
         )
         parser.add_argument(
+            "-T", type=str, required=False, dest="temp_save_fold", 
+            default=None,
+            help="Path to the temporary save folder for drifting analysis. " + 
+            "Must be specified when drift correction will be performed, " + 
+            "i.e., stride or window is set as non-zero. Default: None."
+        )
+        parser.add_argument(
             "-stride", type=int, required=False, dest="stride", 
             default=0,
-            help="Step size of the drift corrector, unit frames. Default: 0."
+            help="Step size of the drift corrector, unit frames. " + 
+            "Shall not be set with -window at the same time. Default: 0."
         )
         parser.add_argument(
             "-window", type=int, required=False, dest="window", 
             default=0,
-            help="Number of frames in each window, unit frames. Default: 0."
+            help="Number of frames in each window, unit frames. " + 
+            "Sall not be set with -stride at the same time. Default: 0."
         )
         parser.add_argument(
             "-b", type=int, required=True, dest="batch_size",

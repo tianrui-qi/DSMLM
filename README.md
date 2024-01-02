@@ -26,8 +26,9 @@ python main.py --help
 - `-L`: Path to the frames load folder.
 - `-S`: Path to the data save folder.
 - `-C`: Path to the checkpoint load file without .ckpt. Default: `ckpt/e08/340` or `ckpt/e10/450` when scale up factor is 4 or 8.
-- `-stride`: Step size of the drift corrector, unit frames. Default: 0.
-- `-window`: Number of frames in each window, unit frames. Default: 0.
+- `-T`: Path to the temporary save folder for drifting analysis. Must be specified when drift correction will be performed, i.e., stride or window is set as non-zero. Default: None.
+- `-stride`: Step size of the drift corrector, unit frames. Shall not be set with -window at the same time. Default: 0.
+- `-window`: Number of frames in each window, unit frames. Sall not be set with -stride at the same time. Default: 0.
 - `-b`: Batch size. Set this value according to your GPU memory.
 
 For example, for scale up by 4 without drift correction:
