@@ -2,7 +2,6 @@
 ckpt/
 data/
 runs/
-cache/
 
 # (matlab-achieve) generated data by dataGenerator.m and dataGeneratorHelper.m
 generated/
