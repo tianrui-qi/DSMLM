@@ -2,6 +2,8 @@ import numpy as np
 import cupy as cp
 import scipy.optimize
 import scipy.interpolate
+from numpy import ndarray
+
 import os
 import tifffile
 import matplotlib.pyplot as plt
@@ -11,7 +13,9 @@ __all__ = []
 
 
 class DriftCorrector:
-    def __init__(self, total: int, stride: int, window: int, load_fold: str):
+    def __init__(
+        self, total: int, stride: int, window: int, load_fold: str
+    ) -> None:
         self.total = total
         self.stride = stride
         self.window = window
@@ -25,11 +29,12 @@ class DriftCorrector:
 
         # preload all images to memory
         self.image = [
-            tifffile.imread(os.path.join(load_fold, "{}".format(i))) 
-            for i in os.listdir(load_fold)
+            tifffile.imread(os.path.join(load_fold, "{}".format(file))) 
+            for file in os.listdir(load_fold)
+            if file.endswith('.tif')
         ]
 
-    def fit(self):
+    def fit(self) -> ndarray:
         self._dcc()
         self._interpolation()
         self._plot()
@@ -98,14 +103,14 @@ class DriftCorrector:
     def _rcc(self) -> None:
         pass
 
-    def _getWindow(self, index):
+    def _getWindow(self, index: int) -> ndarray:
         image = self.image[index]
         for i in range(1, self.window // self.stride):
             image += self.image[index+i]
         return image
 
     @staticmethod
-    def crossCorrelation3D(image1, image2):
+    def crossCorrelation3D(image1: ndarray, image2: ndarray) -> ndarray:
         fft_image1 = cp.fft.fftn(cp.asarray(image1))
         fft_image2 = cp.fft.fftn(cp.asarray(image2))
         corr = cp.fft.ifftn(cp.multiply(fft_image1, cp.conj(fft_image2)))
@@ -113,7 +118,7 @@ class DriftCorrector:
         return cp.asnumpy(corr)
 
     @staticmethod
-    def gaussianFit(corr):
+    def gaussianFit(corr: ndarray) -> ndarray:
         xdata = np.vstack(np.indices(corr.shape).reshape(3, -1))
         ydata = corr.ravel()
         p0 = (
@@ -126,14 +131,14 @@ class DriftCorrector:
         return popt[0:3]
 
     @staticmethod
-    def gaussian3D(xyz, x0, y0, z0, sigma_x, sigma_y, sigma_z, amp):
+    def gaussian3D(xyz, x0, y0, z0, sigma_x, sigma_y, sigma_z, amp) -> ndarray:
         return amp * np.exp(-(
             (xyz[0] - x0) ** 2 / (2 * sigma_x ** 2) +
             (xyz[1] - y0) ** 2 / (2 * sigma_y ** 2) +
             (xyz[2] - z0) ** 2 / (2 * sigma_z ** 2)
         ))
 
-    def _interpolation(self):
+    def _interpolation(self) -> None:
         interp_func_z = scipy.interpolate.interp1d(
             self.index_src, self.drift_src[:, 0], kind='cubic', 
             fill_value=(self.drift_src[0, 0], self.drift_src[-1, 0]), 
@@ -157,7 +162,7 @@ class DriftCorrector:
 
         self.drift_dst = drift_dst
 
-    def _plot(self):
+    def _plot(self) -> None:
         plt.figure()
         plt.plot(self.index_dst, self.drift_dst[:, 0], label='Z')
         plt.plot(self.index_dst, self.drift_dst[:, 1], label='Y')

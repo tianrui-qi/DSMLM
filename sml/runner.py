@@ -4,7 +4,10 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 import torch.utils.tensorboard.writer as writer
 from torch.utils.data import DataLoader
+import torch.nn.functional as F
 from torch import Tensor
+
+import numpy as np
 
 import os
 import tifffile
@@ -57,6 +60,7 @@ class Evaluer:
             "num_sub_user_prod must divisible by batch_size, but got {} and {}"
             .format(self.num_sub_user, self.batch_size)
         )
+        self.total = len(self.dataloader)//(self.num_sub_user/self.batch_size)
 
         # print model info
         """
@@ -68,32 +72,6 @@ class Evaluer:
 
     @torch.no_grad()
     def fit(self) -> None:
-        # when both stride and window are 0, we don't need to perform drift
-        # correction; just predict and save the result directly. 
-        if self.stride == 0 and self.window == 0:
-            sub_cat = torch.zeros(
-                self.num_sub_user, *self.evaluset.dim_dst_pad, 
-                dtype=torch.float16, device=self.device
-            )
-            for i, frames in tqdm.tqdm(
-                enumerate(self.dataloader), desc=self.data_save_fold,
-                total = len(self.dataloader), unit="frame", 
-                unit_scale=float(1/(self.num_sub_user/self.batch_size)),
-                dynamic_ncols=True,
-            ):
-                frame_index = int(i // (self.num_sub_user/self.batch_size))
-                sub_index   = int(i  % (self.num_sub_user/self.batch_size))
-                # prediction of batch_size patches of the current frame
-                sub_cat[
-                    sub_index*self.batch_size : (sub_index+1)*self.batch_size,
-                    :, :, :
-                ] += self.model(frames.half().to(self.device))
-                # continue if we haven't complete the prediction of all patches 
-                # of the current frame
-                if (sub_index+1)*self.batch_size < self.num_sub_user: continue
-                # save the current result as .tif
-                self._saveAccumu(sub_cat, frame_index)
-
         if self.stride and self.window: raise ValueError(
             "Stride and window cannot be set as non-zero at the same time. " + 
             "We split the drifting correction into two steps: " + 
@@ -109,7 +87,7 @@ class Evaluer:
         # when stride is not 0 and window is 0, means we need to save result for
         # drift correction by calling self._saveStride and do not need to 
         # perform the drift correction.
-        if self.stride != 0 and self.window == 0:
+        if self.stride and not self.window:
             # before evaluation, check if self.temp_save_fold exists. 
             # If self.temp_save_fold exists, calculate the stride in 
             # self.temp_save_fold and compare with self.stride.
@@ -155,6 +133,8 @@ class Evaluer:
                 # of the current frame
                 if (sub_index+1)*self.batch_size < self.num_sub_user: continue
                 # save the current result as .tif
+                if self.stride == 0: continue
+                if (frame_index+1) % self.stride != 0: continue
                 self._saveStride(sub_cat, frame_index)
 
         # when stride is 0 and window is not 0, means we already save the result
@@ -162,18 +142,102 @@ class Evaluer:
         # equal to 0 before, and now we need to perform the drift correction. 
         # We will save the result before and after drift correction for 
         # comparison.
-        if self.stride == 0 and self.window != 0:
-            # check if self.temp_save_fold exists
+        if not self.stride and self.window:
+            drift = self._getDrift()
+            # scale up the drift to increase the percision since for image, we
+            # can only shift the image by integer pixels
+            drift *= self.evaluset.scale
+            drift  = drift.round().int()
+
+            sub_cat = torch.zeros(
+                self.num_sub_user, *self.evaluset.dim_dst_pad*4, 
+                dtype=torch.float16, device=self.device
+            )
+            for i, frames in tqdm.tqdm(
+                enumerate(self.dataloader), desc=self.data_save_fold,
+                total = len(self.dataloader), unit="frame", 
+                unit_scale=float(1/(self.num_sub_user/self.batch_size)),
+                dynamic_ncols=True,
+            ):
+                frame_index = int(i // (self.num_sub_user/self.batch_size))
+                sub_index   = int(i  % (self.num_sub_user/self.batch_size))
+                # prediction of batch_size patches of the current frame
+                result = self.model(frames.half().to(self.device))
+                for i in range(len(result)):
+                    sub = F.interpolate(
+                        result[i].unsqueeze(0).unsqueeze(0), 
+                        scale_factor=(4, 4, 4)
+                    ).squeeze(0).squeeze(0)
+                    sub_cat[sub_index*self.batch_size+i] += torch.roll(
+                        sub, tuple(-drift[frame_index]), dims=(0, 1, 2)
+                    )
+                # continue if we haven't complete the prediction of all patches 
+                # of the current frame
+                if (sub_index+1)*self.batch_size < self.num_sub_user: continue
+                # save the current result as .tif
+                if (frame_index+1) & frame_index and \
+                frame_index+1 != self.total: continue
+                self._saveAccumu(F.interpolate(
+                    sub_cat.unsqueeze(0), 
+                    scale_factor=(1/4, 1/4, 1/4)
+                ).squeeze(0), frame_index)
+
+        # when both stride and window are 0, we don't need to perform drift
+        # correction; just predict and save the result directly. 
+        if not self.stride and not self.window:
+            sub_cat = torch.zeros(
+                self.num_sub_user, *self.evaluset.dim_dst_pad, 
+                dtype=torch.float16, device=self.device
+            )
+            for i, frames in tqdm.tqdm(
+                enumerate(self.dataloader), desc=self.data_save_fold,
+                total = len(self.dataloader), unit="frame", 
+                unit_scale=float(1/(self.num_sub_user/self.batch_size)),
+                dynamic_ncols=True,
+            ):
+                frame_index = int(i // (self.num_sub_user/self.batch_size))
+                sub_index   = int(i  % (self.num_sub_user/self.batch_size))
+                # prediction of batch_size patches of the current frame
+                sub_cat[
+                    sub_index*self.batch_size : (sub_index+1)*self.batch_size,
+                    :, :, :
+                ] += self.model(frames.half().to(self.device))
+                # continue if we haven't complete the prediction of all patches 
+                # of the current frame
+                if (sub_index+1)*self.batch_size < self.num_sub_user: continue
+                # save the current result as .tif
+                if (frame_index+1) & frame_index and \
+                frame_index+1 != self.total: continue
+                self._saveAccumu(sub_cat, frame_index)
+
+    @torch.no_grad()
+    def _getDrift(self) -> Tensor:
+        drift = None
+        # find the drift.csv in self.temp_save_fold, directly load cache
+        if os.path.exists(os.path.join(self.temp_save_fold, "drift.csv")):
+            drift = np.loadtxt(
+                os.path.join(self.temp_save_fold, "drift.csv"), 
+                delimiter=','
+            )
+            print(
+                "Load drift from `{}`. ".format(
+                    os.path.join(self.temp_save_fold, "drift.csv")
+                ) + "Please delete the .csv file if you want to " + 
+                "recalculate the drift instead of load from cache."
+            )
+        # if no cache find, calculate the drift and save as .csv
+        else:
             if not os.path.exists(self.temp_save_fold): raise ValueError(
                 "No result saving in temp_save_fold " + 
-                "`{}` for drifting correction. ".format(self.temp_save_fold) + 
+                "`{}`".format(self.temp_save_fold) + 
+                " for drifting correction. " + 
                 "Please re-run the code and set stride not equal to 0."
             )
-
             # get the stride of the self.temp_save_fold
             idx = [
                 int(file.split('.')[0]) 
                 for file in os.listdir(self.temp_save_fold)
+                if file.endswith('.tif')
             ]
             idx.sort()
             # calculate the drift
@@ -181,22 +245,24 @@ class Evaluer:
                 total=idx[-1], stride=idx[1]-idx[0], window=self.window,
                 load_fold=self.temp_save_fold
             ).fit()
+            np.savetxt(
+                os.path.join(self.temp_save_fold, "drift.csv"), 
+                drift, delimiter=','
+            )
+        return torch.from_numpy(drift)
 
     @torch.no_grad()
     def _saveAccumu(self, sub_cat: Tensor, frame_index: int) -> None:
         """
-        Save after combine 1, 2, 4, 8, 16... frames.
+        Save the result of the current frame as .tif.
 
         Args:
             frame_index (int): The index of the current frame, start from 0.
         """
-        # check shall we perform saving
-        total = len(self.dataloader)//(self.num_sub_user/self.batch_size)
-        if (frame_index+1) & frame_index and frame_index != total: return
-
         # check if the folder exists every time before saving
         if not os.path.exists(self.data_save_fold): 
             os.makedirs(self.data_save_fold)
+
         # save as float32 tif
         tifffile.imwrite(
             os.path.join(
@@ -210,8 +276,7 @@ class Evaluer:
     @torch.no_grad()
     def _saveStride(self, sub_cat: Tensor, frame_index: int) -> None:
         """
-        If self.stride is 0, means we don't want to save for drift correction; 
-        else, save after combine self.stride num of frames and then reset.
+        Save the result of the currect frame minus the previous frame as .tif.
 
         We save the result as float16 since these result no need to check by
         fiji and only use to perform drift correction in the future with code.
@@ -219,14 +284,12 @@ class Evaluer:
         Args:
             frame_index (int): The index of the current frame, start from 0.
         """
-        # check shall we perform saving
-        if self.stride == 0: return
-        if (frame_index+1) % self.stride != 0: return
-
         # check if the folder exists every time before saving
         if not os.path.exists(self.temp_save_fold): 
             os.makedirs(self.temp_save_fold)
+
         # save as float16 tif
+        # the first frame, no previous frame to minus
         if frame_index+1 == self.stride:
             tifffile.imwrite(
                 os.path.join(
@@ -236,6 +299,7 @@ class Evaluer:
                     sub_cat
                 ).detach().cpu().numpy(),
             )
+        # current frames minus the previous frame
         else:
             previous = tifffile.imread(os.path.join(
                 self.temp_save_fold, 
