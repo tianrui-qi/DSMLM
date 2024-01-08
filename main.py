@@ -3,11 +3,13 @@ import torch.cuda
 import torch.backends.cudnn
 
 import numpy as np
+
 import random
 import os
+import warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='cupy')
 
 import cfg, sml
-
 
 torch.backends.cudnn.enabled   = True
 torch.backends.cudnn.benchmark = True

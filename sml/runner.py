@@ -12,6 +12,7 @@ import numpy as np
 import os
 import tifffile
 import tqdm
+import warnings
 
 import sml.data, sml.model, sml.loss, sml.drift
 
@@ -72,22 +73,23 @@ class Evaluer:
 
     @torch.no_grad()
     def fit(self) -> None:
-        if self.stride and self.window: raise ValueError(
-            "Stride and window cannot be set as non-zero at the same time. " + 
-            "We split the drifting correction into two steps: " + 
-            "save the result for drifting correction by set stride and " + 
-            "perform the drifting correction by set window. " + 
-            "However, they may use different region of the frame, i.e., " + 
-            "we may use a small region for first step to reduce the time of " + 
-            "calculating the drift and a large region for the final " + 
-            "prediction. Thus, please re-run the code and either set stride " + 
-            "or window as 0." 
-        )
+        if self.stride == 1 and self.window == 1: 
+            raise ValueError(
+                "Stride and window cannot be set as non-zero at the same " + 
+                "time. We split the drifting correction into two steps: " + 
+                "save the result for drifting correction by set stride and " + 
+                "perform the drifting correction by set window. " + 
+                "However, they may use different region of the frame, i.e., " + 
+                "we may use a small region for first step to reduce the time " +
+                "of calculating the drift and a large region for the final " + 
+                "prediction. Thus, please re-run the code and either set " + 
+                "stride or window as 0." 
+            )
 
         # when stride is not 0 and window is 0, means we need to save result for
         # drift correction by calling self._saveStride and do not need to 
         # perform the drift correction.
-        if self.stride and not self.window:
+        if self.stride == 1 and self.window == 0:
             # before evaluation, check if self.temp_save_fold exists. 
             # If self.temp_save_fold exists, calculate the stride in 
             # self.temp_save_fold and compare with self.stride.
@@ -98,10 +100,11 @@ class Evaluer:
                     for file in os.listdir(self.temp_save_fold)
                 ]
                 idx.sort()
-                if idx[1]-idx[0] == self.stride: print(
+                if idx[1]-idx[0] == self.stride: warnings.warn(
                     "The stride in temp_save_fold " + 
                     "`{}` ".format(self.temp_save_fold) + 
-                    "is the same as given stride. Skip the evaluation."
+                    "is the same as given stride. Skip the evaluation.",
+                    UserWarning
                 )
                 if idx[1]-idx[0] != self.stride: raise ValueError(
                     "The stride in temp_save_fold " + 
@@ -142,7 +145,7 @@ class Evaluer:
         # equal to 0 before, and now we need to perform the drift correction. 
         # We will save the result before and after drift correction for 
         # comparison.
-        if not self.stride and self.window:
+        if self.stride == 0 and self.window == 1:
             drift = self._getDrift()
             # scale up the drift to increase the percision since for image, we
             # can only shift the image by integer pixels
@@ -169,7 +172,7 @@ class Evaluer:
                         scale_factor=(4, 4, 4)
                     ).squeeze(0).squeeze(0)
                     sub_cat[sub_index*self.batch_size+i] += torch.roll(
-                        sub, tuple(-drift[frame_index]), dims=(0, 1, 2)
+                        sub, tuple(drift[frame_index]), dims=(0, 1, 2)
                     )
                 # continue if we haven't complete the prediction of all patches 
                 # of the current frame
@@ -184,7 +187,7 @@ class Evaluer:
 
         # when both stride and window are 0, we don't need to perform drift
         # correction; just predict and save the result directly. 
-        if not self.stride and not self.window:
+        if self.stride == 0 and self.window == 0:
             sub_cat = torch.zeros(
                 self.num_sub_user, *self.evaluset.dim_dst_pad, 
                 dtype=torch.float16, device=self.device
@@ -212,39 +215,47 @@ class Evaluer:
 
     @torch.no_grad()
     def _getDrift(self) -> Tensor:
+        # error for no result saving in self.temp_save_fold for drift correction
+        error = ValueError(
+            "No result saving in temp_save_fold " +
+            "`{}` for drifting correction. ".format(self.temp_save_fold) +
+            "Please re-run the code and set stride not equal to 0."
+        )
+
         drift = None
+        # if self.temp_save_fold not exists, we must have not save the result
+        if not os.path.exists(self.temp_save_fold):
+            raise error
         # find the drift.csv in self.temp_save_fold, directly load cache
-        if os.path.exists(os.path.join(self.temp_save_fold, "drift.csv")):
+        elif os.path.exists(os.path.join(self.temp_save_fold, "drift.csv")):
             drift = np.loadtxt(
                 os.path.join(self.temp_save_fold, "drift.csv"), 
                 delimiter=','
             )
-            print(
+            warnings.warn(
                 "Load drift from `{}`. ".format(
                     os.path.join(self.temp_save_fold, "drift.csv")
                 ) + "Please delete the .csv file if you want to " + 
-                "recalculate the drift instead of load from cache."
+                "recalculate the drift instead of load from cache.",
+                UserWarning
             )
-        # if no cache find, calculate the drift and save as .csv
+        # cache for drift correction found, calculate the drift and save as .csv
         else:
-            if not os.path.exists(self.temp_save_fold): raise ValueError(
-                "No result saving in temp_save_fold " + 
-                "`{}`".format(self.temp_save_fold) + 
-                " for drifting correction. " + 
-                "Please re-run the code and set stride not equal to 0."
-            )
-            # get the stride of the self.temp_save_fold
+            # get list of the stride of the self.temp_save_fold
             idx = [
                 int(file.split('.')[0]) 
                 for file in os.listdir(self.temp_save_fold)
                 if file.endswith('.tif')
             ]
             idx.sort()
+            # if no .tif file found, raise error
+            if not idx: raise error
             # calculate the drift
             drift = sml.drift.DriftCorrector(
                 total=idx[-1], stride=idx[1]-idx[0], window=self.window,
                 load_fold=self.temp_save_fold
             ).fit()
+            # save the drift as .csv
             np.savetxt(
                 os.path.join(self.temp_save_fold, "drift.csv"), 
                 drift, delimiter=','
