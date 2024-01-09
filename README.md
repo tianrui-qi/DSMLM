@@ -22,13 +22,18 @@ You can check the parameters that must be specified by:
 ```bash
 python main.py --help
 ```
+usage:
+```bash
+python main.py [-s {4,8}] -L FRAMES_LOAD_FOLD [-S DATA_SAVE_FOLD] [-C CKPT_LOAD_PATH] [-T TEMP_SAVE_FOLD]  [-stride STRIDE] [-window WINDOW] -b BATCH_SIZE
+```
+options:
 - `-s`: Scale up factor, 4 or 8. Default: 4.
 - `-L`: Path to the frames load folder.
-- `-S`: Path to the data save folder.
+- `-S`: Path to the data save folder. No need to specify when stride is set as non-zero. Default: None.
 - `-C`: Path to the checkpoint load file without .ckpt. Default: `ckpt/e08/340` or `ckpt/e10/450` when scale up factor is 4 or 8.
 - `-T`: Path to the temporary save folder for drifting analysis. Must be specified when drift correction will be performed, i.e., stride or window is set as non-zero. Default: None.
-- `-stride`: Step size of the drift corrector, unit frames. Shall not be set with -window at the same time. Default: 0.
-- `-window`: Number of frames in each window, unit frames. Sall not be set with -stride at the same time. Default: 0.
+- `-stride`: Step size of the drift corrector, unit frames. Shall not be set with window at the same time. Default: 0.
+- `-window`: Number of frames in each window, unit frames. Shall not be set with stride at the same time. Default: 0.
 - `-b`: Batch size. Set this value according to your GPU memory.
 
 For example, for scale up by 4 without drift correction:

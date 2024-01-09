@@ -73,7 +73,7 @@ class Evaluer:
 
     @torch.no_grad()
     def fit(self) -> None:
-        if self.stride == 1 and self.window == 1: 
+        if self.stride != 0 and self.window != 0: 
             raise ValueError(
                 "Stride and window cannot be set as non-zero at the same " + 
                 "time. We split the drifting correction into two steps: " + 
@@ -89,7 +89,7 @@ class Evaluer:
         # when stride is not 0 and window is 0, means we need to save result for
         # drift correction by calling self._saveStride and do not need to 
         # perform the drift correction.
-        if self.stride == 1 and self.window == 0:
+        if self.stride != 0 and self.window == 0:
             # before evaluation, check if self.temp_save_fold exists. 
             # If self.temp_save_fold exists, calculate the stride in 
             # self.temp_save_fold and compare with self.stride.
@@ -120,7 +120,7 @@ class Evaluer:
                 dtype=torch.float16, device=self.device
             )
             for i, frames in tqdm.tqdm(
-                enumerate(self.dataloader), desc=self.data_save_fold,
+                enumerate(self.dataloader), desc=self.temp_save_fold,
                 total = len(self.dataloader), unit="frame", 
                 unit_scale=float(1/(self.num_sub_user/self.batch_size)),
                 dynamic_ncols=True,
@@ -145,7 +145,7 @@ class Evaluer:
         # equal to 0 before, and now we need to perform the drift correction. 
         # We will save the result before and after drift correction for 
         # comparison.
-        if self.stride == 0 and self.window == 1:
+        if self.stride == 0 and self.window != 0:
             drift = self._getDrift()
             # scale up the drift to increase the percision since for image, we
             # can only shift the image by integer pixels
