@@ -28,10 +28,9 @@ class DriftCorrector:
         self.drift_dst = None
 
         # preload all images to memory
-        self.image = [
-            tifffile.imread(os.path.join(load_fold, "{}".format(file))) 
-            for file in os.listdir(load_fold)
-            if file.endswith('.tif')
+        self.image_list = [
+            os.path.join(load_fold, "{}".format(file))
+            for file in os.listdir(load_fold) if file.endswith('.tif')
         ]
 
     def fit(self) -> ndarray:
@@ -58,7 +57,14 @@ class DriftCorrector:
                 (corr.shape[2]//2-self.crop[2]//2)+self.crop[2]
             ]
             # fit the correlation with a gaussian to find the drift
-            drift_0j  = DriftCorrector.gaussianFit(corr)
+            try:
+                drift_0j = DriftCorrector.gaussianFit(corr)
+            except RuntimeError:
+                if drift == []: 
+                    drift_0j = np.zeros(3)
+                else:
+                    drift_0j = drift[-1]
+                print("Optimal para not found for window {}".format(j))
             drift_0j -= ((np.array(self.crop)-1)/2)
             # add drift to data structure
             drift.append(drift_0j)
@@ -67,7 +73,6 @@ class DriftCorrector:
         drift = np.insert(drift, 0, 0, axis=0)
         self.drift_src = drift
 
-    # TODO: fix optimial parameters not found
     def _mcc(self) -> None:
         # [window_num, window_num-1, 3], will sum to [window_num, 3] when return
         drift = [[] for _ in range(self.window_num)]
@@ -89,7 +94,14 @@ class DriftCorrector:
                     (corr.shape[2]//2-self.crop[2]//2)+self.crop[2]
                 ]
                 # fit the correlation with a gaussian to find the drift
-                drift_ij  = DriftCorrector.gaussianFit(corr)
+                try:
+                    drift_ij = DriftCorrector.gaussianFit(corr)
+                except RuntimeError:
+                    if drift == [[] for _ in range(self.window_num)]: 
+                        drift_ij = np.zeros(3)
+                    else: 
+                        drift_ij = drift[-1]
+                    print("Optimal para not found for window {}".format(j))
                 drift_ij -= ((np.array(self.crop)-1)/2)
                 # add drift to data structure
                 drift[i].append( drift_ij)  # drift(i, j)
@@ -104,9 +116,9 @@ class DriftCorrector:
         pass
 
     def _getWindow(self, index: int) -> ndarray:
-        image = self.image[index]
+        image = tifffile.imread(self.image_list[index])
         for i in range(1, self.window // self.stride):
-            image += self.image[index+i]
+            image += tifffile.imread(self.image_list[index+i])
         return image
 
     @staticmethod
