@@ -12,7 +12,6 @@ import numpy as np
 import os
 import tifffile
 import tqdm
-import warnings
 
 import sml.data, sml.model, sml.loss, sml.drift
 
@@ -87,8 +86,7 @@ class Evaluer:
             )
 
         # when stride is not 0 and window is 0, means we need to save result for
-        # drift correction by calling self._saveStride and do not need to 
-        # perform the drift correction.
+        # drift correction and do not need to perform the drift correction.
         if self.stride != 0 and self.window == 0:
             # before evaluation, check if self.temp_save_fold exists. 
             # If self.temp_save_fold exists, calculate the stride in 
@@ -100,11 +98,10 @@ class Evaluer:
                     for file in os.listdir(self.temp_save_fold)
                 ]
                 idx.sort()
-                if idx[1]-idx[0] == self.stride: warnings.warn(
+                if idx[1]-idx[0] == self.stride: print(
                     "The stride in temp_save_fold " + 
                     "`{}` ".format(self.temp_save_fold) + 
-                    "is the same as given stride. Skip the evaluation.",
-                    UserWarning
+                    "is the same as given stride. Skip the evaluation."
                 )
                 if idx[1]-idx[0] != self.stride: raise ValueError(
                     "The stride in temp_save_fold " + 
@@ -138,7 +135,11 @@ class Evaluer:
                 # save the current result as .tif
                 if self.stride == 0: continue
                 if (frame_index+1) % self.stride != 0: continue
-                self._saveStride(sub_cat, frame_index)
+                self._save(sub_cat, frame_index, self.temp_save_fold)
+                sub_cat = torch.zeros(
+                    self.num_sub_user, *self.evaluset.dim_dst_pad, 
+                    dtype=torch.float16, device=self.device
+                )
 
         # when stride is 0 and window is not 0, means we already save the result
         # for drift correction in self.temp_save_fold by setting stride not 
@@ -180,10 +181,12 @@ class Evaluer:
                 # save the current result as .tif
                 if (frame_index+1) & frame_index and \
                 frame_index+1 != self.total: continue
-                self._saveAccumu(F.interpolate(
-                    sub_cat.unsqueeze(0), 
-                    scale_factor=(1/4, 1/4, 1/4)
-                ).squeeze(0), frame_index)
+                self._save(
+                        F.interpolate(
+                        sub_cat.unsqueeze(0), 
+                        scale_factor=(1/4, 1/4, 1/4)
+                    ).squeeze(0), frame_index, self.data_save_fold
+                )
 
         # when both stride and window are 0, we don't need to perform drift
         # correction; just predict and save the result directly. 
@@ -211,7 +214,7 @@ class Evaluer:
                 # save the current result as .tif
                 if (frame_index+1) & frame_index and \
                 frame_index+1 != self.total: continue
-                self._saveAccumu(sub_cat, frame_index)
+                self._save(sub_cat, frame_index, self.data_save_fold)
 
     @torch.no_grad()
     def _getDrift(self) -> Tensor:
@@ -232,12 +235,11 @@ class Evaluer:
                 os.path.join(self.temp_save_fold, "drift.csv"), 
                 delimiter=','
             )
-            warnings.warn(
+            print(
                 "Load drift from `{}`. ".format(
                     os.path.join(self.temp_save_fold, "drift.csv")
                 ) + "Please delete the .csv file if you want to " + 
-                "recalculate the drift instead of load from cache.",
-                UserWarning
+                "recalculate the drift instead of load from cache."
             )
         # cache for drift correction found, calculate the drift and save as .csv
         else:
@@ -263,67 +265,25 @@ class Evaluer:
         return torch.from_numpy(drift)
 
     @torch.no_grad()
-    def _saveAccumu(self, sub_cat: Tensor, frame_index: int) -> None:
+    def _save(self, sub_cat: Tensor, frame_index: int, fold: str) -> None:
         """
         Save the result of the current frame as .tif.
 
         Args:
+            sub_cat (Tensor): The prediction of the current frame.
             frame_index (int): The index of the current frame, start from 0.
+            fold (str): The folder to save the result.
         """
         # check if the folder exists every time before saving
-        if not os.path.exists(self.data_save_fold): 
-            os.makedirs(self.data_save_fold)
+        if not os.path.exists(fold): os.makedirs(fold)
 
         # save as float32 tif
         tifffile.imwrite(
-            os.path.join(
-                self.data_save_fold, "{:05}.tif".format(frame_index+1)
-            ),
+            os.path.join(fold, "{:05}.tif".format(frame_index+1)),
             self.evaluset.combineFrame(
                 sub_cat
             ).detach().cpu().float().numpy(),
         )
-
-    @torch.no_grad()
-    def _saveStride(self, sub_cat: Tensor, frame_index: int) -> None:
-        """
-        Save the result of the currect frame minus the previous frame as .tif.
-
-        We save the result as float16 since these result no need to check by
-        fiji and only use to perform drift correction in the future with code.
-
-        Args:
-            frame_index (int): The index of the current frame, start from 0.
-        """
-        # check if the folder exists every time before saving
-        if not os.path.exists(self.temp_save_fold): 
-            os.makedirs(self.temp_save_fold)
-
-        # save as float16 tif
-        # the first frame, no previous frame to minus
-        if frame_index+1 == self.stride:
-            tifffile.imwrite(
-                os.path.join(
-                    self.temp_save_fold, "{:05}.tif".format(frame_index+1)
-                ),
-                self.evaluset.combineFrame(
-                    sub_cat
-                ).detach().cpu().numpy(),
-            )
-        # current frames minus the previous frame
-        else:
-            previous = tifffile.imread(os.path.join(
-                self.temp_save_fold, 
-                "{:05}.tif".format(frame_index+1-self.stride)
-            ))
-            tifffile.imwrite(
-                os.path.join(
-                    self.temp_save_fold, "{:05}.tif".format(frame_index+1)
-                ),
-                self.evaluset.combineFrame(
-                    sub_cat
-                ).detach().cpu().numpy() - previous,
-            )
 
 
 class Trainer:
