@@ -14,7 +14,7 @@ Please down load the checkpoints from [iCloud](https://www.icloud.com/iclouddriv
 Put the checkpoints under the folder `ckpt/e08/` or `ckpt/e10/`.
 Note that `e08` and `e10` match the name in [config/e.py](https://github.com/tianrui-qi/SMLFM/blob/main/config/e.py) so that you can check the training configuration for each checkpoint.
 
-## Run
+## Evaluation
 
 You can check the parameters that must be specified by:
 ```bash
