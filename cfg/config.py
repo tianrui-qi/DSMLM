@@ -36,7 +36,11 @@ class ConfigEvaluer:
         )
         parser.add_argument(
             "-L", type=str, required=True, dest="frames_load_fold",
-            help="Path to the frames load folder."
+            help="Path to the frames load folder. Note that the code will " + 
+            "predict all the frames under this folder. " + 
+            "Thus, if you want to predict portion of the frames, " + 
+            "please copy them to a new folder and specify this parameter " + 
+            "with that new folder."
         )
         parser.add_argument(
             "-S", type=str, required=False, dest="data_save_fold",
