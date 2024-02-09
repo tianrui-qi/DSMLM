@@ -40,8 +40,8 @@ Note that for all example below, we assign the batch size as 4. You can change i
 
 For example, for scale up by 4 or 8 without drift correction:
 ```bash
-python main.py -s 4 -L data/frames/ -S data/dl-444/ -b 4
-python main.py -s 8 -L data/frames/ -S data/dl-488/ -b 4
+python main.py -s 4 -L data/frames/ -S data/dl-444/ -b 2
+python main.py -s 8 -L data/frames/ -S data/dl-488/ -b 2
 ```
 
 ### With drift correction
@@ -52,15 +52,15 @@ These temp results will be used for drift correction in second step.
 Scale up factor must set to 4, i.e., the default value, for this step. 
 For example, to perform drift correction with stride 250:
 ```bash
-python main.py -L data/frames/ -T data/temp/ -stride 250 -b 4
+python main.py -L data/frames/ -T data/temp/ -stride 250 -b 2
 ```
 
 Then, in second step, we perform the drift correction using the temp results generated in first step. 
 We do not need to specify `-stride` since it will be calculate automatically by result saved in TEMP_SAVE_FOLD `-T`.
 For example, to perform drift correction with window size 2000 by:
 ```bash
-python main.py -s 4 -L data/frames/ -S data/dl-444/ -T data/temp/ -window 2000 -b 4
-python main.py -s 8 -L data/frames/ -S data/dl-488/ -T data/temp/ -window 2000 -b 4
+python main.py -s 4 -L data/frames/ -S data/dl-444/ -T data/temp/ -window 2000 -b 2
+python main.py -s 8 -L data/frames/ -S data/dl-488/ -T data/temp/ -window 2000 -b 2
 ```
 
 If you want to re-predict the temp result in first step or the drift calculation in second step, please delete the cache file in TEMP_SAVE_FOLD `-T` since the code will directly load them and not re-calculate the result if the cache file exists.
