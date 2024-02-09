@@ -8,6 +8,7 @@ import os
 import tifffile
 import matplotlib.pyplot as plt
 import tqdm
+from typing import Tuple
 
 __all__ = []
 
@@ -34,53 +35,71 @@ class DriftCorrector:
         ]
 
     def fit(self) -> ndarray:
-        self._dcc()
-        self._interpolation()
+        self.drift_src = self._mcc()
+        self.drift_dst = self._interpolation()
         self._plot()
         return self.drift_dst
 
-    def _dcc(self) -> None:
-        drift = []  # [window_num, 3]
+    def _dcc(self) -> ndarray:
+        drift = np.zeros([self.window_num, 3])  # [window_num, 3]
 
         image0 = self._getWindow(0)
-        for j in tqdm.tqdm(range(1, self.window_num)):
+        for j in tqdm.tqdm(range(0, self.window_num)):
             imagej = self._getWindow(j)
             # calculate the cross correlation
             corr = self.crossCorrelation3D(image0, imagej)
             # crop the correlation from the center to reduce fitting time
             corr = corr[
-                (corr.shape[0]//2-self.crop[0]//2) : 
-                (corr.shape[0]//2-self.crop[0]//2)+self.crop[0], 
-                (corr.shape[1]//2-self.crop[1]//2) : 
-                (corr.shape[1]//2-self.crop[1]//2)+self.crop[1], 
-                (corr.shape[2]//2-self.crop[2]//2) : 
-                (corr.shape[2]//2-self.crop[2]//2)+self.crop[2]
+                corr.shape[0]//2 - self.crop[0]//2 : 
+                corr.shape[0]//2 + self.crop[0]//2, 
+                corr.shape[1]//2 - self.crop[1]//2 : 
+                corr.shape[1]//2 + self.crop[1]//2, 
+                corr.shape[2]//2 - self.crop[2]//2 : 
+                corr.shape[2]//2 + self.crop[2]//2
             ]
             # fit the correlation with a gaussian to find the drift
             try:
-                drift_0j = DriftCorrector.gaussianFit(corr)
-            except RuntimeError:
-                if drift == []: 
-                    drift_0j = np.zeros(3)
+                # initial guess for current drift
+                if j == 0:
+                    # if no previous drift, set the center of the corr as
+                    # the initial guess
+                    p0 = np.array([
+                        (corr.shape[0]-1)/2, (corr.shape[1]-1)/2,
+                        (corr.shape[2]-1)/2, 1, 1, 1, 1
+                    ])
                 else:
-                    drift_0j = drift[-1]
-                print("Optimal para not found for window {}".format(j))
-            drift_0j -= ((np.array(self.crop)-1)/2)
-            # add drift to data structure
-            drift.append(drift_0j)
+                    # set previous drift as the initial guess
+                    p0 = np.array([*drift[j-1], 1, 1, 1, 1])
+                # set 10 pixels around the initial guess as the bounds
+                bounds=(
+                    (*(p0[0:3]-10), -np.inf, -np.inf, -np.inf, -np.inf),
+                    (*(p0[0:3]+10),  np.inf,  np.inf,  np.inf,  np.inf)  
+                )
+                # fit the correlation with a gaussian to find the drift
+                drift[j] = DriftCorrector.gaussianFit(
+                    corr, p0=p0, bounds=bounds
+                )
+            except RuntimeError:
+                if j == 0: 
+                    drift[j] = ((np.array(self.crop)-1)/2)
+                else:
+                    drift[j] = drift[j-1]
+                tqdm.tqdm.write(
+                    "Optimal para not found for window ({},{})".format(0, j)
+                )
+        # since the drift of window (0,0) must be zero, the center of drift is 
+        # just drift(0,0) and need to be subtracted from drift 
+        drift -= drift[0]
 
-        drift = np.array(drift)
-        drift = np.insert(drift, 0, 0, axis=0)
-        self.drift_src = drift
+        return drift
 
-    def _mcc(self) -> None:
-        # [window_num, window_num-1, 3], will sum to [window_num, 3] when return
-        drift = [[] for _ in range(self.window_num)]
+    def _mcc(self) -> ndarray:
+        # [window_num, window_num, 3], will sum to [window_num, 3] before return
+        drift = np.zeros([self.window_num, self.window_num, 3])
 
         for i in tqdm.tqdm(range(self.window_num)):
             imagei = self._getWindow(i)
-            for j in tqdm.tqdm(range(i+1, self.window_num), leave=False):
-                print(i, j)
+            for j in tqdm.tqdm(range(i, self.window_num), leave=False):
                 imagej = self._getWindow(j)
                 # calculate the cross correlation
                 corr = self.crossCorrelation3D(imagei, imagej)
@@ -95,24 +114,54 @@ class DriftCorrector:
                 ]
                 # fit the correlation with a gaussian to find the drift
                 try:
-                    drift_ij = DriftCorrector.gaussianFit(corr)
+                    # initial guess for current drift
+                    if i == j:
+                        # if no previous drift, set the center of the corr as
+                        # the initial guess
+                        p0 = np.array([
+                            (corr.shape[0]-1)/2, (corr.shape[1]-1)/2,
+                            (corr.shape[2]-1)/2, 1, 1, 1, 1
+                        ])
+                    else:
+                        # set previous drift as the initial guess
+                        p0 = np.array([*drift[i][j-1], 1, 1, 1, 1])
+                    # set 10 pixels around the initial guess as the bounds
+                    bounds=(
+                        (*(p0[0:3]-10), -np.inf, -np.inf, -np.inf, -np.inf),
+                        (*(p0[0:3]+10),  np.inf,  np.inf,  np.inf,  np.inf)  
+                    )
+                    # fit the correlation with a gaussian to find the drift
+                    drift[i][j] = DriftCorrector.gaussianFit(
+                        corr, p0=p0, bounds=bounds
+                    )
                 except RuntimeError:
-                    if drift == [[] for _ in range(self.window_num)]: 
-                        drift_ij = np.zeros(3)
-                    else: 
-                        drift_ij = drift[-1]
-                    print("Optimal para not found for window {}".format(j))
-                drift_ij -= ((np.array(self.crop)-1)/2)
-                # add drift to data structure
-                drift[i].append( drift_ij)  # drift(i, j)
-                drift[j].append(-drift_ij)  # drift(j, i)
+                    if i == j:
+                        drift[i][j] = ((np.array(self.crop)-1)/2)
+                    elif i == 0:
+                        drift[i][j] = drift[i][j-1]
+                    else:
+                        drift[i][j] = drift[i-1][j] - drift[i-1][j-1]
+                    tqdm.tqdm.write(
+                        "Optimal para not found for window ({},{})".format(i, j)
+                    )
+        # since the drift of window (i,i) must be zero, the center of 
+        # drift[i][:] is drift[i][i] and need to be subtracted from drift[i][:] 
+        for i in range(self.window_num):
+            for j in range(i+1, self.window_num):
+                drift[i][j] -= drift[i][i]
+            drift[i][i] -= drift[i][i]
+        # drift is symmetric, i.e., drift(i,j) = -drift(j,i)
+        drift -= drift.transpose((1, 0, 2))
+        # optimal drift(j) is the avereage of drift(i,j) for all i
+        drift = drift.sum(axis=0) / self.window_num
+        # since the drift of window (0,0) must be zero, the center of drift is 
+        # just drift(0,0) and need to be subtracted from drift 
+        drift -= drift[0]
 
-        drift = np.array(drift).sum(axis=1)
-        drift = np.insert(drift, 0, 0, axis=0)
-        self.drift_src = drift
+        return drift
 
     # TODO: implement RCC
-    def _rcc(self) -> None:
+    def _rcc(self) -> ndarray:
         pass
 
     def _getWindow(self, index: int) -> ndarray:
@@ -130,15 +179,15 @@ class DriftCorrector:
         return cp.asnumpy(corr)
 
     @staticmethod
-    def gaussianFit(corr: ndarray) -> ndarray:
-        xdata = np.vstack(np.indices(corr.shape).reshape(3, -1))
-        ydata = corr.ravel()
-        p0 = (
-            (corr.shape[0]-1)/2, (corr.shape[1]-1)/2, (corr.shape[2]-1)/2, 
-            1, 1, 1, 1
-        )
+    def gaussianFit(
+        corr: ndarray, p0: ndarray = None, 
+        bounds: Tuple[Tuple[float, ...], Tuple[float, ...]] = None
+    ) -> ndarray:
         popt, _ = scipy.optimize.curve_fit(
-            DriftCorrector.gaussian3D, xdata, ydata, p0=p0, maxfev=3000
+            DriftCorrector.gaussian3D, 
+            xdata=np.vstack(np.indices(corr.shape).reshape(3, -1)), 
+            ydata=corr.ravel(), 
+            p0=p0, bounds=bounds
         )
         return popt[0:3]
 
@@ -150,19 +199,19 @@ class DriftCorrector:
             (xyz[2] - z0) ** 2 / (2 * sigma_z ** 2)
         ))
 
-    def _interpolation(self) -> None:
+    def _interpolation(self) -> ndarray:
         interp_func_z = scipy.interpolate.interp1d(
-            self.index_src, self.drift_src[:, 0], kind='cubic', 
+            self.index_src, self.drift_src[:, 0], kind='linear', 
             fill_value=(self.drift_src[0, 0], self.drift_src[-1, 0]), 
             bounds_error=False
         )
         interp_func_y = scipy.interpolate.interp1d(
-            self.index_src, self.drift_src[:, 1], kind='cubic', 
+            self.index_src, self.drift_src[:, 1], kind='linear', 
             fill_value=(self.drift_src[0, 1], self.drift_src[-1, 1]), 
             bounds_error=False
         )
         interp_func_x = scipy.interpolate.interp1d(
-            self.index_src, self.drift_src[:, 2], kind='cubic', 
+            self.index_src, self.drift_src[:, 2], kind='linear', 
             fill_value=(self.drift_src[0, 2], self.drift_src[-1, 2]), 
             bounds_error=False
         )
@@ -172,7 +221,7 @@ class DriftCorrector:
         drift_dst[:, 1] = interp_func_y(self.index_dst)
         drift_dst[:, 2] = interp_func_x(self.index_dst)
 
-        self.drift_dst = drift_dst
+        return drift_dst
 
     def _plot(self) -> None:
         plt.figure()
