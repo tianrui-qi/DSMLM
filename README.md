@@ -32,7 +32,7 @@ options:
 - `-T TEMP_SAVE_FOLD`: Path to the temporary save folder for drifting analysis. Must be specified when drift correction will be performed. Default: None.
 - `-stride STRIDE`: Step size of the drift corrector, unit frames. Should set with window at the same time. Default: 0.
 - `-window WINDOW`: Number of frames in each window, unit frames. Should set with stride at the same time. Default: 0.
-- `-method {DCC,MCC,RCC}`: Drift correction method, DCC, MCC, or RCC. DCC run very fast where MCC and RCC is more accurate. We suggest to use DCC to test the window size first and then use MCC or RCC to calculate the final drift. Optional to set when window is set. Default: DCC.
+- `-method {DCC,MCC,RCC}`: Drift correction method, DCC, MCC, or RCC. DCC run very fast where MCC and RCC is more accurate. We suggest to use DCC (default) to test the window size first and then use MCC or RCC to calculate the final drift. Optional to set when window is set. Default: DCC.
 - `-b BATCH_SIZE`: Batch size. Set this value according to your GPU memory.
 
 Note that for all example below, we assign `-b BATCH_SIZE` as 4. You can change it according to your GPU memory and the region you selected to predict.
