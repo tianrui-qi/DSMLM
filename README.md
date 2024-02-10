@@ -32,7 +32,7 @@ options:
 - `-T TEMP_SAVE_FOLD`: Path to the temporary save folder for drifting analysis. Must be specified when drift correction will be performed. Default: None.
 - `-stride STRIDE`: Step size of the drift corrector, unit frames. Should set with window at the same time. Default: 0.
 - `-window WINDOW`: Number of frames in each window, unit frames. Should set with stride at the same time. Default: 0.
-- `-method {DCC,MCC,RCC}`: Drift correction method, DCC, MCC, or RCC. DCC run very fast where MCC and RCC is more accurate. We suggest to use DCC to test the window size first and then use MCC or RCC to calculate the final drift. Optional to set when window is set. Default: MCC.
+- `-method {DCC,MCC,RCC}`: Drift correction method, DCC, MCC, or RCC. DCC run very fast where MCC and RCC is more accurate. We suggest to use DCC to test the window size first and then use MCC or RCC to calculate the final drift. Optional to set when window is set. Default: DCC.
 - `-b BATCH_SIZE`: Batch size. Set this value according to your GPU memory.
 
 Note that for all example below, we assign `-b BATCH_SIZE` as 4. You can change it according to your GPU memory and the region you selected to predict.
@@ -64,15 +64,15 @@ please delete whole `-T TEMP_SAVE_FOLD` before running if you want to re-calcula
 It will be time comsuming to change `-stride STRIDE` since we need to delete whole `-T TEMP_SAVE_FOLD` and re-predict frames. 
 A relatively small `-stride STRIDE`, i.e., 250, is recommended to leave the room for test `-window WINDOW` since window size must larger or equal to stride and divisible by stride.
 Smaller stride size will be more accurate but time comsuming since we have more windows; big O of DCC is linear to number of windows and MCC and RCC are quadratic to number of windows. 
-We suggest to use DCC to test the window size first and then use MCC or RCC to calculate the final drift.
+We suggest to use DCC (default) to test the window size first and then use MCC or RCC to calculate the final drift.
 
-For example, test the window size 1000, 2000, or 3000 with DCC method,
+For example, test the window size 1000, 2000, or 3000 with DCC (default) method,
 ```bash
-python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 1000 -method DCC -b 4
-python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 2000 -method DCC -b 4
-python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 3000 -method DCC -b 4
+python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 1000 -b 4
+python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 2000 -b 4
+python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 3000 -b 4
 ```
-and then use MCC (default) or RCC to calculate the final drift with the best window size, 2000 as a example,
+and then use MCC or RCC to calculate the final drift with the best window size, 2000 as a example,
 ```bash
 python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 2000 -method MCC -b 4
 python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 2000 -method RCC -b 4

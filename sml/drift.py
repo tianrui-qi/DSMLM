@@ -15,7 +15,7 @@ __all__ = []
 
 class DriftCorrector:
     def __init__(
-        self, temp_save_fold: str, window: int, method: str = "MCC",
+        self, temp_save_fold: str, window: int, method: str = "DCC",
     ) -> None:
         # path
         self.temp_save_fold = temp_save_fold

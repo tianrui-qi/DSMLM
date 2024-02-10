@@ -76,12 +76,13 @@ class ConfigEvaluer:
         )
         parser.add_argument(
             "-method", type=str, required=False, dest="method",
-            choices=["DCC", "MCC", "RCC"], default="MCC",
+            choices=["DCC", "MCC", "RCC"], default="DCC",
             help="Drift correction method, DCC, MCC, or RCC. DCC run very " + 
-            "fast where MCC and RCC is more accurate. We suggest to use DCC " + 
-            "to test the window size first and then use MCC or RCC to " + 
-            "calculate the final drift. Optional to set when window is set. " + 
-            "Default: MCC."
+            "fast where MCC and RCC is more accurate. We suggest to use " + 
+            "DCC (default) to test the window size first and then use " + 
+            "MCC or RCC to calculate the final drift. " + 
+            "Optional to set when window is set. " + 
+            "Default: DCC."
         )
         parser.add_argument(
             "-b", type=int, required=True, dest="batch_size",
