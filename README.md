@@ -40,8 +40,8 @@ Note that for all example below, we assign the batch size as 4. You can change i
 
 For example, for scale up by 4 or 8 without drift correction:
 ```bash
-python main.py -s 4 -L data/frames/ -S data/dl-444/ -b 4
-python main.py -s 8 -L data/frames/ -S data/dl-488/ -b 4
+python main.py -s 4 -L "data/frames/" -S "data/444-dl/" -b 4
+python main.py -s 8 -L "data/frames/" -S "data/488-dl/" -b 4
 ```
 
 ### With drift correction
@@ -52,14 +52,14 @@ These temp results will then be used to calculate the drift, which will be saved
 Scale up factor must set to 4, i.e., the default value. 
 For example, to perform drift correction with stride 250 and window size 2000,
 ```bash
-python main.py -L data/frames/ -T data/temp/ -stride 250 -window 2000 -b 4
+python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 2000 -b 4
 ```
 
 Then, in second step, since we already cached the drift result, we can directly use it and perform drift correction while predicting the frames.
 For example, if we set TEMP_SAVE_FOLD `-T` as `data/temp/` in the first step, then we can perform drift correction by
 ```bash
-python main.py -s 4 -L data/frames/ -S data/dl-444/ -T data/temp/ -b 4
-python main.py -s 8 -L data/frames/ -S data/dl-488/ -T data/temp/ -b 4
+python main.py -s 4 -L "data/frames/" -S "data/444-dl/" -T "data/temp/" -b 4
+python main.py -s 8 -L "data/frames/" -S "data/488-dl/" -T "data/temp/" -b 4
 ```
 
 Note that calculating the drift will use temp results. Please delete `drift.csv` in TEMP_SAVE_FOLD `-T` and re-run first step if you want to re-calculate the drift with a new window size for same dataset. However, if you change to a new dataset or change the stride size, you must delete the whole TEMP_SAVE_FOLD `-T` and re-run first step.
