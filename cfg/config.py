@@ -46,7 +46,7 @@ class ConfigEvaluer:
             "-S", type=str, required=False, dest="data_save_fold",
             default=None,
             help="Path to the data save folder. No need to specify " +
-            "when stride is set as non-zero. Default: None."
+            "when stride or window is set as non-zero. Default: None."
         )
         parser.add_argument(
             "-C", type=str, required=False, dest="ckpt_load_path",
@@ -58,20 +58,20 @@ class ConfigEvaluer:
             "-T", type=str, required=False, dest="temp_save_fold", 
             default=None,
             help="Path to the temporary save folder for drifting analysis. " + 
-            "Must be specified when drift correction will be performed, " + 
-            "i.e., stride or window is set as non-zero. Default: None."
+            "Must be specified when drift correction will be performed. " + 
+            "Default: None."
         )
         parser.add_argument(
             "-stride", type=int, required=False, dest="stride", 
             default=0,
             help="Step size of the drift corrector, unit frames. " + 
-            "Shall not be set with window at the same time. Default: 0."
+            "Should set with window at the same time. Default: 0."
         )
         parser.add_argument(
             "-window", type=int, required=False, dest="window", 
             default=0,
             help="Number of frames in each window, unit frames. " + 
-            "Shall not be set with stride at the same time. Default: 0."
+            "Should set with stride at the same time. Default: 0."
         )
         parser.add_argument(
             "-b", type=int, required=True, dest="batch_size",

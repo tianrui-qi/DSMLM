@@ -72,8 +72,11 @@ class DriftCorrector:
             print(
                 "Load drift from `{}`. ".format(
                     os.path.join(self.temp_save_fold, "drift.csv")
-                ) + "Please delete the .csv file if you want to " + 
-                "recalculate the drift instead of load from cache."
+                ) + "Please delete the .csv file if you want to re-calculate " +
+                "the drift with a new window size for same dataset. " + 
+                "However, if you change to a new dataset or " + 
+                "change the stride size, you must delete the whole " + 
+                "`{}`.".format(self.temp_save_fold)
             )
         else:
             # calculate the drift

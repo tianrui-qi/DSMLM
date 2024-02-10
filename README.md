@@ -27,40 +27,39 @@ python main.py [-s {4,8}] -L FRAMES_LOAD_FOLD [-S DATA_SAVE_FOLD] [-C CKPT_LOAD_
 options:
 - `-s`: Scale up factor, 4 or 8. Default: 4.
 - `-L`: Path to the frames load folder. Note that the code will predict all the frames under this folder. Thus, if you want to predict portion of the frames, please copy them to a new folder and specify this parameter with that new folder.
-- `-S`: Path to the data save folder. No need to specify when stride is set as non-zero. Default: None.
+- `-S`: Path to the data save folder. No need to specify when stride or window is set as non-zero. Default: None.
 - `-C`: Path to the checkpoint load file without .ckpt. Default: `ckpt/e08/340` or `ckpt/e10/450` when scale up factor is 4 or 8.
-- `-T`: Path to the temporary save folder for drifting analysis. Must be specified when drift correction will be performed, i.e., stride or window is set as non-zero. Default: None.
-- `-stride`: Step size of the drift corrector, unit frames. Shall not be set with window at the same time. Default: 0.
-- `-window`: Number of frames in each window, unit frames. Shall not be set with stride at the same time. Default: 0.
+- `-T`: Path to the temporary save folder for drifting analysis. Must be specified when drift correction will be performed. Default: None.
+- `-stride`: Step size of the drift corrector, unit frames. Should set with window at the same time. Default: 0.
+- `-window`: Number of frames in each window, unit frames. Should set with stride at the same time. Default: 0.
 - `-b`: Batch size. Set this value according to your GPU memory.
 
-Note that for all example below, we assign the batch size as 4. You can change it according to your GPU memory.
+Note that for all example below, we assign the batch size as 4. You can change it according to your GPU memory and the region number you selected to predict.
 
 ### Without drift correction
 
 For example, for scale up by 4 or 8 without drift correction:
 ```bash
-python main.py -s 4 -L data/frames/ -S data/dl-444/ -b 2
-python main.py -s 8 -L data/frames/ -S data/dl-488/ -b 2
+python main.py -s 4 -L data/frames/ -S data/dl-444/ -b 4
+python main.py -s 8 -L data/frames/ -S data/dl-488/ -b 4
 ```
 
 ### With drift correction
 
 To perform drift correction, we split into two steps. 
-First, we stack and save stride number of prediction results to TEMP_SAVE_FOLD `-T` then reset while predicting the frames. 
-These temp results will be used for drift correction in second step. 
-Scale up factor must set to 4, i.e., the default value, for this step. 
-For example, to perform drift correction with stride 250:
+First, we stack and save stride number of prediction results to TEMP_SAVE_FOLD `-T` then reset while predicting the frames as temp results. 
+These temp results will then be used to calculate the drift, which will be saved in TEMP_SAVE_FOLD `-T` as `drift.csv`. 
+Scale up factor must set to 4, i.e., the default value. 
+For example, to perform drift correction with stride 250 and window size 2000,
 ```bash
-python main.py -L data/frames/ -T data/temp/ -stride 250 -b 2
+python main.py -L data/frames/ -T data/temp/ -stride 250 -window 2000 -b 4
 ```
 
-Then, in second step, we perform the drift correction using the temp results generated in first step. 
-We do not need to specify `-stride` since it will be calculate automatically by result saved in TEMP_SAVE_FOLD `-T`.
-For example, to perform drift correction with window size 2000 by:
+Then, in second step, since we already cached the drift result, we can directly use it and perform drift correction while predicting the frames.
+For example, if we set TEMP_SAVE_FOLD `-T` as `data/temp/` in the first step, then we can perform drift correction by
 ```bash
-python main.py -s 4 -L data/frames/ -S data/dl-444/ -T data/temp/ -window 2000 -b 2
-python main.py -s 8 -L data/frames/ -S data/dl-488/ -T data/temp/ -window 2000 -b 2
+python main.py -s 4 -L data/frames/ -S data/dl-444/ -T data/temp/ -b 4
+python main.py -s 8 -L data/frames/ -S data/dl-488/ -T data/temp/ -b 4
 ```
 
-If you want to re-predict the temp result in first step or the drift calculation in second step, please delete the cache file in TEMP_SAVE_FOLD `-T` since the code will directly load them and not re-calculate the result if the cache file exists.
+Note that calculating the drift will use temp results. Please delete `drift.csv` in TEMP_SAVE_FOLD `-T` and re-run first step if you want to re-calculate the drift with a new window size for same dataset. However, if you change to a new dataset or change the stride size, you must delete the whole TEMP_SAVE_FOLD `-T` and re-run first step.
