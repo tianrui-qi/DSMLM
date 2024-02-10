@@ -147,7 +147,10 @@ class Evaluer:
         # We will save the result before and after drift correction for 
         # comparison.
         if self.stride == 0 and self.window != 0:
-            drift = self._getDrift()
+            drift = sml.drift.DriftCorrector(
+                temp_save_fold=self.temp_save_fold, window=self.window
+            ).fit()
+            drift = torch.from_numpy(drift)
             # scale up the drift to increase the percision since for image, we
             # can only shift the image by integer pixels
             drift *= self.evaluset.scale
@@ -215,54 +218,6 @@ class Evaluer:
                 if (frame_index+1) & frame_index and \
                 frame_index+1 != self.total: continue
                 self._save(sub_cat, frame_index, self.data_save_fold)
-
-    @torch.no_grad()
-    def _getDrift(self) -> Tensor:
-        # error for no result saving in self.temp_save_fold for drift correction
-        error = ValueError(
-            "No result saving in temp_save_fold " +
-            "`{}` for drifting correction. ".format(self.temp_save_fold) +
-            "Please re-run the code and set stride not equal to 0."
-        )
-
-        drift = None
-        # if self.temp_save_fold not exists, we must have not save the result
-        if not os.path.exists(self.temp_save_fold):
-            raise error
-        # find the drift.csv in self.temp_save_fold, directly load cache
-        elif os.path.exists(os.path.join(self.temp_save_fold, "drift.csv")):
-            drift = np.loadtxt(
-                os.path.join(self.temp_save_fold, "drift.csv"), 
-                delimiter=','
-            )
-            print(
-                "Load drift from `{}`. ".format(
-                    os.path.join(self.temp_save_fold, "drift.csv")
-                ) + "Please delete the .csv file if you want to " + 
-                "recalculate the drift instead of load from cache."
-            )
-        # cache for drift correction found, calculate the drift and save as .csv
-        else:
-            # get list of the stride of the self.temp_save_fold
-            idx = [
-                int(file.split('.')[0]) 
-                for file in os.listdir(self.temp_save_fold)
-                if file.endswith('.tif')
-            ]
-            idx.sort()
-            # if no .tif file found, raise error
-            if not idx: raise error
-            # calculate the drift
-            drift = sml.drift.DriftCorrector(
-                total=idx[-1], stride=idx[1]-idx[0], window=self.window,
-                load_fold=self.temp_save_fold
-            ).fit()
-            # save the drift as .csv
-            np.savetxt(
-                os.path.join(self.temp_save_fold, "drift.csv"), 
-                drift, delimiter=','
-            )
-        return torch.from_numpy(drift)
 
     @torch.no_grad()
     def _save(self, sub_cat: Tensor, frame_index: int, fold: str) -> None:

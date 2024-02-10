@@ -14,29 +14,76 @@ __all__ = []
 
 
 class DriftCorrector:
-    def __init__(
-        self, total: int, stride: int, window: int, load_fold: str
-    ) -> None:
-        self.total = total
-        self.stride = stride
+    def __init__(self, temp_save_fold: str, window: int) -> None:
+        # path
+        self.temp_save_fold = temp_save_fold
+
+        # parameters
+        self.total, self.stride = self._getIndex()
         self.window = window
         self.window_num = (self.total-self.window)//self.stride+1
         self.crop = [32, 64, 64]
 
+        # result
         self.index_src = self.window/2 + np.arange(self.window_num)*self.stride
-        self.index_dst = np.arange(total) + 1
+        self.index_dst = np.arange(self.total) + 1
         self.drift_src = None
         self.drift_dst = None
 
         # preload all images to memory
+        # note that we already perform the fold check in self._getIndex()
         self.image_list = [
-            os.path.join(load_fold, "{}".format(file))
-            for file in os.listdir(load_fold) if file.endswith('.tif')
+            os.path.join(self.temp_save_fold, "{}".format(file))
+            for file in os.listdir(self.temp_save_fold) if file.endswith('.tif')
         ]
 
+    def _getIndex(self) -> Tuple[int, int]:
+        # error for no result saving in self.temp_save_fold for drift correction
+        error = ValueError(
+            "No result saving in temp_save_fold " +
+            "`{}` for drifting correction. ".format(self.temp_save_fold) +
+            "Please re-run the code and set stride not equal to 0."
+        )
+
+        # if self.temp_save_fold not exists, we must have not save the result
+        if not os.path.exists(self.temp_save_fold):
+            raise error
+        # get list of the stride of the self.temp_save_fold
+        idx = [
+            int(file.split('.')[0]) 
+            for file in os.listdir(self.temp_save_fold)
+            if file.endswith('.tif')
+        ]
+        idx.sort()
+        # if no .tif file found, raise error
+        if not idx: raise error
+        # calculate the parameters
+        total = idx[-1]
+        stride = idx[1]-idx[0]
+
+        return total, stride
+
     def fit(self) -> ndarray:
-        self.drift_src = self._mcc()
-        self.drift_dst = self._interpolation()
+        if os.path.exists(os.path.join(self.temp_save_fold, "drift.csv")):
+            # if cache exists, load the drift from the cache
+            self.drift_dst = np.loadtxt(
+                os.path.join(self.temp_save_fold, "drift.csv"), delimiter=','
+            )
+            print(
+                "Load drift from `{}`. ".format(
+                    os.path.join(self.temp_save_fold, "drift.csv")
+                ) + "Please delete the .csv file if you want to " + 
+                "recalculate the drift instead of load from cache."
+            )
+        else:
+            # calculate the drift
+            self.drift_src = self._mcc()
+            self.drift_dst = self._interpolation()
+            # save the drift as .csv for future use
+            np.savetxt(
+                os.path.join(self.temp_save_fold, "drift.csv"), 
+                self.drift_dst, delimiter=','
+            )
         self._plot()
         return self.drift_dst
 
@@ -224,14 +271,37 @@ class DriftCorrector:
         return drift_dst
 
     def _plot(self) -> None:
+        # Drift over frames
         plt.figure()
         plt.plot(self.index_dst, self.drift_dst[:, 0], label='Z')
         plt.plot(self.index_dst, self.drift_dst[:, 1], label='Y')
         plt.plot(self.index_dst, self.drift_dst[:, 2], label='X')
         plt.legend()
+        plt.grid(linestyle='--')
+        plt.suptitle("Drift over frames")
         plt.title("total: {}; window: {}; stride: {}; crop: {}".format(
             self.total, self.window, self.stride, self.crop
         ))
-        plt.xlabel('window index (frame)')
+        plt.xlabel('frame')
         plt.ylabel('drift (pixel)')
+
+        # Drift in XY plane
+        plt.figure()
+        cmap = plt.get_cmap('viridis')  # Define colormap
+        for i in range(len(self.drift_dst) - 1):
+            plt.plot(
+                -self.drift_dst[i:i+2, 2], -self.drift_dst[i:i+2, 1], 
+                color=cmap(i / len(self.drift_dst))  # Use colormap to set color
+            )
+        plt.gca().invert_yaxis()
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.grid(linestyle='--')
+        plt.suptitle("Drift in XY plane")
+        plt.title("total: {}; window: {}; stride: {}; crop: {}".format(
+            self.total, self.window, self.stride, self.crop
+        ))
+        plt.xlabel('x (pixel)')
+        plt.ylabel('y (pixel)')
+
+        # show both plots simultaneously
         plt.show()
