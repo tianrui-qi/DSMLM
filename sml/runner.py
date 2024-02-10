@@ -7,8 +7,6 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 from torch import Tensor
 
-import numpy as np
-
 import os
 import tifffile
 import tqdm
