@@ -21,7 +21,7 @@ __all__ = ["Evaluer", "Trainer"]
 class Evaluer:
     def __init__(
         self, data_save_fold: str, ckpt_load_path: str, temp_save_fold: str,
-        stride: int, window: int, batch_size: int,
+        stride: int, window: int, method: str, batch_size: int,
         evaluset: sml.data.RawDataset, 
     ) -> None:
         # evalu
@@ -33,6 +33,7 @@ class Evaluer:
         # drift
         self.stride = stride
         self.window = window
+        self.method = method    # DCC, MCC, or RCC
 
         # data
         self.evaluset = evaluset
@@ -168,14 +169,13 @@ class Evaluer:
             # perform drift correction using the temp result in 
             # self.temp_save_fold
             sml.drift.DriftCorrector(
-                temp_save_fold=self.temp_save_fold, window=self.window
+                self.temp_save_fold, self.window, self.method
             ).fit()
 
             # we need to exit the program since temp result for drift correction
             # and final prediction may use different region of the frame, i.e., 
-            # we may use a small region for getting temp result to reduce the 
-            # time of calculating the drift and a large region for the final 
-            # prediction.
+            # a small region for getting temp result to reduce the time of 
+            # calculating the drift and a large region for the final prediction.
             return
         # case 3:
         # we already have cached drift.csv, means we want to perform the final
@@ -187,11 +187,14 @@ class Evaluer:
             print(
                 "Load drift from `{}`. ".format(
                     os.path.join(self.temp_save_fold, "drift.csv")
-                ) + "Please delete the .csv file if you want to re-calculate " +
-                "the drift with a new window size for same dataset. " + 
-                "However, if you change to a new dataset or " + 
-                "change the stride size, you must delete the whole " + 
-                "`{}`.".format(self.temp_save_fold)
+                ) + "Please delete `{}` ".format(
+                    os.path.join(self.temp_save_fold, "drift.csv")
+                ) + 
+                "before running if you want to re-calculate the drift " + 
+                "for same dataset with new window size or method. " + 
+                "Please delete whole `{}` ".format(self.temp_save_fold) + 
+                "before running if you want to re-calculate the drift " + 
+                "for same dataset with new stride size or for a new dataset."
             )
             # scale up the drift to increase the percision since for image, we
             # can only shift the image by integer pixels

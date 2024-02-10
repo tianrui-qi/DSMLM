@@ -14,7 +14,9 @@ __all__ = []
 
 
 class DriftCorrector:
-    def __init__(self, temp_save_fold: str, window: int) -> None:
+    def __init__(
+        self, temp_save_fold: str, window: int, method: str = "MCC",
+    ) -> None:
         # path
         self.temp_save_fold = temp_save_fold
 
@@ -23,6 +25,7 @@ class DriftCorrector:
         self.window = window
         self.window_num = (self.total-self.window)//self.stride+1
         self.crop = [32, 64, 64]
+        self.method = method    # DCC, MCC, or RCC
 
         # result
         self.index_src = self.window/2 + np.arange(self.window_num)*self.stride
@@ -72,15 +75,28 @@ class DriftCorrector:
             print(
                 "Load drift from `{}`. ".format(
                     os.path.join(self.temp_save_fold, "drift.csv")
-                ) + "Please delete the .csv file if you want to re-calculate " +
-                "the drift with a new window size for same dataset. " + 
-                "However, if you change to a new dataset or " + 
-                "change the stride size, you must delete the whole " + 
-                "`{}`.".format(self.temp_save_fold)
+                ) + "Please delete `{}` ".format(
+                    os.path.join(self.temp_save_fold, "drift.csv")
+                ) + 
+                "before running if you want to re-calculate the drift " + 
+                "for same dataset with new window size or method. " + 
+                "Please delete whole `{}` ".format(self.temp_save_fold) + 
+                "before running if you want to re-calculate the drift " + 
+                "for same dataset with new stride size or for a new dataset."
             )
         else:
             # calculate the drift
-            self.drift_src = self._mcc()
+            if self.method == "DCC":
+                self.drift_src = self._dcc()
+            elif self.method == "MCC":
+                self.drift_src = self._mcc()
+            elif self.method == "RCC":
+                self.drift_src = self._rcc()
+            else:
+                raise ValueError(
+                    "Method must be one of DCC, MCC, or RCC, " + 
+                    "but got {}".format(self.method)
+                )
             self.drift_dst = self._interpolation()
             # save the drift as .csv for future use
             np.savetxt(

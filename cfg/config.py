@@ -23,6 +23,7 @@ class ConfigEvaluer:
             # drift
             "stride": args.stride,  # unit: frames
             "window": args.window,  # unit: frames
+            "method": args.method,  # DCC, MCC, or RCC
             # data
             "batch_size": args.batch_size,
         }
@@ -72,6 +73,15 @@ class ConfigEvaluer:
             default=0,
             help="Number of frames in each window, unit frames. " + 
             "Should set with stride at the same time. Default: 0."
+        )
+        parser.add_argument(
+            "-method", type=str, required=False, dest="method",
+            choices=["DCC", "MCC", "RCC"], default="MCC",
+            help="Drift correction method, DCC, MCC, or RCC. DCC run very " + 
+            "fast where MCC and RCC is more accurate. We suggest to use DCC " + 
+            "to test the window size first and then use MCC or RCC to " + 
+            "calculate the final drift. Optional to set when window is set. " + 
+            "Default: MCC."
         )
         parser.add_argument(
             "-b", type=int, required=True, dest="batch_size",
