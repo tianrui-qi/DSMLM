@@ -67,19 +67,15 @@ class DriftCorrector:
         return total, stride
 
     def fit(self) -> ndarray:
-        if os.path.exists(os.path.join(self.temp_save_fold, "drift.csv")):
+        cache_path = os.path.join(self.temp_save_fold, "{}.csv".format(self.method))
+        if os.path.exists(cache_path):
             # if cache exists, load the drift from the cache
-            self.drift_dst = np.loadtxt(
-                os.path.join(self.temp_save_fold, "drift.csv"), delimiter=','
-            )
+            self.drift_dst = np.loadtxt(cache_path, delimiter=',')
             print(
-                "Load drift from `{}`. ".format(
-                    os.path.join(self.temp_save_fold, "drift.csv")
-                ) + "Please delete `{}` ".format(
-                    os.path.join(self.temp_save_fold, "drift.csv")
-                ) + 
+                "Load drift from `{}`. ".format(cache_path) + 
+                "Please delete `{}` ".format(cache_path) + 
                 "before running if you want to re-calculate the drift " + 
-                "for same dataset with new window size or method. " + 
+                "for same dataset with new window size. " + 
                 "Please delete whole `{}` ".format(self.temp_save_fold) + 
                 "before running if you want to re-calculate the drift " + 
                 "for same dataset with new stride size or for a new dataset."
@@ -99,16 +95,12 @@ class DriftCorrector:
                 )
             self.drift_dst = self._interpolation()
             # save the drift as .csv for future use
-            np.savetxt(
-                os.path.join(self.temp_save_fold, "drift.csv"), 
-                self.drift_dst, delimiter=','
-            )
+            np.savetxt(cache_path, self.drift_dst, delimiter=',')
         self._plot()
         return self.drift_dst
 
     def _dcc(self) -> ndarray:
         drift = np.zeros([self.window_num, 3])  # [window_num, 3]
-
         image0 = self._getWindow(0)
         for j in tqdm.tqdm(range(0, self.window_num)):
             imagej = self._getWindow(j)
@@ -157,11 +149,99 @@ class DriftCorrector:
         # just drift(0,0) and need to be subtracted from drift 
         drift -= drift[0]
 
-        return drift
+        return drift    # [window_num, 3]
 
     def _mcc(self) -> ndarray:
-        # [window_num, window_num, 3], will sum to [window_num, 3] before return
+        drift = self._getDriftMatrix()  # [window_num, window_num, 3]
+
+        # drift is symmetric, i.e., drift(i,j) = -drift(j,i)
+        drift -= drift.transpose((1, 0, 2))
+        # optimal drift(j) is the avereage of drift(i,j) for all i
+        drift = drift.sum(axis=0) / self.window_num
+        # since the drift of window (0,0) must be zero, the center of drift is 
+        # just drift(0,0) and need to be subtracted from drift 
+        drift -= drift[0]
+
+        return drift    # [window_num, 3]
+
+    def _rcc(self, rmax: float = 1.0) -> ndarray:
+        drift = self._getDriftMatrix()  # [window_num, window_num, 3]
+
+        # number of drifts that is non-zero
+        N = self.window_num * (self.window_num - 1) // 2
+        # r, A
+        r = np.zeros((N, 3))                    # [N, 3]
+        A = np.zeros((N, self.window_num-1))    # [N, window_num-1]
+        flag = 0
+        for i in range(self.window_num-1):
+            for j in range(i + 1, self.window_num):
+                r[flag] = drift[i][j]
+                A[flag, i:j] = 1
+                flag += 1
+        # error
+        # get the error according to r and A
+        error = A @ (np.linalg.pinv(A) @ r) - r     # [N, 3]
+        error = np.linalg.norm(error, axis=1)       # [N]
+        # col1 is norm error of each drift, col2 is the corresponding index
+        error = np.array([[error[i], i] for i in range(N)])
+        # we sort error in descending order where keep the index of the drift 
+        # in order, i.e., still match to the err.
+        error = error[np.flipud(np.argsort(error[:,0])),:]
+        # select all the index where error is larger than rmax
+        index = error[np.where(error[:,0] > rmax)[0]][:, 1].astype(int)
+        for flag in index:
+            # try to delete flag row in A
+            # if the remaining matrix has a rank equal to nbinframe - 1, it 
+            # means that deleting row flag will not cause the matrix A to become
+            # singular then we can delete the corresponding row in A and r 
+            temp = np.delete(A.copy(), flag, axis=0)
+            if np.linalg.matrix_rank(temp) != (self.window_num - 1): continue
+            # delete corresponding row in A and r
+            A = np.delete(A, flag, axis=0)
+            r = np.delete(r, flag, axis=0)
+            # update index that we need to delete later since now we have less 
+            # row and index larger than flag (current) should minus 1
+            index[np.where(index > flag)[0]] -= 1
+        # drift
+        drift = np.linalg.pinv(A) @ r           # [window_num-1, 3]
+        drift = np.cumsum(drift, axis=0)        # [window_num-1, 3]
+        drift = np.insert(drift, 0, 0, axis=0)  # [window_num, 3]
+
+        return drift    # [window_num, 3]
+
+    def _getDriftMatrix(self) -> ndarray:
+        # [window_num, window_num, 3]
         drift = np.zeros([self.window_num, self.window_num, 3])
+
+        # load the drift vector from cache if exists and transform it to
+        # drift matrix and return
+        if os.path.exists(os.path.join(self.temp_save_fold, "r.csv")):
+            r = np.loadtxt(
+                os.path.join(self.temp_save_fold, "r.csv"), delimiter=','
+            )
+            flag = 0
+            for i in range(self.window_num-1):
+                for j in range(i+1, self.window_num):
+                    drift[i][j] = r[flag]
+                    flag += 1
+            print(
+                "Load drift matrix from `{}`. ".format(
+                    os.path.join(self.temp_save_fold, "r.csv")
+                ) + 
+                "This drift matrix is temp result shared between MCC and RCC " + "method to save drift calculation time. " +
+                "Note that this is not final drift value. " +
+                "Please ignore if you have run one of MCC or RCC method and " +
+                "want to try another method. "
+                "Please delete `{}` ".format(
+                    os.path.join(self.temp_save_fold, "r.csv")
+                ) + 
+                "before running if you want to re-calculate the drift " + 
+                "for same dataset with new window size. " + 
+                "Please delete whole `{}` ".format(self.temp_save_fold) + 
+                "before running if you want to re-calculate the drift " + 
+                "for same dataset with new stride size or for a new dataset."
+            )
+            return drift
 
         for i in tqdm.tqdm(range(self.window_num)):
             imagei = self._getWindow(i)
@@ -216,19 +296,22 @@ class DriftCorrector:
             for j in range(i+1, self.window_num):
                 drift[i][j] -= drift[i][i]
             drift[i][i] -= drift[i][i]
-        # drift is symmetric, i.e., drift(i,j) = -drift(j,i)
-        drift -= drift.transpose((1, 0, 2))
-        # optimal drift(j) is the avereage of drift(i,j) for all i
-        drift = drift.sum(axis=0) / self.window_num
-        # since the drift of window (0,0) must be zero, the center of drift is 
-        # just drift(0,0) and need to be subtracted from drift 
-        drift -= drift[0]
+
+        # flat the drift matrix to drift vector to save for future use
+        # number of drifts that is non-zero
+        N = self.window_num * (self.window_num - 1) // 2
+        r = np.zeros((N, 3))                    # [N, 3]
+        flag = 0
+        for i in range(self.window_num-1):
+            for j in range(i+1, self.window_num):
+                r[flag] = drift[i][j]
+                flag += 1
+        np.savetxt(
+            os.path.join(self.temp_save_fold, "r.csv"), 
+            r, delimiter=','
+        )
 
         return drift
-
-    # TODO: implement RCC
-    def _rcc(self) -> ndarray:
-        pass
 
     def _getWindow(self, index: int) -> ndarray:
         image = tifffile.imread(self.image_list[index])

@@ -79,11 +79,15 @@ of frames 251-500 prediction results, and so on. As a comparison, when
 predicting without drift correction, `DATA_SAVE_FOLD/500.tif` will be the stack 
 of frames 1-500 prediction results. Then, these temp results will be used to 
 calculate the drift, and the final drift of each frames in all dimension will be
-saved in `TEMP_SAVE_FOLD/drift.csv`. 
+saved in `TEMP_SAVE_FOLD/{DCC,MCC,RCC}.csv` depend on the method you choose. 
 
-We highly rely on cached temp result and drift here: please delete 
-`TEMP_SAVE_FOLD/drift.csv` before running if you want to re-calculate the drift 
-for same dataset with new window size or method; please delete whole 
+We highly rely on cached temp result and drift here. Please delete 
+`TEMP_SAVE_FOLD/{DCC,MCC,RCC}.csv` before running if you want to re-calculate 
+the drift for same dataset with new window size; in addition, for MCC and RCC, 
+you need to delete `TEMP_SAVE_FOLD/r.csv`, temp result shared between MCC and 
+RCC method to save drift calculation time. Note that this is not final drift 
+value. If you have run one of MCC or RCC method and want to try the other, you 
+can keep `TEMP_SAVE_FOLD/r.csv` to save time. Please delete whole 
 `-T TEMP_SAVE_FOLD` before running if you want to re-calculate the drift for 
 same dataset with new stride size or for a new dataset.
 
@@ -108,9 +112,8 @@ and then use MCC or RCC to calculate the final drift with the best window size,
 python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 2000 -method MCC -b 4
 python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 2000 -method RCC -b 4
 ```
-Remember to delete `TEMP_SAVE_FOLD/drift.csv` every time you change 
-`-window WINDOW` or `-method` in order to re-calculate the drift instead of 
-using the cached drift.
+Please read though the README.md before running, especially the paragraph about
+cached temp result and drift!!!
 
 #### Step 2: Perform drift correction
 
