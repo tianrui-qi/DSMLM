@@ -164,7 +164,7 @@ class DriftCorrector:
 
         return drift    # [window_num, 3]
 
-    def _rcc(self, rmax: float = 1.0) -> ndarray:
+    def _rcc(self, rmax: float = 0.8) -> ndarray:
         drift = self._getDriftMatrix()  # [window_num, window_num, 3]
 
         # number of drifts that is non-zero
@@ -380,7 +380,7 @@ class DriftCorrector:
         plt.plot(self.index_dst, self.drift_dst[:, 2], label='X')
         plt.legend()
         plt.grid(linestyle='--')
-        plt.title("Drift over frames")
+        plt.title("Drift over frames (method: {})".format(self.method))
         plt.xlabel('frame')
         plt.ylabel('drift (pixel)')
 
@@ -395,7 +395,7 @@ class DriftCorrector:
         plt.gca().invert_yaxis()
         plt.gca().set_aspect('equal', adjustable='box')
         plt.grid(linestyle='--')
-        plt.title("Drift in XY plane")
+        plt.title("Drift in XY plane (method: {})".format(self.method))
         plt.xlabel('x (pixel)')
         plt.ylabel('y (pixel)')
 
