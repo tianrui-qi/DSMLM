@@ -119,9 +119,9 @@ cached temp result and drift!!!
 
 Since we already cached the drift result, we can directly use it and perform 
 drift correction while predicting the frames. For example, if we set 
-`-T TEMP_SAVE_FOLD` as `data/temp/` in the first step, then we can perform drift
-correction by
+`-T TEMP_SAVE_FOLD` as `data/temp/` and `-method {DCC,MCC,RCC}` as RCC in the 
+first step, then we can perform drift correction by
 ```bash
-python main.py -s 4 -L "data/frames/" -S "data/444-dl/" -T "data/temp/" -b 4
-python main.py -s 8 -L "data/frames/" -S "data/488-dl/" -T "data/temp/" -b 4
+python main.py -s 4 -L "data/frames/" -S "data/444-dl-RCC/" -T "data/temp/" -method RCC -b 4
+python main.py -s 8 -L "data/frames/" -S "data/488-dl-RCC/" -T "data/temp/" -method RCC -b 4
 ```

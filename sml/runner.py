@@ -178,20 +178,18 @@ class Evaluer:
             # calculating the drift and a large region for the final prediction.
             return
         # case 3:
-        # we already have cached drift.csv, means we want to perform the final
-        # prediction
+        # we already have cached {method}.csv, means we want to perform the 
+        # final prediction
         else:
-            drift = torch.from_numpy(np.loadtxt(
-                os.path.join(self.temp_save_fold, "drift.csv"), delimiter=','
-            ))
+            cache_path = os.path.join(
+                self.temp_save_fold, "{}.csv".format(self.method)
+            )
+            drift = torch.from_numpy(np.loadtxt(cache_path, delimiter=','))
             print(
-                "Load drift from `{}`. ".format(
-                    os.path.join(self.temp_save_fold, "drift.csv")
-                ) + "Please delete `{}` ".format(
-                    os.path.join(self.temp_save_fold, "drift.csv")
-                ) + 
+                "Load drift from `{}`. ".format(cache_path) + 
+                "Please delete `{}` ".format(cache_path) + 
                 "before running if you want to re-calculate the drift " + 
-                "for same dataset with new window size or method. " + 
+                "for same dataset with new window size. " + 
                 "Please delete whole `{}` ".format(self.temp_save_fold) + 
                 "before running if you want to re-calculate the drift " + 
                 "for same dataset with new stride size or for a new dataset."
