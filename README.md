@@ -35,10 +35,11 @@ python main.py --help
 ```
 usage:
 ```bash
-python main.py [-h] [-s {4,8}] -L FRAMES_LOAD_FOLD [-S DATA_SAVE_FOLD] [-C CKPT_LOAD_PATH] [-T TEMP_SAVE_FOLD][-stride STRIDE] [-window WINDOW] [-method {DCC,MCC,RCC}] -b BATCH_SIZE
+python main.py [-h] [-s {4,8}] [-r RNG_SUB_USER] -L FRAMES_LOAD_FOLD [-S DATA_SAVE_FOLD] [-C CKPT_LOAD_PATH] [-T TEMP_SAVE_FOLD][-stride STRIDE] [-window WINDOW] [-method {DCC,MCC,RCC}] -b BATCH_SIZE
 ```
 options:
 - `-s {4,8}`: Scale up factor, 4 or 8. Default: 4.
+- `-r RNG_SUB_USER`: Range of the sub-region of the frames to predict. Due to limited memory, we cut whole frames into patches, i.e., sub-regions and predict them separately. Please type six int separated by space as the subframe start (inclusive) and end (exclusive) index for each dimension, i.e., `-r 0 1 8 12 9 13`. If you not sure about the number of subframe for each dimension you can select, do not specify this parameter; the code will print the range you can select and ask you to type the range. Default: None.
 - `-L FRAMES_LOAD_FOLD`: Path to the frames load folder. Note that the code will predict all the frames under this folder. Thus, if you want to predict portion of the frames, please copy them to a new folder and specify this parameter with that new folder.
 - `-S DATA_SAVE_FOLD`: Path to the data save folder. No need to specify when stride or window is set as non-zero. Default: None.
 - `-C CKPT_LOAD_PATH`: Path to the checkpoint load file without .ckpt. Default: `ckpt/e08/340` or `ckpt/e10/450` when scale up factor is 4 or 8.
@@ -46,25 +47,39 @@ options:
 - `-stride STRIDE`: Step size of the drift corrector, unit frames. Should set with window at the same time. Default: 0.
 - `-window WINDOW`: Number of frames in each window, unit frames. Should set with stride at the same time. Default: 0.
 - `-method {DCC,MCC,RCC}`: Drift correction method, DCC, MCC, or RCC. DCC run very fast where MCC and RCC is more accurate. We suggest to use DCC (default) to test the window size first and then use MCC or RCC to calculate the final drift. Optional to set when window is set. Default: DCC.
-- `-b BATCH_SIZE`: Batch size. Set this value according to your GPU memory.
+- `-b BATCH_SIZE`: Batch size. Set this value according to your GPU memory. Note that the product of rng_sub_user must divisible by batch_size.
 
 Note that for all example below, we assign `-b BATCH_SIZE` as 4. You can change 
-it according to your GPU memory and the region you selected to predict.
+it according to your GPU memory and the region `-r RNG_SUB_USER` you selected to 
+predict.
 
 ### Without drift correction
 
-For example, for scale up by 4 (default) or 8 without drift correction:
+For example, for scale up by 4 (default) or 8 without drift correction, if you
+not sure about the number of subframe for each dimension you can select, run 
+command below and follow the instruction of the code to type the range of 
+sub-region you want to predict.
 ```bash
 python main.py -s 4 -L "data/frames/" -S "data/444-dl/" -b 4
 python main.py -s 8 -L "data/frames/" -S "data/488-dl/" -b 4
 ```
 
+If you already know the sub-region you want to predict, for example, patch 
+`[0, 1)` in Z, `[8, 12)` in Y, and `[9, 13)` in X, pass the range to 
+`-r RNG_SUB_USER` as below.
+```bash
+python main.py -s 4 -r 0 1 8 12 9 13 -L "data/frames/" -S "data/444-dl/" -b 4
+python main.py -s 8 -r 0 1 8 12 9 13 -L "data/frames/" -S "data/488-dl/" -b 4
+```
+
 ### With drift correction
 
 To perform evaluation with drift correction, we split into two steps since temp 
-results for calculating the drift and final prediction may use different region 
-of the frames, i.e., a small region for getting temp result to reduce the time 
-of calculating the drift and a large region for the final prediction.
+results for calculating the drift and final prediction may use different region
+`-r RNG_SUB_USER` of the frames, i.e., a small region for getting temp result to 
+reduce the time of calculating the drift and a large region for the final 
+prediction. We skip examples of passing `-r RNG_SUB_USER` to the command below; 
+it is the same as without drift correction.
 
 #### Step 1: Calculate the drift
 
@@ -112,8 +127,6 @@ and then use MCC or RCC to calculate the final drift with the best window size,
 python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 2000 -method MCC -b 4
 python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 2000 -method RCC -b 4
 ```
-Please read though the README.md before running, especially the paragraph about
-cached temp result and drift!!!
 
 #### Step 2: Perform drift correction
 

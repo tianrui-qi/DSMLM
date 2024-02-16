@@ -17,7 +17,8 @@ __all__ = ["RawDataset", "SimDataset"]
 class RawDataset(Dataset):
     def __init__(
         self, num: int, lum_info: bool, dim_dst: List[int], 
-        scale: List[int], frames_load_fold: str, mlists_load_fold: str
+        scale: List[int], rng_sub_user: List[int],
+        frames_load_fold: str, mlists_load_fold: str
     ) -> None:
         super(RawDataset, self).__init__()
         self.num  = num
@@ -41,9 +42,9 @@ class RawDataset(Dataset):
         self.pad_src = Tensor([2, 2, 2]).int()  # [D], int
 
         # subframe index
-        self.num_sub      = None    # [D], int
-        self.num_sub_user = None    # [D], int
-        self.rng_sub_user = None    # [D, 2], int
+        self.num_sub      = None            # [D], int
+        self.num_sub_user = None            # [D], int
+        self.rng_sub_user = rng_sub_user    # [D, 2], int
 
         # data path and file name list
         self.frames_load_fold = frames_load_fold
@@ -90,70 +91,24 @@ class RawDataset(Dataset):
 
         ## evalu
 
-        # draw all patch
-        """
-        patch = torch.zeros(self.dim_src_raw_pad.tolist())
-        patch[
-            self.pad_src[0] : self.pad_src[0] + self.dim_src_raw[0],
-            self.pad_src[1] : self.pad_src[1] + self.dim_src_raw[1],
-            self.pad_src[2] : self.pad_src[2] + self.dim_src_raw[2],
-        ] = 1
-        for c in range(self.num_sub[0]+1):
-            index = c * self.dim_src[0] + (self.pad_src[0]-1)
-            patch[index : index+2, :, :] = 0.1
-        for h in range(self.num_sub[1]+1):
-            index = h * self.dim_src[1] + (self.pad_src[1]-1)
-            patch[:, index : index+2, :] = 0.1
-        for w in range(self.num_sub[2]+1):
-            index = w * self.dim_src[2] + (self.pad_src[2]-1)
-            patch[:, :, index : index+2] = 0.1
-        if not os.path.exists("data"): os.makedirs("data")
-        tifffile.imwrite("data/patch.tif", patch.numpy())
-        print("Check data/patch.tif for the all patch.")
-        """
-
-        # ask user to input sub_range, six number
-        input_string = input(
-            "The number of subframe for each dimension is " + 
-            "{}. ".format(self.num_sub.tolist()) + 
-            "Please type six int separated by comma " + 
-            "as the subframe start, end index for each dimension, " + 
-            "e.g., '0, 1, 8, 12, 9, 16': "
-        )
-        self.rng_sub_user = [
-            0, self.num_sub[0], 0, self.num_sub[1], 0, self.num_sub[2]
-        ] if input_string == "" else [
-            int(item.strip()) for item in input_string.split(",")
-        ]
+        if self.rng_sub_user is None:
+            # ask user to input sub_range, six number
+            input_string = input(
+                "The number of subframe for each dimension is " + 
+                "{}. ".format(self.num_sub.tolist()) + 
+                "Please type six int separated by comma " + 
+                "as the subframe start (inclusive) and end (exclusive) " + 
+                "index for each dimension, i.e., '0, 1, 8, 12, 9, 13': "
+            )
+            self.rng_sub_user = [
+                0, self.num_sub[0], 0, self.num_sub[1], 0, self.num_sub[2]
+            ] if input_string == "" else [
+                int(item.strip()) for item in input_string.split(",")
+            ]
         self.rng_sub_user = Tensor(self.rng_sub_user).int().reshape(self.D, 2)
         self.num_sub_user = self.rng_sub_user[:, 1] - self.rng_sub_user[:, 0]
         # compute total number of data automatically
         self.num = torch.prod(self.num_sub_user) * len(self.frames_list)
-
-        # draw selected patch
-        """
-        patch = torch.zeros(self.dim_src_raw_pad.tolist())
-        patch[
-            self.pad_src[0] + self.dim_src[0] * self.rng_sub_user[0][0] :
-            self.pad_src[0] + self.dim_src[0] * self.rng_sub_user[0][1],
-            self.pad_src[1] + self.dim_src[1] * self.rng_sub_user[1][0] :
-            self.pad_src[1] + self.dim_src[1] * self.rng_sub_user[1][1],
-            self.pad_src[2] + self.dim_src[2] * self.rng_sub_user[2][0] :
-            self.pad_src[2] + self.dim_src[2] * self.rng_sub_user[2][1],
-        ] = 1
-        for c in range(self.num_sub[0]+1):
-            index = c * self.dim_src[0] + (self.pad_src[0]-1)
-            patch[index : index+2, :, :] = 0.1
-        for h in range(self.num_sub[1]+1):
-            index = h * self.dim_src[1] + (self.pad_src[1]-1)
-            patch[:, index : index+2, :] = 0.1
-        for w in range(self.num_sub[2]+1):
-            index = w * self.dim_src[2] + (self.pad_src[2]-1)
-            patch[:, :, index : index+2] = 0.1
-        if not os.path.exists("data"): os.makedirs("data")
-        tifffile.imwrite("data/patch.tif", patch.numpy())
-        print("Check data/patch.tif for selected patch.")
-        """
 
     def _getAveragemax(self) -> None:
         """

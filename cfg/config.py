@@ -12,6 +12,7 @@ class ConfigEvaluer:
             "dim_dst" : [160, 160, 160],
 
             "scale": [4, args.scale, args.scale],
+            "rng_sub_user": args.rng_sub_user,
             "frames_load_fold": args.frames_load_fold,
             "mlists_load_fold": None,   # not used
         }
@@ -34,6 +35,20 @@ class ConfigEvaluer:
             "-s", type=int, required=False, dest="scale", 
             choices=[4, 8], default=4,
             help="Scale up factor, 4 or 8. Default: 4."
+        )
+        parser.add_argument(
+            "-r", type=int, required=False, dest="rng_sub_user",
+            default=None, nargs="+",
+            help="Range of the sub-region of the frames to predict. " + 
+            "Due to limited memory, we cut whole frames into patches, " + 
+            "i.e., sub-regions and predict them separately. " + 
+            "Please type six int separated by space as the subframe " + 
+            "start (inclusive) and end (exclusive) index for each dimension, " +
+            "i.e., `-r 0 1 8 12 9 13`. " + 
+            "If you not sure about the number of subframe for each dimension " +
+            "you can select, do not specify this parameter; " + 
+            "the code will print the range you can select and " + 
+            "ask you to type the range. Default: None."
         )
         parser.add_argument(
             "-L", type=str, required=True, dest="frames_load_fold",
@@ -86,7 +101,9 @@ class ConfigEvaluer:
         )
         parser.add_argument(
             "-b", type=int, required=True, dest="batch_size",
-            help="Batch size. Set this value according to your GPU memory."
+            help="Batch size. Set this value according to your GPU memory. " +
+            "Note that the product of rng_sub_user must divisible " + 
+            "by batch_size."
         )
         args = parser.parse_args()
         # set default value for ckpt_load_path
@@ -114,8 +131,9 @@ class ConfigTrainer:
             "dim_dst" : [160, 160, 160],
 
             "scale": [4, 4, 4],
-            "frames_load_fold": "D:/SMLFM/hela/frames",
-            "mlists_load_fold": "D:/SMLFM/hela/mlists",
+            "rng_sub_user": None,   # not used for training
+            "frames_load_fold": "D:/frames",
+            "mlists_load_fold": "D:/mlists",
         }
         self.model = {
             "dim"  : 3,
