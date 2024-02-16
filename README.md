@@ -38,20 +38,41 @@ usage:
 python main.py [-h] [-s {4,8}] [-r RNG_SUB_USER] -L FRAMES_LOAD_FOLD [-S DATA_SAVE_FOLD] [-C CKPT_LOAD_PATH] [-T TEMP_SAVE_FOLD][-stride STRIDE] [-window WINDOW] [-method {DCC,MCC,RCC}] -b BATCH_SIZE
 ```
 options:
-- `-s {4,8}`: Scale up factor, 4 or 8. Default: 4.
-- `-r RNG_SUB_USER`: Range of the sub-region of the frames to predict. Due to limited memory, we cut whole frames into patches, i.e., sub-regions and predict them separately. Please type six int separated by space as the subframe start (inclusive) and end (exclusive) index for each dimension, i.e., `-r 0 1 8 12 9 13`. If you not sure about the number of subframe for each dimension you can select, do not specify this parameter; the code will print the range you can select and ask you to type the range. Default: None.
-- `-L FRAMES_LOAD_FOLD`: Path to the frames load folder. Note that the code will predict all the frames under this folder. Thus, if you want to predict portion of the frames, please copy them to a new folder and specify this parameter with that new folder.
-- `-S DATA_SAVE_FOLD`: Path to the data save folder. No need to specify when stride or window is set as non-zero. Default: None.
-- `-C CKPT_LOAD_PATH`: Path to the checkpoint load file without .ckpt. Default: `ckpt/e08/340` or `ckpt/e10/450` when scale up factor is 4 or 8.
-- `-T TEMP_SAVE_FOLD`: Path to the temporary save folder for drifting analysis. Must be specified when drift correction will be performed. Default: None.
-- `-stride STRIDE`: Step size of the drift corrector, unit frames. Should set with window at the same time. Default: 0.
-- `-window WINDOW`: Number of frames in each window, unit frames. Should set with stride at the same time. Default: 0.
-- `-method {DCC,MCC,RCC}`: Drift correction method, DCC, MCC, or RCC. DCC run very fast where MCC and RCC is more accurate. We suggest to use DCC (default) to test the window size first and then use MCC or RCC to calculate the final drift. Optional to set when window is set. Default: DCC.
-- `-b BATCH_SIZE`: Batch size. Set this value according to your GPU memory. Note that the product of rng_sub_user must divisible by batch_size.
+-   `-s {4,8}`: Scale up factor, 4 or 8. Default: 4.
+-   `-r RNG_SUB_USER`: Range of the sub-region of the frames to predict. Due to 
+    limited memory, we cut whole frames into patches, i.e., sub-regions and 
+    predict them separately. Please type six int separated by space as the 
+    subframe start (inclusive) and end (exclusive) index for each dimension, 
+    i.e., `-r 0 1 8 12 9 13`. If you not sure about the number of subframe for 
+    each dimension you can select, do not specify this parameter; the code will 
+    print the range you can select and ask you to type the range. Default: None.
+-   `-L FRAMES_LOAD_FOLD`: Path to the frames load folder. Note that the code 
+    will predict all the frames under this folder. Thus, if you want to predict 
+    portion of the frames, please copy them to a new folder and specify this 
+    parameter with that new folder.
+-   `-S DATA_SAVE_FOLD`: Path to the data save folder. No need to specify when 
+    stride or window is set as non-zero. Default: None.
+-   `-C CKPT_LOAD_PATH`: Path to the checkpoint load file without .ckpt. 
+    Default: `ckpt/e08/340` or `ckpt/e10/450` when scale up factor is 4 or 8.
+-   `-T TEMP_SAVE_FOLD`: Path to the temporary save folder for drifting 
+    analysis. Must be specified when drift correction will be performed. 
+    Recomend to specify different path for different dataset.
+    Default: `os.path.dirname(FRAMES_LOAD_FOLD)/temp/`.
+-   `-stride STRIDE`: Step size of the drift corrector, unit frames. Window size
+    must larger or equal to stride and divisible by stride. Should set with 
+    window at the same time. Default: 0.
+-   `-window WINDOW`: Number of frames in each window, unit frames. Window size 
+    must larger or equal to stride and divisible by stride. Should set with 
+    stride at the same time. Default: 0.
+-   `-method {DCC,MCC,RCC}`: Drift correction method, DCC, MCC, or RCC. Must be 
+    set if you want to evaluate with drift correction. DCC run very fast where 
+    MCC and RCC is more accurate. We suggest to use DCC to test the window size 
+    first and then use MCC or RCC to calculate the final drift. Default: None.
+-   `-b BATCH_SIZE`: Batch size. Set this value according to your GPU memory. 
+    Note that the product of rng_sub_user must divisible by batch_size.
 
-Note that for all example below, we assign `-b BATCH_SIZE` as 4. You can change 
-it according to your GPU memory and the region `-r RNG_SUB_USER` you selected to 
-predict.
+For examples below, we assign `-b BATCH_SIZE` as 4. Change it according to your 
+GPU memory and the region `-r RNG_SUB_USER` you selected to predict.
 
 ### Without drift correction
 
@@ -83,58 +104,58 @@ it is the same as without drift correction.
 
 #### Step 1: Calculate the drift
 
-First, we predict frames in `-L FRAMES_LOAD_FOLD` as usual like without drift 
-correction where the scale up factor `-s` must set to 4, i.e., the default 
-value.  However, instead of saving the final prediction results in 
-`-S DATA_SAVE_FOLD`, we stack and save `-stride STRIDE` number of prediction 
-results to `-T TEMP_SAVE_FOLD` as temp result then reset. For example, if 
-`-stride STRIDE` is 250, temp result `TEMP_SAVE_FOLD/250.tif` will be the stack 
-of frames 1-250 prediction results, `TEMP_SAVE_FOLD/500.tif` will be the stack 
-of frames 251-500 prediction results, and so on. As a comparison, when 
-predicting without drift correction, `DATA_SAVE_FOLD/500.tif` will be the stack 
-of frames 1-500 prediction results. Then, these temp results will be used to 
-calculate the drift, and the final drift of each frames in all dimension will be
-saved in `TEMP_SAVE_FOLD/{DCC,MCC,RCC}.csv` depend on the method you choose. 
+First, we predict frames in `-L FRAMES_LOAD_FOLD` like without drift correction 
+where the scale up factor `-s` must set to 4 (default). However, instead of 
+saving the final prediction results in `-S DATA_SAVE_FOLD`, we stack and save 
+`-stride STRIDE` number of prediction results to `-T TEMP_SAVE_FOLD` as temp 
+result then reset. For example, if `-stride STRIDE` is 250, temp result 
+`TEMP_SAVE_FOLD/00250.tif` will be the stack of frames 1-250 prediction results,
+`TEMP_SAVE_FOLD/00500.tif` will be the stack of frames 251-500 prediction 
+results, and so on. As a comparison, when predicting without drift correction, 
+`DATA_SAVE_FOLD/00500.tif` will be the stack of frames 1-500 prediction results.
+These temp results will be used to calculate the drift, and the final drift of 
+each frames in all dimension will be saved in `TEMP_SAVE_FOLD/{DCC,MCC,RCC}.csv`
+depend on the method you choose. 
 
-We highly rely on cached temp result and drift here. Please delete 
-`TEMP_SAVE_FOLD/{DCC,MCC,RCC}.csv` before running if you want to re-calculate 
-the drift for same dataset with new window size; in addition, for MCC and RCC, 
-you need to delete `TEMP_SAVE_FOLD/r.csv`, temp result shared between MCC and 
-RCC method to save drift calculation time. Note that this is not final drift 
-value. If you have run one of MCC or RCC method and want to try the other, you 
-can keep `TEMP_SAVE_FOLD/r.csv` to save time. Please delete whole 
-`-T TEMP_SAVE_FOLD` before running if you want to re-calculate the drift for 
-same dataset with new stride size or for a new dataset.
+We highly rely on cached temp result and drift value here:
+-   Delete `TEMP_SAVE_FOLD/{DCC,MCC,RCC}.csv` if you want to re-calculate the 
+    drift for same dataset with new window size; 
+-   In addition, for MCC and RCC, delete `TEMP_SAVE_FOLD/r.csv`, temp result 
+    shared between MCC and RCC method. If you have run one of MCC or RCC method 
+    and want to try the other, you can keep `TEMP_SAVE_FOLD/r.csv` to save time. 
+-   Delete whole `-T TEMP_SAVE_FOLD` if you want to re-calculate the drift for 
+    same dataset with new stride size.
+-   Delete whole `-T TEMP_SAVE_FOLD` or specify a new path (recommend) if you 
+    want to re-calculate the drift for different dataset.
 
-It will be time comsuming to change `-stride STRIDE` since we need to delete 
-whole `-T TEMP_SAVE_FOLD` and re-predict frames. A relatively small 
-`-stride STRIDE`, i.e., 250, is recommended to leave the room for test 
-`-window WINDOW` since window size must larger or equal to stride and divisible 
-by stride. Smaller stride size will be more accurate but time comsuming since we
-have more windows; big O of DCC is linear to number of windows and MCC and RCC 
-are quadratic to number of windows. We suggest to use DCC (default) to test the 
-window size first and then use MCC or RCC to calculate the final drift.
+Smaller stride size means more window number, leading to more accurate drift
+calculation but more time comsuming; big O of DCC is linear to number of windows
+and MCC and RCC are quadratic to number of windows. We suggest to use DCC to 
+test the window size first and then use MCC or RCC to calculate the final drift.
 
-For example, test the window size 1000, 2000, or 3000 with DCC (default) method,
+For example, test the window size 1000, 2000, or 3000 with DCC method
 ```bash
-python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 1000 -b 4
-python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 2000 -b 4
-python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 3000 -b 4
+python main.py -L "data/frames/" -stride 250 -window 1000 -method DCC -b 4
+python main.py -L "data/frames/" -stride 250 -window 2000 -method DCC -b 4
+python main.py -L "data/frames/" -stride 250 -window 3000 -method DCC -b 4
 ```
 and then use MCC or RCC to calculate the final drift with the best window size, 
 2000 as a example,
 ```bash
-python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 2000 -method MCC -b 4
-python main.py -L "data/frames/" -T "data/temp/" -stride 250 -window 2000 -method RCC -b 4
+python main.py -L "data/frames/" -stride 250 -window 2000 -method MCC -b 4
+python main.py -L "data/frames/" -stride 250 -window 2000 -method RCC -b 4
 ```
+Note that we use default `-T TEMP_SAVE_FOLD` here, 
+`os.path.dirname(FRAMES_LOAD_FOLD)/temp/`, i.e., `data/temp/`.
 
 #### Step 2: Perform drift correction
 
 Since we already cached the drift result, we can directly use it and perform 
-drift correction while predicting the frames. For example, if we set 
-`-T TEMP_SAVE_FOLD` as `data/temp/` and `-method {DCC,MCC,RCC}` as RCC in the 
-first step, then we can perform drift correction by
+drift correction while predicting the frames. Please make sure that 
+`-T TEMP_SAVE_FOLD` and `-method {DCC,MCC,RCC}` match the first step. For 
+example, if we use default `-T TEMP_SAVE_FOLD` and set `-method {DCC,MCC,RCC}` 
+as RCC in the first step, we can perform drift correction by
 ```bash
-python main.py -s 4 -L "data/frames/" -S "data/444-dl-RCC/" -T "data/temp/" -method RCC -b 4
-python main.py -s 8 -L "data/frames/" -S "data/488-dl-RCC/" -T "data/temp/" -method RCC -b 4
+python main.py -s 4 -L "data/frames/" -S "data/444-dl-RCC/" -method RCC -b 4
+python main.py -s 8 -L "data/frames/" -S "data/488-dl-RCC/" -method RCC -b 4
 ```

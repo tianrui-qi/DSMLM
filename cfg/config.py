@@ -1,3 +1,4 @@
+import os
 import argparse
 
 __all__ = ["ConfigEvaluer", "ConfigTrainer"]
@@ -74,30 +75,32 @@ class ConfigEvaluer:
             "-T", type=str, required=False, dest="temp_save_fold", 
             default=None,
             help="Path to the temporary save folder for drifting analysis. " + 
-            "Must be specified when drift correction will be performed. " + 
-            "Default: None."
+            "Must be specified when drift correction will be performed. " +
+            "Recomend to specify different path for different dataset. " +
+            "Default: `os.path.dirname(FRAMES_LOAD_FOLD)/temp/`."
         )
         parser.add_argument(
             "-stride", type=int, required=False, dest="stride", 
             default=0,
             help="Step size of the drift corrector, unit frames. " + 
-            "Should set with window at the same time. Default: 0."
+            "Window size must larger or equal to stride and divisible by " + 
+            "stride. Should set with window at the same time. Default: 0."
         )
         parser.add_argument(
             "-window", type=int, required=False, dest="window", 
             default=0,
             help="Number of frames in each window, unit frames. " + 
-            "Should set with stride at the same time. Default: 0."
+            "Window size must larger or equal to stride and divisible by " + 
+            "stride. Should set with stride at the same time. Default: 0."
         )
         parser.add_argument(
             "-method", type=str, required=False, dest="method",
-            choices=["DCC", "MCC", "RCC"], default="DCC",
-            help="Drift correction method, DCC, MCC, or RCC. DCC run very " + 
-            "fast where MCC and RCC is more accurate. We suggest to use " + 
-            "DCC (default) to test the window size first and then use " + 
-            "MCC or RCC to calculate the final drift. " + 
-            "Optional to set when window is set. " + 
-            "Default: DCC."
+            choices=["DCC", "MCC", "RCC"], default=None,
+            help="Drift correction method, DCC, MCC, or RCC. " + 
+            "Must be set if you want to evaluate with drift correction. " +
+            "DCC run very fast where MCC and RCC is more accurate. " + 
+            "We suggest to use DCC to test the window size first and " + 
+            "then use MCC or RCC to calculate the final drift. Default: None."
         )
         parser.add_argument(
             "-b", type=int, required=True, dest="batch_size",
@@ -106,10 +109,14 @@ class ConfigEvaluer:
             "by batch_size."
         )
         args = parser.parse_args()
-        # set default value for ckpt_load_path
+        # set default value
         if args.ckpt_load_path is None:
             if args.scale == 4: args.ckpt_load_path = "ckpt/e08/340"
             if args.scale == 8: args.ckpt_load_path = "ckpt/e10/450"
+        if args.temp_save_fold is None:
+            args.temp_save_fold = os.path.join(
+                os.path.dirname(os.path.normpath(args.frames_load_fold)), "temp"
+            )
         return args
 
 

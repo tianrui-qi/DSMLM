@@ -15,10 +15,10 @@ __all__ = []
 
 class DriftCorrector:
     def __init__(
-        self, temp_save_fold: str, window: int, method: str = "DCC",
+        self, temp_save_fold: str, window: int, method: str,
     ) -> None:
         # path
-        self.temp_save_fold = temp_save_fold
+        self.temp_save_fold = os.path.normpath(temp_save_fold)
 
         # parameters
         self.total, self.stride = self._getIndex()
@@ -73,12 +73,14 @@ class DriftCorrector:
             self.drift_dst = np.loadtxt(cache_path, delimiter=',')
             print(
                 "Load drift from `{}`. ".format(cache_path) + 
-                "Please delete `{}` ".format(cache_path) + 
-                "before running if you want to re-calculate the drift " + 
-                "for same dataset with new window size. " + 
-                "Please delete whole `{}` ".format(self.temp_save_fold) + 
-                "before running if you want to re-calculate the drift " + 
-                "for same dataset with new stride size or for a new dataset."
+                "Delete `{}` if you want to re-calculate ".format(cache_path) + 
+                "the drift for same dataset with new window size. " + 
+                "Delete whole `{}` if you want ".format(self.temp_save_fold) + 
+                "to re-calculate the drift for same dataset with new stride " + 
+                "size. " + 
+                "Delete whole `{}` or specify a ".format(self.temp_save_fold) + 
+                "new path (recommend) if you want to re-calculate the drift " + 
+                "for different dataset."
             )
         else:
             # calculate the drift
@@ -102,7 +104,10 @@ class DriftCorrector:
     def _dcc(self) -> ndarray:
         drift = np.zeros([self.window_num, 3])  # [window_num, 3]
         image0 = self._getWindow(0)
-        for j in tqdm.tqdm(range(0, self.window_num)):
+        for j in tqdm.tqdm(
+            range(0, self.window_num), 
+            desc=os.path.join(self.temp_save_fold, "DCC.csv")
+        ):
             imagej = self._getWindow(j)
             # calculate the cross correlation
             corr = self.crossCorrelation3D(image0, imagej)
@@ -229,21 +234,25 @@ class DriftCorrector:
                     os.path.join(self.temp_save_fold, "r.csv")
                 ) + 
                 "This drift matrix is temp result shared between MCC and RCC " + "method to save drift calculation time. " +
-                "Note that this is not final drift value. " +
                 "Please ignore if you have run one of MCC or RCC method and " +
                 "want to try another method. "
-                "Please delete `{}` ".format(
+                "Delete `{}` if you want to re-calculate the drift ".format(
                     os.path.join(self.temp_save_fold, "r.csv")
                 ) + 
-                "before running if you want to re-calculate the drift " + 
                 "for same dataset with new window size. " + 
-                "Please delete whole `{}` ".format(self.temp_save_fold) + 
-                "before running if you want to re-calculate the drift " + 
-                "for same dataset with new stride size or for a new dataset."
+                "Delete whole `{}` if you want ".format(self.temp_save_fold) + 
+                "to re-calculate the drift for same dataset with new stride " + 
+                "size. " + 
+                "Delete whole `{}` or specify a ".format(self.temp_save_fold) + 
+                "new path (recommend) if you want to re-calculate the drift " + 
+                "for different dataset."
             )
             return drift
 
-        for i in tqdm.tqdm(range(self.window_num)):
+        for i in tqdm.tqdm(
+            range(self.window_num),
+            desc=os.path.join(self.temp_save_fold, "r.csv")
+        ):
             imagei = self._getWindow(i)
             for j in tqdm.tqdm(range(i, self.window_num), leave=False):
                 imagej = self._getWindow(j)

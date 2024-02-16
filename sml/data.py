@@ -9,16 +9,16 @@ import tifffile
 import h5py
 import scipy.io
 import tqdm
-from typing import Tuple, Union, List
+from typing import Tuple, Union, Optional, List
 
 __all__ = ["RawDataset", "SimDataset"]
 
 
 class RawDataset(Dataset):
     def __init__(
-        self, num: int, lum_info: bool, dim_dst: List[int], 
-        scale: List[int], rng_sub_user: List[int],
-        frames_load_fold: str, mlists_load_fold: str
+        self, num: Optional[int], lum_info: bool, dim_dst: List[int], 
+        scale: List[int], rng_sub_user: Optional[List[int]],
+        frames_load_fold: str, mlists_load_fold: Optional[str]
     ) -> None:
         super(RawDataset, self).__init__()
         self.num  = num
@@ -47,10 +47,10 @@ class RawDataset(Dataset):
         self.rng_sub_user = rng_sub_user    # [D, 2], int
 
         # data path and file name list
-        self.frames_load_fold = frames_load_fold
+        self.frames_load_fold = os.path.normpath(frames_load_fold)
         self.frames_list = os.listdir(self.frames_load_fold)
         if self.mode == "train":
-            self.mlists_load_fold = mlists_load_fold
+            self.mlists_load_fold = os.path.normpath(mlists_load_fold)
             self.mlists_list = os.listdir(self.mlists_load_fold)
         # read option
         self.averagemax = None      # for normalizing all frames

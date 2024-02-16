@@ -12,6 +12,7 @@ import numpy as np
 import os
 import tifffile
 import tqdm
+from typing import Optional
 
 import sml.data, sml.model, sml.loss, sml.drift
 
@@ -20,20 +21,26 @@ __all__ = ["Evaluer", "Trainer"]
 
 class Evaluer:
     def __init__(
-        self, data_save_fold: str, ckpt_load_path: str, temp_save_fold: str,
-        stride: int, window: int, method: str, batch_size: int,
+        self, data_save_fold: Optional[str], ckpt_load_path: str, 
+        temp_save_fold: Optional[str],
+        stride: Optional[int], window: Optional[int], method: Optional[str], 
+        batch_size: int,
         evaluset: sml.data.RawDataset, 
     ) -> None:
         # evalu
         self.device = "cuda"
         # path
-        self.data_save_fold = data_save_fold
-        self.ckpt_load_path = ckpt_load_path
-        self.temp_save_fold = temp_save_fold
+        self.data_save_fold = os.path.normpath(
+            data_save_fold
+        ) if data_save_fold else None
+        self.ckpt_load_path = os.path.normpath(ckpt_load_path)
+        self.temp_save_fold = os.path.normpath(
+            temp_save_fold
+        ) if temp_save_fold else None
         # drift
         self.stride = stride
         self.window = window
-        self.method = method    # DCC, MCC, or RCC
+        self.method = method    # None, "DCC", "MCC", or "RCC"
 
         # data
         self.evaluset = evaluset
@@ -73,9 +80,8 @@ class Evaluer:
 
     @torch.no_grad()
     def fit(self) -> None:
-        # case 1: if self.temp_save_fold is not given, do not perform drift 
-        # correction
-        if self.temp_save_fold == None:
+        # case 1: if self.method is not given, do not perform drift correction
+        if self.method == None:
             sub_cat = torch.zeros(
                 self.num_sub_user, *self.evaluset.dim_dst_pad, 
                 dtype=torch.float16, device=self.device
@@ -178,7 +184,7 @@ class Evaluer:
             # calculating the drift and a large region for the final prediction.
             return
         # case 3:
-        # we already have cached {method}.csv, means we want to perform the 
+        # we already have cached {self.method}.csv, means we want to perform the 
         # final prediction
         else:
             cache_path = os.path.join(
@@ -187,12 +193,14 @@ class Evaluer:
             drift = torch.from_numpy(np.loadtxt(cache_path, delimiter=','))
             print(
                 "Load drift from `{}`. ".format(cache_path) + 
-                "Please delete `{}` ".format(cache_path) + 
-                "before running if you want to re-calculate the drift " + 
-                "for same dataset with new window size. " + 
-                "Please delete whole `{}` ".format(self.temp_save_fold) + 
-                "before running if you want to re-calculate the drift " + 
-                "for same dataset with new stride size or for a new dataset."
+                "Delete `{}` if you want to re-calculate ".format(cache_path) + 
+                "the drift for same dataset with new window size. " + 
+                "Delete whole `{}` if you want ".format(self.temp_save_fold) + 
+                "to re-calculate the drift for same dataset with new stride " + 
+                "size. " + 
+                "Delete whole `{}` or specify a ".format(self.temp_save_fold) + 
+                "new path (recommend) if you want to re-calculate the drift " + 
+                "for different dataset."
             )
             # scale up the drift to increase the percision since for image, we
             # can only shift the image by integer pixels
