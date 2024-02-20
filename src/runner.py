@@ -14,7 +14,7 @@ import tifffile
 import tqdm
 from typing import Optional
 
-import sml.data, sml.model, sml.loss, sml.drift
+import src.data, src.model, src.loss, src.drift
 
 __all__ = ["Evaluer", "Trainer"]
 
@@ -25,7 +25,7 @@ class Evaluer:
         temp_save_fold: Optional[str],
         stride: Optional[int], window: Optional[int], method: Optional[str], 
         batch_size: int,
-        evaluset: sml.data.RawDataset, 
+        evaluset: src.data.RawDataset, 
     ) -> None:
         # evalu
         self.device = "cuda"
@@ -52,7 +52,7 @@ class Evaluer:
         ckpt = torch.load(
             "{}.ckpt".format(self.ckpt_load_path), map_location=self.device
         )
-        self.model = sml.model.ResAttUNet(
+        self.model = src.model.ResAttUNet(
             ckpt["dim"], ckpt["feats"], ckpt["use_cbam"], ckpt["use_res"]
         ).to(self.device)
         self.model.load_state_dict(ckpt['model'])
@@ -174,7 +174,7 @@ class Evaluer:
 
             # perform drift correction using the temp result in 
             # self.temp_save_fold
-            sml.drift.DriftCorrector(
+            src.drift.DriftCorrector(
                 self.temp_save_fold, self.window, self.method
             ).fit()
 
@@ -269,8 +269,8 @@ class Trainer:
         self, max_epoch: int, accumu_steps: int, 
         ckpt_save_fold: str, ckpt_load_path: str, ckpt_load_lr: bool,
         batch_size: int, lr: float,
-        trainset: sml.data.SimDataset, validset: sml.data.RawDataset, 
-        model: sml.model.ResAttUNet,
+        trainset: src.data.SimDataset, validset: src.data.RawDataset, 
+        model: src.model.ResAttUNet,
     ) -> None:
         # train
         self.device = "cuda"
@@ -293,7 +293,7 @@ class Trainer:
         # model
         self.model = model.to(self.device)
         # loss
-        self.loss  = sml.loss.GaussianBlurLoss().to(self.device)
+        self.loss  = src.loss.GaussianBlurLoss().to(self.device)
         # optimizer
         self.scaler    = amp.GradScaler()
         self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
