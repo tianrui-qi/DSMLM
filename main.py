@@ -9,7 +9,7 @@ import os
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='cupy')
 
-import cfg, src
+import src
 
 torch.backends.cudnn.enabled   = True
 torch.backends.cudnn.benchmark = True
@@ -28,12 +28,12 @@ def set_seed(seed):
 
 if __name__ == "__main__":
     set_seed(42)
-    config = cfg.ConfigEvaluer()
-    if isinstance(config, cfg.ConfigEvaluer): src.Evaluer(
+    config = src.ConfigEvaluer()
+    if isinstance(config, src.ConfigEvaluer): src.Evaluer(
         **config.runner,
         evaluset=src.RawDataset(**config.evaluset), 
     ).fit()
-    if isinstance(config, cfg.ConfigTrainer): src.Trainer(
+    if isinstance(config, src.ConfigTrainer): src.Trainer(
         **config.runner,
         trainset=src.SimDataset(**config.trainset), 
         validset=src.RawDataset(**config.validset), 
