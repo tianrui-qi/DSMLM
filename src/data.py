@@ -263,11 +263,11 @@ class RawDataset(Dataset):
         # right pad exceed the raw frame
         exceed_src = self.dim_src_raw_pad - self.dim_src_raw - 2*self.pad_src
         exceed_dst = exceed_src * self.scale
-        if self.rng_sub_user[0][1] == self.num_sub[0]:
+        if self.rng_sub_user[0][1] == self.num_sub[0] and exceed_dst[0] > 0:
             frame = frame[:-exceed_dst[0], :, :]
-        if self.rng_sub_user[1][1] == self.num_sub[1]:
+        if self.rng_sub_user[1][1] == self.num_sub[1] and exceed_dst[1] > 0:
             frame = frame[:, :-exceed_dst[1], :]
-        if self.rng_sub_user[2][1] == self.num_sub[2]:
+        if self.rng_sub_user[2][1] == self.num_sub[2] and exceed_dst[2] > 0:
             frame = frame[:, :, :-exceed_dst[2]]
 
         return frame
