@@ -162,11 +162,11 @@ python main.py evalu -s 8 -L "data/frames/" -S "data/488-dl-RCC/" -method RCC -b
 
 ### Scale Up
 
-We provide the argument `-r RNG_SUB_USER` in purpose; for example, if you whole
-frames patch into `(1, 32, 32)` sub-region in `(Z, Y, X)` but you GPU memeory 
-can only predict 4 sub-region at a time, you can easily predict the whole frames
-by running a loop script; take scale up by 8 without drift correction as an
-example:
+We provide the argument `-r RNG_SUB_USER` in purpose; if you whole frames patch 
+into `(1, 32, 32)` sub-regions in `(Z, Y, X)` but you GPU memeory can only 
+predict 4 sub-regions at a time, you can easily predict the whole frames by 
+a loop script. Here is a python example that perform evaluation without drift 
+correction, scale up by 8, 4 sub-regions at a time:
 ```python
 import subprocess
 for y in range(0, 32):          # 0, 1, 2, ..., 31
@@ -177,7 +177,8 @@ for y in range(0, 32):          # 0, 1, 2, ..., 31
 Remember to provide unique `-S DATA_SAVE_FOLD` for each loop, like the example 
 we show above, to avoid overwriting the results.
 
-Then, you can use any software to concatenate the results together to get the 
-final prediction results. We also provide a simple script to do this; please 
-check code cell 4 "concatenate two 3D subframes into a 3D frame" in 
-[utils.py](https://github.com/tianrui-qi/SMLFM/blob/main/util.ipynb).
+Then, you can concatenate results together to get the prediction for whole 
+frames. We provide a simple script to do this; please check code cell 4 
+"concatenate two 3D subframes into a 3D frame" in 
+[utils.py](https://github.com/tianrui-qi/SMLFM/blob/main/util.ipynb) for more
+detail.
