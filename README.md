@@ -179,5 +179,5 @@ we show above, to avoid overwriting the results.
 
 Then, you can use any software to concatenate the results together to get the 
 final prediction results. We also provide a simple script to do this; please 
-check code cell 4 "concatenate two 3D subframes into a 3D frame" in [utils.py]
-(https://github.com/tianrui-qi/SMLFM/blob/main/util.ipynb).
+check code cell 4 "concatenate two 3D subframes into a 3D frame" in 
+[utils.py](https://github.com/tianrui-qi/SMLFM/blob/main/util.ipynb).
