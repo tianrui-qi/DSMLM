@@ -29,13 +29,13 @@ you can check the training configuration for each checkpoint.
 
 ## Evaluation
 
-You can check the parameters that must be specified by:
+You can check the parameters that must be specified for evaluation mode by:
 ```bash
-python main.py --help
+python main.py evalu --help
 ```
 usage:
 ```bash
-python main.py [-h] [-s {4,8}] [-r RNG_SUB_USER] -L FRAMES_LOAD_FOLD [-S DATA_SAVE_FOLD] [-C CKPT_LOAD_PATH] [-T TEMP_SAVE_FOLD][-stride STRIDE] [-window WINDOW] [-method {DCC,MCC,RCC}] -b BATCH_SIZE
+python main.py evalu [-h] [-s {4,8}] [-r RNG_SUB_USER [RNG_SUB_USER ...]] -L FRAMES_LOAD_FOLD [-S DATA_SAVE_FOLD] [-C CKPT_LOAD_PATH] [-T TEMP_SAVE_FOLD] [-stride STRIDE] [-window WINDOW] [-method {DCC,MCC,RCC}] -b BATCH_SIZE
 ```
 options:
 -   `-s {4,8}`: Scale up factor, 4 or 8. Default: 4.
@@ -81,16 +81,16 @@ not sure about the number of subframe for each dimension you can select, run
 command below and follow the instruction of the code to type the range of 
 sub-region you want to predict.
 ```bash
-python main.py -s 4 -L "data/frames/" -S "data/444-dl/" -b 4
-python main.py -s 8 -L "data/frames/" -S "data/488-dl/" -b 4
+python main.py evalu -s 4 -L "data/frames/" -S "data/444-dl/" -b 4
+python main.py evalu -s 8 -L "data/frames/" -S "data/488-dl/" -b 4
 ```
 
 If you already know the sub-region you want to predict, for example, patch 
 `[0, 1)` in Z, `[8, 12)` in Y, and `[9, 13)` in X, pass the range to 
 `-r RNG_SUB_USER` as below.
 ```bash
-python main.py -s 4 -r 0 1 8 12 9 13 -L "data/frames/" -S "data/444-dl/" -b 4
-python main.py -s 8 -r 0 1 8 12 9 13 -L "data/frames/" -S "data/488-dl/" -b 4
+python main.py evalu -s 4 -r 0 1 8 12 9 13 -L "data/frames/" -S "data/444-dl/" -b 4
+python main.py evalu -s 8 -r 0 1 8 12 9 13 -L "data/frames/" -S "data/488-dl/" -b 4
 ```
 
 ### With drift correction
@@ -135,15 +135,15 @@ test the window size first and then use MCC or RCC to calculate the final drift.
 
 For example, test the window size 1000, 2000, or 3000 with DCC method
 ```bash
-python main.py -L "data/frames/" -stride 250 -window 1000 -method DCC -b 4
-python main.py -L "data/frames/" -stride 250 -window 2000 -method DCC -b 4
-python main.py -L "data/frames/" -stride 250 -window 3000 -method DCC -b 4
+python main.py evalu -L "data/frames/" -stride 250 -window 1000 -method DCC -b 4
+python main.py evalu -L "data/frames/" -stride 250 -window 2000 -method DCC -b 4
+python main.py evalu -L "data/frames/" -stride 250 -window 3000 -method DCC -b 4
 ```
 and then use MCC or RCC to calculate the final drift with the best window size, 
 2000 as a example,
 ```bash
-python main.py -L "data/frames/" -stride 250 -window 2000 -method MCC -b 4
-python main.py -L "data/frames/" -stride 250 -window 2000 -method RCC -b 4
+python main.py evalu -L "data/frames/" -stride 250 -window 2000 -method MCC -b 4
+python main.py evalu -L "data/frames/" -stride 250 -window 2000 -method RCC -b 4
 ```
 Note that we use default `-T TEMP_SAVE_FOLD` here, 
 `os.path.dirname(FRAMES_LOAD_FOLD)/temp/`, i.e., `data/temp/`.
@@ -156,6 +156,6 @@ drift correction while predicting the frames. Please make sure that
 example, if we use default `-T TEMP_SAVE_FOLD` and set `-method {DCC,MCC,RCC}` 
 as RCC in the first step, we can perform drift correction by
 ```bash
-python main.py -s 4 -L "data/frames/" -S "data/444-dl-RCC/" -method RCC -b 4
-python main.py -s 8 -L "data/frames/" -S "data/488-dl-RCC/" -method RCC -b 4
+python main.py evalu -s 4 -L "data/frames/" -S "data/444-dl-RCC/" -method RCC -b 4
+python main.py evalu -s 8 -L "data/frames/" -S "data/488-dl-RCC/" -method RCC -b 4
 ```

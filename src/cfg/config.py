@@ -1,12 +1,8 @@
-import os
-import argparse
-
 __all__ = ["ConfigEvaluer", "ConfigTrainer"]
 
 
 class ConfigEvaluer:
-    def __init__(self) -> None:
-        args = self._getArgument()
+    def __init__(self, args) -> None:
         self.evaluset = {
             "num": None,    # must be None
             "lum_info": True,
@@ -29,95 +25,6 @@ class ConfigEvaluer:
             # data
             "batch_size": args.batch_size,
         }
-
-    def _getArgument(self):
-        parser = argparse.ArgumentParser()
-        parser.add_argument(
-            "-s", type=int, required=False, dest="scale", 
-            choices=[4, 8], default=4,
-            help="Scale up factor, 4 or 8. Default: 4."
-        )
-        parser.add_argument(
-            "-r", type=int, required=False, dest="rng_sub_user",
-            default=None, nargs="+",
-            help="Range of the sub-region of the frames to predict. " + 
-            "Due to limited memory, we cut whole frames into patches, " + 
-            "i.e., sub-regions and predict them separately. " + 
-            "Please type six int separated by space as the subframe " + 
-            "start (inclusive) and end (exclusive) index for each dimension, " +
-            "i.e., `-r 0 1 8 12 9 13`. " + 
-            "If you not sure about the number of subframe for each dimension " +
-            "you can select, do not specify this parameter; " + 
-            "the code will print the range you can select and " + 
-            "ask you to type the range. Default: None."
-        )
-        parser.add_argument(
-            "-L", type=str, required=True, dest="frames_load_fold",
-            help="Path to the frames load folder. Note that the code will " + 
-            "predict all the frames under this folder. " + 
-            "Thus, if you want to predict portion of the frames, " + 
-            "please copy them to a new folder and specify this parameter " + 
-            "with that new folder."
-        )
-        parser.add_argument(
-            "-S", type=str, required=False, dest="data_save_fold",
-            default=None,
-            help="Path to the data save folder. No need to specify " +
-            "when stride or window is set as non-zero. Default: None."
-        )
-        parser.add_argument(
-            "-C", type=str, required=False, dest="ckpt_load_path",
-            help="Path to the checkpoint load file without .ckpt. " +
-            "Default: `ckpt/e08/340` or `ckpt/e10/450` " + 
-            "when scale up factor is 4 or 8."
-        )
-        parser.add_argument(
-            "-T", type=str, required=False, dest="temp_save_fold", 
-            default=None,
-            help="Path to the temporary save folder for drifting analysis. " + 
-            "Must be specified when drift correction will be performed. " +
-            "Recomend to specify different path for different dataset. " +
-            "Default: `os.path.dirname(FRAMES_LOAD_FOLD)/temp/`."
-        )
-        parser.add_argument(
-            "-stride", type=int, required=False, dest="stride", 
-            default=0,
-            help="Step size of the drift corrector, unit frames. " + 
-            "Window size must larger or equal to stride and divisible by " + 
-            "stride. Should set with window at the same time. Default: 0."
-        )
-        parser.add_argument(
-            "-window", type=int, required=False, dest="window", 
-            default=0,
-            help="Number of frames in each window, unit frames. " + 
-            "Window size must larger or equal to stride and divisible by " + 
-            "stride. Should set with stride at the same time. Default: 0."
-        )
-        parser.add_argument(
-            "-method", type=str, required=False, dest="method",
-            choices=["DCC", "MCC", "RCC"], default=None,
-            help="Drift correction method, DCC, MCC, or RCC. " + 
-            "Must be set if you want to evaluate with drift correction. " +
-            "DCC run very fast where MCC and RCC is more accurate. " + 
-            "We suggest to use DCC to test the window size first and " + 
-            "then use MCC or RCC to calculate the final drift. Default: None."
-        )
-        parser.add_argument(
-            "-b", type=int, required=True, dest="batch_size",
-            help="Batch size. Set this value according to your GPU memory. " +
-            "Note that the product of rng_sub_user must divisible " + 
-            "by batch_size."
-        )
-        args = parser.parse_args()
-        # set default value
-        if args.ckpt_load_path is None:
-            if args.scale == 4: args.ckpt_load_path = "ckpt/e08/340"
-            if args.scale == 8: args.ckpt_load_path = "ckpt/e10/450"
-        if args.temp_save_fold is None:
-            args.temp_save_fold = os.path.join(
-                os.path.dirname(os.path.normpath(args.frames_load_fold)), "temp"
-            )
-        return args
 
 
 class ConfigTrainer:

@@ -1,4 +1,4 @@
-from .config import *
+from src.cfg.config import ConfigTrainer
 
 __all__ = ["e08", "e09", "e10", "e11",]
 
