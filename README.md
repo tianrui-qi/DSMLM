@@ -2,7 +2,7 @@
 
 ## Environment
 
-The code is tested with `Python == 3.11`, `PyTorch == 2.0`, and `CUDA == 11.8`. 
+The code is tested with `Python == 3.11`, `PyTorch == 2.1`, and `CUDA == 12.1`. 
 We recommend you to use 
 [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or 
 [Anaconda](https://www.anaconda.com/) to make sure that all dependencies are in 
@@ -24,8 +24,8 @@ scale up by 4 or
 [iCloud](https://www.icloud.com/iclouddrive/0e6maAxyFbHaA3MIGSYuivcOw#450) 
 for 8. Put the checkpoints under the folder `ckpt/e08/` or `ckpt/e10/`.
 Note that `e08` and `e10` match the name in 
-[config/e.py](https://github.com/tianrui-qi/SMLFM/blob/main/config/e.py) so that
-you can check the training configuration for each checkpoint.
+[src/cfg/e.py](https://github.com/tianrui-qi/SMLFM/blob/main/src/cfg/e.py) so 
+that you can check the training configuration for each checkpoint.
 
 ## Evaluation
 
