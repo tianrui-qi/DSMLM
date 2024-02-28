@@ -162,8 +162,8 @@ python main.py evalu -s 8 -L "data/frames/" -S "data/488-dl-RCC/" -method RCC -b
 
 ### Scale Up
 
-We provide the argument `-r RNG_SUB_USER` in purpose; if you whole frames patch 
-into `(1, 32, 32)` sub-regions in `(Z, Y, X)` but you GPU memeory can only 
+We provide the argument `-r RNG_SUB_USER` in purpose; if your whole frames patch 
+into `(1, 32, 32)` sub-regions in `(Z, Y, X)` but your GPU memeory can only 
 predict 4 sub-regions at a time, you can easily predict the whole frames by 
 a loop script. Here is a python example that perform evaluation without drift 
 correction, scale up by 8, 4 sub-regions at a time:

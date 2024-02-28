@@ -1,35 +1,44 @@
+from typing import List, Optional
+
 __all__ = ["ConfigEvaluer", "ConfigTrainer"]
 
 
 class ConfigEvaluer:
-    def __init__(self, args) -> None:
-        self.evaluset = {
+    def __init__(
+        self, scale: Optional[int], rng_sub_user: Optional[List[int]], 
+        frames_load_fold: str,
+        data_save_fold: Optional[str], ckpt_load_path: Optional[str], 
+        temp_save_fold: Optional[str], 
+        stride: Optional[int], window: Optional[int], method: Optional[str], 
+        batch_size: int, **kwargs,
+    ) -> None:
+        self.evaluset = {   # src.data.RawDataset
             "num": None,    # must be None
             "lum_info": True,
             "dim_dst" : [160, 160, 160],
 
-            "scale": [4, args.scale, args.scale],
-            "rng_sub_user": args.rng_sub_user,
-            "frames_load_fold": args.frames_load_fold,
+            "scale": [4, scale, scale],
+            "rng_sub_user": rng_sub_user,
+            "frames_load_fold": frames_load_fold,
             "mlists_load_fold": None,   # not used
         }
-        self.runner = {
+        self.runner = {     # src.runner.Evaluer
             # path
-            "data_save_fold": args.data_save_fold,
-            "ckpt_load_path": args.ckpt_load_path,  # path without .ckpt
-            "temp_save_fold": args.temp_save_fold,
+            "data_save_fold": data_save_fold,
+            "ckpt_load_path": ckpt_load_path,  # path without .ckpt
+            "temp_save_fold": temp_save_fold,
             # drift
-            "stride": args.stride,  # unit: frames
-            "window": args.window,  # unit: frames
-            "method": args.method,  # DCC, MCC, or RCC
+            "stride": stride,   # unit: frames
+            "window": window,   # unit: frames
+            "method": method,   # DCC, MCC, or RCC
             # data
-            "batch_size": args.batch_size,
+            "batch_size": batch_size,
         }
 
 
 class ConfigTrainer:
     def __init__(self) -> None:
-        self.trainset = {
+        self.trainset = {   # src.data.SimDataset
             "num": 10000,
             "lum_info": True,  
             "dim_dst" : [160, 160, 160],
@@ -39,7 +48,7 @@ class ConfigTrainer:
                 [1.0, 1.0, 1.0], [3.0, 2.5, 2.5]
             ],
         }
-        self.validset = {
+        self.validset = {   # src.data.RawDataset
             "num": 5000,
             "lum_info": True,
             "dim_dst" : [160, 160, 160],
@@ -49,11 +58,11 @@ class ConfigTrainer:
             "frames_load_fold": "D:/frames",
             "mlists_load_fold": "D:/mlists",
         }
-        self.model = {
+        self.model = {      # src.model.ResAttUNet
             "dim"  : 3,
             "feats": [1, 16, 32, 64, 128],
         }
-        self.runner = {
+        self.runner = {     # src.runner.Trainer
             # train
             "max_epoch": 800,
             "accumu_steps": 10,

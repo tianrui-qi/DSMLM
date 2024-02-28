@@ -18,6 +18,23 @@ torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.deterministic = True
 
 
+def main():
+    setSeed(42)
+    args = getArgument()
+    if args.mode == "evalu":
+        config = src.ConfigEvaluer(**vars(args))
+        src.Evaluer(**config.runner,
+            evaluset=src.RawDataset(**config.evaluset), 
+        ).fit()
+    if args.mode == "train":
+        config = getattr(src, args.config)()
+        src.Trainer(**config.runner,
+            trainset=src.SimDataset(**config.trainset), 
+            validset=src.RawDataset(**config.validset), 
+            model=src.ResAttUNet(**config.model), 
+        ).fit()
+
+
 def setSeed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -95,6 +112,7 @@ def getArgument():
     )
     parser_evalu.add_argument(
         "-C", type=str, required=False, dest="ckpt_load_path",
+        default=None,
         help="Path to the checkpoint load file without .ckpt. " +
         "Default: `ckpt/e08/340` or `ckpt/e10/450` " + 
         "when scale up factor is 4 or 8."
@@ -152,21 +170,4 @@ def getArgument():
     return args
 
 
-if __name__ == "__main__":
-    setSeed(42)
-    args = getArgument()
-    if args.mode == "evalu":
-        config = src.ConfigEvaluer(args)
-        src.Evaluer(
-            **config.runner,
-            evaluset=src.RawDataset(**config.evaluset), 
-        ).fit()
-    if args.mode == "train":
-        obj = getattr(src, args.config)
-        config = obj()
-        src.Trainer(
-            **config.runner,
-            trainset=src.SimDataset(**config.trainset), 
-            validset=src.RawDataset(**config.validset), 
-            model=src.ResAttUNet(**config.model), 
-        ).fit()
+if __name__ == "__main__": main()

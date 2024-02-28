@@ -94,8 +94,8 @@ class RawDataset(Dataset):
         if self.rng_sub_user is None:
             # ask user to input sub_range, six number
             input_string = input(
-                "The number of subframe for each dimension is " + 
-                "{}. ".format(self.num_sub.tolist()) + 
+                "The number of subframe is " + 
+                "{} in (Z, Y, X). ".format(self.num_sub.tolist()) + 
                 "Please type six int separated by comma " + 
                 "as the subframe start (inclusive) and end (exclusive) " + 
                 "index for each dimension, i.e., '0, 1, 8, 12, 9, 13': "
