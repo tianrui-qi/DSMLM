@@ -81,16 +81,16 @@ not sure about the number of subframe for each dimension you can select, run
 command below and follow the instruction of the code to type the range of 
 sub-region you want to predict.
 ```bash
-python main.py evalu -s 4 -L "data/frames/" -S "data/444-dl/" -b 4
-python main.py evalu -s 8 -L "data/frames/" -S "data/488-dl/" -b 4
+python main.py evalu -s 4 -L "data/frames/" -S "data/dl-444/" -b 4
+python main.py evalu -s 8 -L "data/frames/" -S "data/dl-488/" -b 4
 ```
 
 If you already know the sub-region you want to predict, for example, patch 
 `[0, 1)` in Z, `[8, 12)` in Y, and `[9, 13)` in X, pass the range to 
 `-r RNG_SUB_USER` as below.
 ```bash
-python main.py evalu -s 4 -r 0 1 8 12 9 13 -L "data/frames/" -S "data/444-dl/" -b 4
-python main.py evalu -s 8 -r 0 1 8 12 9 13 -L "data/frames/" -S "data/488-dl/" -b 4
+python main.py evalu -s 4 -r 0 1 8 12 9 13 -L "data/frames/" -S "data/dl-444/" -b 4
+python main.py evalu -s 8 -r 0 1 8 12 9 13 -L "data/frames/" -S "data/dl-488/" -b 4
 ```
 
 ### With drift correction
@@ -156,8 +156,8 @@ drift correction while predicting the frames. Please make sure that
 example, if we use default `-T TEMP_SAVE_FOLD` and set `-method {DCC,MCC,RCC}` 
 as RCC in the first step, we can perform drift correction by
 ```bash
-python main.py evalu -s 4 -L "data/frames/" -S "data/444-dl-RCC/" -method RCC -b 4
-python main.py evalu -s 8 -L "data/frames/" -S "data/488-dl-RCC/" -method RCC -b 4
+python main.py evalu -s 4 -L "data/frames/" -S "data/dl-444-RCC/" -method RCC -b 4
+python main.py evalu -s 8 -L "data/frames/" -S "data/dl-488-RCC/" -method RCC -b 4
 ```
 
 ### Scale Up
@@ -171,7 +171,7 @@ correction, scale up by 8, 4 sub-regions at a time:
 import subprocess
 for y in range(0, 32):          # 0, 1, 2, ..., 31
     for x in range(0, 32, 4):   # 0, 4, 8, ..., 28
-        command = f"python main.py evalu -s 8 -r 0 1 {y} {y+1} {x} {x+4} -L data/frames/ -S data/488-dl-(00-01-{y:02d}-{y+1:02d}-{x:02d}-{x+4:02d})/ -b 4"
+        command = f"python main.py evalu -s 8 -r 0 1 {y} {y+1} {x} {x+4} -L data/frames/ -S data/dl-488-(00-01-{y:02d}-{y+1:02d}-{x:02d}-{x+4:02d})/ -b 4"
         subprocess.run(command, check=True, shell=True)
 ```
 Remember to provide unique `-S DATA_SAVE_FOLD` for each loop, like the example 
