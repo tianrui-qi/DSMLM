@@ -1,4 +1,4 @@
-name: SMLFM
+name: DSMLM
 channels:
   - pytorch
   - nvidia

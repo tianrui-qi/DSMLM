@@ -1,4 +1,4 @@
-# SMLFM
+# DSMLM
 
 ## Environment
 
@@ -9,11 +9,11 @@ We recommend you to use
 place. To create an conda environment:
 ```bash
 # clone the repository
-git clone git@github.com:tianrui-qi/SMLFM.git
-cd SMLFM
+git clone git@github.com:tianrui-qi/DSMLM.git
+cd DSMLM
 # create the conda environment
 conda env create -f environment.yml
-conda activate SMLFM
+conda activate DSMLM
 ```
 
 ## Checkpoints
@@ -24,7 +24,7 @@ scale up by 4 or
 [iCloud](https://www.icloud.com/iclouddrive/0e6maAxyFbHaA3MIGSYuivcOw#450) 
 for 8. Put the checkpoints under the folder `ckpt/e08/` or `ckpt/e10/`.
 Note that `e08` and `e10` match the name in 
-[src/cfg/e.py](https://github.com/tianrui-qi/SMLFM/blob/main/src/cfg/e.py) so 
+[src/cfg/e.py](https://github.com/tianrui-qi/DSMLM/blob/main/src/cfg/e.py) so 
 that you can check the training configuration for each checkpoint.
 
 ## Evaluation
@@ -180,5 +180,5 @@ we show above, to avoid overwriting the results.
 Then, you can concatenate results together to get the prediction for whole 
 frames. We provide a simple script to do this; please check code cell 4 
 "concatenate two 3D subframes into a 3D frame" in 
-[utils.py](https://github.com/tianrui-qi/SMLFM/blob/main/util.ipynb) for more
+[utils.py](https://github.com/tianrui-qi/DSMLM/blob/main/util.ipynb) for more
 detail.
