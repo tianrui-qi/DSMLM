@@ -10,8 +10,12 @@ from torch import Tensor
 import numpy as np
 
 import os
+import sys
 import tifffile
-import tqdm
+if 'ipykernel' in sys.modules:
+    import tqdm.notebook as tqdm
+else:
+    import tqdm     # since tqdm does not work in jupyter properly
 from typing import Optional
 
 import src.data, src.model, src.loss, src.drift

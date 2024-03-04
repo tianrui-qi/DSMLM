@@ -5,9 +5,13 @@ import scipy.interpolate
 from numpy import ndarray
 
 import os
+import sys
 import tifffile
 import matplotlib.pyplot as plt
-import tqdm
+if 'ipykernel' in sys.modules:
+    import tqdm.notebook as tqdm
+else:
+    import tqdm     # since tqdm does not work in jupyter properly
 from typing import Tuple
 
 __all__ = []

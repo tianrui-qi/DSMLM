@@ -5,10 +5,14 @@ from torch.distributions.multivariate_normal import MultivariateNormal
 from torch import Tensor
 
 import os
+import sys
 import tifffile
 import h5py
 import scipy.io
-import tqdm
+if 'ipykernel' in sys.modules:
+    import tqdm.notebook as tqdm
+else:
+    import tqdm     # since tqdm does not work in jupyter properly
 from typing import Tuple, Union, Optional, List
 
 __all__ = ["RawDataset", "SimDataset"]

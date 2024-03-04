@@ -35,7 +35,7 @@ python main.py evalu --help
 ```
 usage:
 ```bash
-python main.py evalu [-h] [-s {4,8}] [-r RNG_SUB_USER [RNG_SUB_USER ...]] -L FRAMES_LOAD_FOLD [-S DATA_SAVE_FOLD] [-C CKPT_LOAD_PATH] [-T TEMP_SAVE_FOLD] [-stride STRIDE] [-window WINDOW] [-method {DCC,MCC,RCC}] -b BATCH_SIZE
+python main.py evalu [-h] [-s {4,8}] [-r RNG_SUB_USER [RNG_SUB_USER ...]] -L FRAMES_LOAD_FOLD [-S DATA_SAVE_FOLD] [-C CKPT_LOAD_PATH] [-T TEMP_SAVE_FOLD] [-stride STRIDE] [-window WINDOW] [-m {DCC,MCC,RCC}] -b BATCH_SIZE
 ```
 options:
 -   `-s {4,8}`: Scale up factor, 4 or 8. Default: 4.
@@ -64,9 +64,9 @@ options:
 -   `-window WINDOW`: Number of frames in each window, unit frames. Window size 
     must larger or equal to stride and divisible by stride. Should set with 
     stride at the same time. Default: 0.
--   `-method {DCC,MCC,RCC}`: Drift correction method, DCC, MCC, or RCC. Must be 
-    set if you want to evaluate with drift correction. DCC run very fast where 
-    MCC and RCC is more accurate. We suggest to use DCC to test the window size 
+-   `-m {DCC,MCC,RCC}`: Drift correction method, DCC, MCC, or RCC. Must be set 
+    if you want to evaluate with drift correction. DCC run very fast where MCC 
+    and RCC is more accurate. We suggest to use DCC to test the window size 
     first and then use MCC or RCC to calculate the final drift. Default: None.
 -   `-b BATCH_SIZE`: Batch size. Set this value according to your GPU memory. 
     Note that the product of rng_sub_user must divisible by batch_size.
@@ -135,15 +135,15 @@ test the window size first and then use MCC or RCC to calculate the final drift.
 
 For example, test the window size 1000, 2000, or 3000 with DCC method
 ```bash
-python main.py evalu -L "data/frames/" -stride 250 -window 1000 -method DCC -b 4
-python main.py evalu -L "data/frames/" -stride 250 -window 2000 -method DCC -b 4
-python main.py evalu -L "data/frames/" -stride 250 -window 3000 -method DCC -b 4
+python main.py evalu -L "data/frames/" -stride 250 -window 1000 -m DCC -b 4
+python main.py evalu -L "data/frames/" -stride 250 -window 2000 -m DCC -b 4
+python main.py evalu -L "data/frames/" -stride 250 -window 3000 -m DCC -b 4
 ```
 and then use MCC or RCC to calculate the final drift with the best window size, 
 2000 as a example,
 ```bash
-python main.py evalu -L "data/frames/" -stride 250 -window 2000 -method MCC -b 4
-python main.py evalu -L "data/frames/" -stride 250 -window 2000 -method RCC -b 4
+python main.py evalu -L "data/frames/" -stride 250 -window 2000 -m MCC -b 4
+python main.py evalu -L "data/frames/" -stride 250 -window 2000 -m RCC -b 4
 ```
 Note that we use default `-T TEMP_SAVE_FOLD` here, 
 `os.path.dirname(FRAMES_LOAD_FOLD)/temp/`, i.e., `data/temp/`.
@@ -152,12 +152,12 @@ Note that we use default `-T TEMP_SAVE_FOLD` here,
 
 Since we already cached the drift result, we can directly use it and perform 
 drift correction while predicting the frames. Please make sure that 
-`-T TEMP_SAVE_FOLD` and `-method {DCC,MCC,RCC}` match the first step. For 
-example, if we use default `-T TEMP_SAVE_FOLD` and set `-method {DCC,MCC,RCC}` 
+`-T TEMP_SAVE_FOLD` and `-m {DCC,MCC,RCC}` match the first step. For 
+example, if we use default `-T TEMP_SAVE_FOLD` and set `-m {DCC,MCC,RCC}` 
 as RCC in the first step, we can perform drift correction by
 ```bash
-python main.py evalu -s 4 -L "data/frames/" -S "data/dl-444-RCC/" -method RCC -b 4
-python main.py evalu -s 8 -L "data/frames/" -S "data/dl-488-RCC/" -method RCC -b 4
+python main.py evalu -s 4 -L "data/frames/" -S "data/dl-444-RCC/" -m RCC -b 4
+python main.py evalu -s 8 -L "data/frames/" -S "data/dl-488-RCC/" -m RCC -b 4
 ```
 
 ### Scale Up
@@ -171,8 +171,15 @@ correction, scale up by 8, 4 sub-regions at a time:
 import subprocess
 for y in range(0, 32):          # 0, 1, 2, ..., 31
     for x in range(0, 32, 4):   # 0, 4, 8, ..., 28
-        command = f"python main.py evalu -s 8 -r 0 1 {y} {y+1} {x} {x+4} -L data/frames/ -S data/dl-488-(00-01-{y:02d}-{y+1:02d}-{x:02d}-{x+4:02d})/ -b 4"
-        subprocess.run(command, check=True, shell=True)
+        s =  "-s 8"
+        r = f"-r 0 1 {y} {y+1} {x} {x+4}"
+        L =  "-L data/frames/"
+        S = f"-S data/dl-488-RCC-({y:02d}-{y+1:02d}-{x:02d}-{x+4:02d})/"
+        m =  "-m RCC"   # set to None for without drift correction
+        b =  "-b 4"
+        subprocess.run(
+            f"python main.py evalu {s} {r} {L} {S} {m} {b}", 
+        check=True, shell=True)
 ```
 Remember to provide unique `-S DATA_SAVE_FOLD` for each loop, like the example 
 we show above, to avoid overwriting the results.

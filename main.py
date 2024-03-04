@@ -140,7 +140,7 @@ def getArgument():
         "stride. Should set with stride at the same time. Default: 0."
     )
     parser_evalu.add_argument(
-        "-method", type=str, required=False, dest="method",
+        "-m", type=str, required=False, dest="method",
         choices=["DCC", "MCC", "RCC"], default=None,
         help="Drift correction method, DCC, MCC, or RCC. " + 
         "Must be set if you want to evaluate with drift correction. " +
