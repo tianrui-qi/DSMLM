@@ -150,11 +150,10 @@ Note that we use default `-T TEMP_SAVE_FOLD` here,
 
 #### Step 2: Perform drift correction
 
-Since we already cached the drift result, we can directly use it and perform 
-drift correction while predicting the frames. Please make sure that 
-`-T TEMP_SAVE_FOLD` and `-m {DCC,MCC,RCC}` match the first step. For 
-example, if we use default `-T TEMP_SAVE_FOLD` and set `-m {DCC,MCC,RCC}` 
-as RCC in the first step, we can perform drift correction by
+With cached drift value, perform drift correction while predicting the frames. 
+Make sure that `-T TEMP_SAVE_FOLD` and `-m {DCC,MCC,RCC}` match the first step. 
+For example, if use default `-T TEMP_SAVE_FOLD` and set `-m {DCC,MCC,RCC}` as 
+RCC in the first step, perform drift correction by
 ```bash
 python main.py evalu -s 4 -L "data/frames/" -S "data/dl-444-RCC/" -m RCC -b 4
 python main.py evalu -s 8 -L "data/frames/" -S "data/dl-488-RCC/" -m RCC -b 4
