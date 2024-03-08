@@ -1,9 +1,9 @@
 import torch
-import torch.cuda.amp as amp
-import torch.optim as optim
-import torch.optim.lr_scheduler as lr_scheduler
-import torch.utils.tensorboard.writer as writer
-from torch.utils.data import DataLoader
+import torch.utils.data                 # DataLoader
+import torch.cuda.amp                   # GradScaler, autocast
+import torch.optim                      # Adam
+import torch.optim.lr_scheduler         # ExponentialLR
+import torch.utils.tensorboard.writer   # SummaryWriter
 import torch.nn.functional as F
 from torch import Tensor
 
@@ -28,7 +28,7 @@ class Evaluer:
         self, data_save_fold: Optional[str], ckpt_load_path: str, 
         temp_save_fold: Optional[str],
         stride: Optional[int], window: Optional[int], method: Optional[str], 
-        batch_size: int,
+        batch_size: int, num_workers: int,
         evaluset: src.data.RawDataset, 
     ) -> None:
         # evalu
@@ -48,9 +48,10 @@ class Evaluer:
 
         # data
         self.evaluset = evaluset
-        self.dataloader = DataLoader(
+        self.dataloader = torch.utils.data.DataLoader(
             dataset=self.evaluset,
-            batch_size=batch_size, num_workers=batch_size*4, pin_memory=True
+            batch_size=batch_size, num_workers=num_workers, 
+            pin_memory=True, persistent_workers=True
         )
         # model
         ckpt = torch.load(
@@ -94,7 +95,7 @@ class Evaluer:
                 enumerate(self.dataloader), desc=self.data_save_fold,
                 total = len(self.dataloader), unit="frame", 
                 unit_scale=float(1/(self.num_sub_user/self.batch_size)),
-                dynamic_ncols=True,
+                dynamic_ncols=True, smoothing=0.0,
             ):
                 frame_index = int(i // (self.num_sub_user/self.batch_size))
                 sub_index   = int(i  % (self.num_sub_user/self.batch_size))
@@ -131,14 +132,14 @@ class Evaluer:
                 if idx[1]-idx[0] == self.stride: print(
                     "The stride in temp_save_fold " + 
                     "`{}` ".format(self.temp_save_fold) + 
-                    "is the same as given stride. Skip the prediction."
+                    "same as given stride. Skip the prediction."
                 )
                 # if the stride in temp_save_fold is different from given 
                 # stride, means we have a ambiguous situation and raise an error
                 if idx[1]-idx[0] != self.stride: raise ValueError(
                     "The stride in temp_save_fold " + 
                     "`{}` ".format(self.temp_save_fold) + 
-                    "is diff from given stride. Please either delete the " + 
+                    "diff from given stride. Please either delete the " + 
                     "`{}` ".format(self.temp_save_fold) + 
                     "to use the given stride or change the " + 
                     "given stride to the stride in " + 
@@ -155,18 +156,20 @@ class Evaluer:
                     enumerate(self.dataloader), desc=self.temp_save_fold,
                     total = len(self.dataloader), unit="frame", 
                     unit_scale=float(1/(self.num_sub_user/self.batch_size)),
-                    dynamic_ncols=True,
+                    dynamic_ncols=True, smoothing=0.0,
                 ):
                     frame_index = int(i // (self.num_sub_user/self.batch_size))
                     sub_index   = int(i  % (self.num_sub_user/self.batch_size))
                     # prediction of batch_size patches of the current frame
                     sub_cat[
-                        sub_index*self.batch_size : (sub_index+1)*self.batch_size,
+                        sub_index*self.batch_size : 
+                        (sub_index+1)*self.batch_size,
                         :, :, :
                     ] += self.model(frames.half().to(self.device))
-                    # continue if we haven't complete the prediction of all patches 
-                    # of the current frame
-                    if (sub_index+1)*self.batch_size < self.num_sub_user: continue
+                    # continue if we haven't complete the prediction of all  
+                    # patches of the current frame
+                    if (sub_index+1)*self.batch_size < self.num_sub_user:
+                        continue
                     # save the current result as .tif
                     if self.stride == 0: continue
                     if (frame_index+1) % self.stride != 0: continue
@@ -219,7 +222,7 @@ class Evaluer:
                 enumerate(self.dataloader), desc=self.data_save_fold,
                 total = len(self.dataloader), unit="frame", 
                 unit_scale=float(1/(self.num_sub_user/self.batch_size)),
-                dynamic_ncols=True,
+                dynamic_ncols=True, smoothing=0.0,
             ):
                 frame_index = int(i // (self.num_sub_user/self.batch_size))
                 sub_index   = int(i  % (self.num_sub_user/self.batch_size))
@@ -286,11 +289,11 @@ class Trainer:
         self.ckpt_load_lr   = ckpt_load_lr
 
         # data
-        self.trainloader = DataLoader(
+        self.trainloader = torch.utils.data.DataLoader(
             dataset=trainset,
             batch_size=batch_size, num_workers=batch_size*4, pin_memory=True
         )
-        self.validloader = DataLoader(
+        self.validloader = torch.utils.data.DataLoader(
             dataset=validset, 
             batch_size=batch_size, num_workers=batch_size*4, pin_memory=True
         )
@@ -299,11 +302,13 @@ class Trainer:
         # loss
         self.loss  = src.loss.GaussianBlurLoss().to(self.device)
         # optimizer
-        self.scaler    = amp.GradScaler()
-        self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
-        self.scheduler = lr_scheduler.ExponentialLR(self.optimizer, gamma=0.95)
+        self.scaler    = torch.cuda.amp.GradScaler()
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
+        self.scheduler = torch.optim.lr_scheduler.ExponentialLR(
+            self.optimizer, gamma=0.95
+        )
         # recorder
-        self.writer = writer.SummaryWriter()
+        self.writer = torch.utils.tensorboard.writer.SummaryWriter()
 
         # index
         self.epoch = 1  # epoch index may update in load_ckpt()
@@ -334,7 +339,7 @@ class Trainer:
         # record: progress bar
         pbar = tqdm.tqdm(
             total=int(len(self.trainloader)/self.accumu_steps), 
-            desc='train_epoch', leave=False, unit="steps", smoothing=1.0, 
+            desc='_trainEpoch', leave=False, unit="steps", smoothing=1.0, 
             dynamic_ncols=True,
         )
         # record: tensorboard
@@ -347,7 +352,7 @@ class Trainer:
             labels = labels.to(self.device)
 
             # forward and backward
-            with amp.autocast(dtype=torch.float16):
+            with torch.cuda.amp.autocast(dtype=torch.float16):
                 predis = self.model(frames)
                 loss_value = self.loss(predis, labels) / self.accumu_steps
             self.scaler.scale(loss_value).backward()
@@ -364,14 +369,16 @@ class Trainer:
 
             # record: tensorboard
             self.writer.add_scalars(
-                'scalars/loss', {'train': torch.sum(torch.as_tensor(train_loss))}, 
-                (self.epoch - 1) * len(self.trainloader) / self.accumu_steps + 
-                (i + 1) / self.accumu_steps
+                'scalars/loss', 
+                {'train': torch.sum(torch.as_tensor(train_loss))}, 
+                (self.epoch-1) * len(self.trainloader) / self.accumu_steps + 
+                (i+1) / self.accumu_steps
             )  # average loss of each frame
             self.writer.add_scalars(
-                'scalars/numb', {'train': torch.mean(torch.as_tensor(train_num))}, 
-                (self.epoch - 1) * len(self.trainloader) / self.accumu_steps + 
-                (i + 1) / self.accumu_steps
+                'scalars/numb', 
+                {'train': torch.mean(torch.as_tensor(train_num))}, 
+                (self.epoch-1) * len(self.trainloader) / self.accumu_steps + 
+                (i+1) / self.accumu_steps
             )  # average num of each frame
             train_loss = []
             train_num  = []
@@ -385,7 +392,7 @@ class Trainer:
         # record: progress bar
         pbar = tqdm.tqdm(
             total=int(len(self.validloader)/self.accumu_steps), 
-            desc="valid_epoch", leave=False, unit="steps", smoothing=1.0, 
+            desc="_validEpoch", leave=False, unit="steps", smoothing=1.0, 
             dynamic_ncols=True,
         )
         # record: tensorboard

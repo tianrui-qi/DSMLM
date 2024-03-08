@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from torch.utils.data import Dataset
+import torch.utils.data                 # Dataset
 from torch.distributions.multivariate_normal import MultivariateNormal
 from torch import Tensor
 
@@ -18,7 +18,7 @@ from typing import Tuple, Union, Optional, List
 __all__ = ["RawDataset", "SimDataset"]
 
 
-class RawDataset(Dataset):
+class RawDataset(torch.utils.data.Dataset):
     def __init__(
         self, num: Optional[int], lum_info: bool, dim_dst: List[int], 
         scale: List[int], rng_sub_user: Optional[List[int]],
@@ -128,7 +128,8 @@ class RawDataset(Dataset):
         """
         self.averagemax = 0
         for index in tqdm.tqdm(
-            range(len(self.frames_list)//10), unit="frame", leave=False
+            range(len(self.frames_list)//10), unit="frame", 
+            desc="_getAveragemax", smoothing=0.0,
         ):
             self.averagemax += torch.from_numpy(tifffile.imread(
                 os.path.join(self.frames_load_fold, self.frames_list[index])
@@ -284,7 +285,7 @@ class RawDataset(Dataset):
         return self.num
 
 
-class SimDataset(Dataset):
+class SimDataset(torch.utils.data.Dataset):
     def __init__(
         self, num: int, lum_info: bool, dim_dst: List[int], 
         scale_list: List[int], std_src: List[List[float]]

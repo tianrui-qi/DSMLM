@@ -9,13 +9,16 @@ import random
 import argparse
 import inspect
 import warnings
-warnings.filterwarnings('ignore', category=UserWarning, module='cupy')
 
 import src
+
+__all__ = []
+
 
 torch.backends.cudnn.enabled   = True
 torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.deterministic = True
+warnings.filterwarnings('ignore', category=UserWarning, module='cupy')
 
 
 def main():
@@ -153,6 +156,11 @@ def getArgument():
         help="Batch size. Set this value according to your GPU memory. " +
         "Note that the product of rng_sub_user must divisible " + 
         "by batch_size."
+    )
+    parser_evalu.add_argument(
+        "-w", type=int, required=True, dest="num_workers",
+        help="Number of workers for dataloader. Set this value according " + 
+        "to your CPU."
     )
 
     args = parser.parse_args()

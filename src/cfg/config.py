@@ -10,7 +10,7 @@ class ConfigEvaluer:
         data_save_fold: Optional[str], ckpt_load_path: Optional[str], 
         temp_save_fold: Optional[str], 
         stride: Optional[int], window: Optional[int], method: Optional[str], 
-        batch_size: int, **kwargs,
+        batch_size: int, num_workers: int, **kwargs,
     ) -> None:
         self.evaluset = {   # src.data.RawDataset
             "num": None,    # must be None
@@ -33,6 +33,7 @@ class ConfigEvaluer:
             "method": method,   # DCC, MCC, or RCC
             # data
             "batch_size": batch_size,
+            "num_workers": num_workers,
         }
 
 

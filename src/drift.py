@@ -109,8 +109,8 @@ class DriftCorrector:
         drift = np.zeros([self.window_num, 3])  # [window_num, 3]
         image0 = self._getWindow(0)
         for j in tqdm.tqdm(
-            range(0, self.window_num), 
-            desc=os.path.join(self.temp_save_fold, "DCC.csv")
+            range(0, self.window_num), dynamic_ncols=True,
+            desc=os.path.join(self.temp_save_fold, "DCC.csv"), 
         ):
             imagej = self._getWindow(j)
             # calculate the cross correlation
@@ -254,11 +254,13 @@ class DriftCorrector:
             return drift
 
         for i in tqdm.tqdm(
-            range(self.window_num),
+            range(self.window_num), dynamic_ncols=True,
             desc=os.path.join(self.temp_save_fold, "r.csv")
         ):
             imagei = self._getWindow(i)
-            for j in tqdm.tqdm(range(i, self.window_num), leave=False):
+            for j in tqdm.tqdm(
+                range(i, self.window_num), leave=False, dynamic_ncols=True,
+            ):
                 imagej = self._getWindow(j)
                 # calculate the cross correlation
                 corr = self.crossCorrelation3D(imagei, imagej)
@@ -296,10 +298,8 @@ class DriftCorrector:
                 except RuntimeError:
                     if i == j:
                         drift[i][j] = ((np.array(self.crop)-1)/2)
-                    elif i == 0:
-                        drift[i][j] = drift[i][j-1]
                     else:
-                        drift[i][j] = drift[i-1][j] - drift[i-1][j-1]
+                        drift[i][j] = drift[i][j-1]
                     tqdm.tqdm.write(
                         "Optimal para not found for window ({},{})".format(i, j)
                     )
