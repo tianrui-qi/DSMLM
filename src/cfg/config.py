@@ -1,15 +1,13 @@
-from typing import List, Optional
-
 __all__ = ["ConfigEvaluer", "ConfigTrainer"]
 
 
 class ConfigEvaluer:
     def __init__(
-        self, scale: Optional[int], rng_sub_user: Optional[List[int]], 
+        self, scale: int | None, rng_sub_user: list[int] | None, 
         frames_load_fold: str,
-        data_save_fold: Optional[str], ckpt_load_path: Optional[str], 
-        temp_save_fold: Optional[str], 
-        stride: Optional[int], window: Optional[int], method: Optional[str], 
+        data_save_fold: str | None, ckpt_load_path: str | None, 
+        temp_save_fold: str | None, 
+        stride: int | None, window: int | None, method: str | None, 
         batch_size: int, num_workers: int, **kwargs,
     ) -> None:
         self.evaluset = {   # src.data.RawDataset

@@ -13,16 +13,15 @@ if 'ipykernel' in sys.modules:
     import tqdm.notebook as tqdm
 else:
     import tqdm     # since tqdm does not work in jupyter properly
-from typing import Tuple, Union, Optional, List
 
 __all__ = ["RawDataset", "SimDataset"]
 
 
 class RawDataset(torch.utils.data.Dataset):
     def __init__(
-        self, num: Optional[int], lum_info: bool, dim_dst: List[int], 
-        scale: List[int], rng_sub_user: Optional[List[int]],
-        frames_load_fold: str, mlists_load_fold: Optional[str]
+        self, num: int | None, lum_info: bool, dim_dst: list[int], 
+        scale: list[int], rng_sub_user: list[int] | None,
+        frames_load_fold: str, mlists_load_fold: str | None
     ) -> None:
         super(RawDataset, self).__init__()
         self.num  = num
@@ -137,7 +136,7 @@ class RawDataset(torch.utils.data.Dataset):
         self.averagemax /= len(self.frames_list)
         return self.averagemax
 
-    def __getitem__(self, index: int) -> Union[Tensor, Tuple[Tensor, Tensor]]:
+    def __getitem__(self, index: int) -> Tensor | tuple[Tensor, Tensor]:
         frame_index = index // torch.prod(self.num_sub_user)    # frame index
         sub_index   = index %  torch.prod(self.num_sub_user)    # subframe index
         # channel index
@@ -287,8 +286,8 @@ class RawDataset(torch.utils.data.Dataset):
 
 class SimDataset(torch.utils.data.Dataset):
     def __init__(
-        self, num: int, lum_info: bool, dim_dst: List[int], 
-        scale_list: List[int], std_src: List[List[float]]
+        self, num: int, lum_info: bool, dim_dst: list[int], 
+        scale_list: list[int], std_src: list[list[float]]
     ) -> None:
         super(SimDataset, self).__init__()
         self.num = num
@@ -311,7 +310,7 @@ class SimDataset(torch.utils.data.Dataset):
         self.vars_set = None    # [N, D], float
         self.peak_set = None    # [N], float   
 
-    def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
+    def __getitem__(self, index: int) -> tuple[Tensor, Tensor]:
         # generate molecular list for current frame
         self._generateMlist()
 

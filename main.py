@@ -9,6 +9,7 @@ import random
 import argparse
 import inspect
 import warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='cupy')
 
 import src
 
@@ -18,12 +19,11 @@ __all__ = []
 torch.backends.cudnn.enabled   = True
 torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.deterministic = True
-warnings.filterwarnings('ignore', category=UserWarning, module='cupy')
 
 
-def main():
+def main() -> None:
     setSeed(42)
-    args = getArgument()
+    args = getArgs()
     if args.mode == "evalu":
         config = src.ConfigEvaluer(**vars(args))
         src.Evaluer(**config.runner,
@@ -38,7 +38,7 @@ def main():
         ).fit()
 
 
-def setSeed(seed):
+def setSeed(seed) -> None:
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)  # for multi-GPU
@@ -48,7 +48,7 @@ def setSeed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)  # python hash seed
 
 
-def getArgument():
+def getArgs():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(
         dest='mode', help='Modes of operation: train or evalu.'

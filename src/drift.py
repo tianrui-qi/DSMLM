@@ -12,7 +12,6 @@ if 'ipykernel' in sys.modules:
     import tqdm.notebook as tqdm
 else:
     import tqdm     # since tqdm does not work in jupyter properly
-from typing import Tuple
 
 __all__ = []
 
@@ -44,7 +43,7 @@ class DriftCorrector:
             for file in os.listdir(self.temp_save_fold) if file.endswith('.tif')
         ]
 
-    def _getIndex(self) -> Tuple[int, int]:
+    def _getIndex(self) -> tuple[int, int]:
         # error for no result saving in self.temp_save_fold for drift correction
         error = ValueError(
             "No result saving in temp_save_fold " +
@@ -71,7 +70,9 @@ class DriftCorrector:
         return total, stride
 
     def fit(self) -> ndarray:
-        cache_path = os.path.join(self.temp_save_fold, "{}.csv".format(self.method))
+        cache_path = os.path.join(
+            self.temp_save_fold, "{}.csv".format(self.method)
+        )
         if os.path.exists(cache_path):
             # if cache exists, load the drift from the cache
             self.drift_dst = np.loadtxt(cache_path, delimiter=',')
@@ -109,8 +110,9 @@ class DriftCorrector:
         drift = np.zeros([self.window_num, 3])  # [window_num, 3]
         image0 = self._getWindow(0)
         for j in tqdm.tqdm(
-            range(0, self.window_num), dynamic_ncols=True,
+            range(0, self.window_num), 
             desc=os.path.join(self.temp_save_fold, "DCC.csv"), 
+            dynamic_ncols=True, smoothing=0.0,
         ):
             imagej = self._getWindow(j)
             # calculate the cross correlation
@@ -259,7 +261,8 @@ class DriftCorrector:
         ):
             imagei = self._getWindow(i)
             for j in tqdm.tqdm(
-                range(i, self.window_num), leave=False, dynamic_ncols=True,
+                range(i, self.window_num), leave=False, 
+                dynamic_ncols=True, smoothing=0.0,
             ):
                 imagej = self._getWindow(j)
                 # calculate the cross correlation
@@ -343,7 +346,7 @@ class DriftCorrector:
     @staticmethod
     def gaussianFit(
         corr: ndarray, p0: ndarray = None, 
-        bounds: Tuple[Tuple[float, ...], Tuple[float, ...]] = None
+        bounds: tuple[tuple[float, ...], tuple[float, ...]] = None
     ) -> ndarray:
         popt, _ = scipy.optimize.curve_fit(
             DriftCorrector.gaussian3D, 

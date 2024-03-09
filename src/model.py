@@ -2,14 +2,12 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from typing import List
-
 __all__ = ["ResAttUNet"]
 
 
 class ResAttUNet(nn.Module):
     def __init__(
-        self, dim: int, feats: List[int], 
+        self, dim: int, feats: list[int], 
         use_cbam: bool = False, use_res: bool = False
     ) -> None:
         super(ResAttUNet, self).__init__()

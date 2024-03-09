@@ -166,8 +166,8 @@ python main.py evalu -s 8 -L "data/frames/" -S "data/dl-488-RCC/" -m RCC -b 4 -w
 We provide the argument `-r RNG_SUB_USER` in purpose; if your whole frames patch 
 into `(1, 32, 32)` sub-regions in `(Z, Y, X)` but your GPU memeory can only 
 predict 4 sub-regions at a time, you can easily predict the whole frames by 
-a loop script. Here is a python example that perform evaluation without drift 
-correction, scale up by 8, 4 sub-regions at a time:
+a loop script. Here is a simple python example that perform evaluation with 
+drift correction, scale up by 8, 4 sub-regions at a time:
 ```python
 import subprocess
 for y in range(0, 32):          # 0, 1, 2, ..., 31
@@ -176,7 +176,7 @@ for y in range(0, 32):          # 0, 1, 2, ..., 31
         r = f"-r 0 1 {y} {y+1} {x} {x+4}"
         L =  "-L data/frames/"
         S = f"-S data/dl-488-RCC-({y:02d}-{y+1:02d}-{x:02d}-{x+4:02d})/"
-        m =  "-m RCC"   # set to None for without drift correction
+        m =  "-m RCC"
         b =  "-b 4"
         w =  "-w 8"
         subprocess.run(

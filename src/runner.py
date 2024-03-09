@@ -16,7 +16,6 @@ if 'ipykernel' in sys.modules:
     import tqdm.notebook as tqdm
 else:
     import tqdm     # since tqdm does not work in jupyter properly
-from typing import Optional
 
 import src.data, src.model, src.loss, src.drift
 
@@ -25,9 +24,9 @@ __all__ = ["Evaluer", "Trainer"]
 
 class Evaluer:
     def __init__(
-        self, data_save_fold: Optional[str], ckpt_load_path: str, 
-        temp_save_fold: Optional[str],
-        stride: Optional[int], window: Optional[int], method: Optional[str], 
+        self, data_save_fold: str | None, ckpt_load_path: str, 
+        temp_save_fold: str | None,
+        stride: int | None, window: int |  None, method: str | None, 
         batch_size: int, num_workers: int,
         evaluset: src.data.RawDataset, 
     ) -> None:
