@@ -23,9 +23,8 @@ Please download the checkpoints from
 scale up by 4 or 
 [iCloud](https://www.icloud.com/iclouddrive/0e6maAxyFbHaA3MIGSYuivcOw#450) 
 for 8. Put the checkpoints under the folder `ckpt/e08/` or `ckpt/e10/`.
-Note that `e08` and `e10` match the name in 
-[src/cfg/e.py](https://github.com/tianrui-qi/DSMLM/blob/main/src/cfg/e.py) so 
-that you can check the training configuration for each checkpoint.
+Note that `e08` and `e10` match config in [src/cfg/e.py](src/cfg/e.py) so that 
+you can check the training configuration for each checkpoint.
 
 ## Evaluation
 
@@ -187,7 +186,6 @@ Remember to provide unique `-S DATA_SAVE_FOLD` for each loop, like the example
 we show above, to avoid overwriting the results.
 
 Then, you can concatenate results together to get the prediction for whole 
-frames. We provide a simple script to do this; please check code cell 4 
-"concatenate two 3D subframes into a 3D frame" in 
-[utils.py](https://github.com/tianrui-qi/DSMLM/blob/main/util.ipynb) for more
+frames. We provide a simple script to do this; please check code cell 5 
+"concatenate two 3D subframes into a 3D frame" in [utils.py](utils.py) for more 
 detail.

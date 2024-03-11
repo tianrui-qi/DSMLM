@@ -5,13 +5,9 @@ import scipy.interpolate
 from numpy import ndarray
 
 import os
-import sys
+import tqdm 
 import tifffile
 import matplotlib.pyplot as plt
-if 'ipykernel' in sys.modules:
-    import tqdm.notebook as tqdm
-else:
-    import tqdm     # since tqdm does not work in jupyter properly
 
 __all__ = []
 
@@ -239,7 +235,8 @@ class DriftCorrector:
                 "Load drift matrix from `{}`. ".format(
                     os.path.join(self.temp_save_fold, "r.csv")
                 ) + 
-                "This drift matrix is temp result shared between MCC and RCC " + "method to save drift calculation time. " +
+                "This drift matrix is temp result shared between MCC and RCC " + 
+                "method to save drift calculation time. " +
                 "Please ignore if you have run one of MCC or RCC method and " +
                 "want to try another method. "
                 "Delete `{}` if you want to re-calculate the drift ".format(

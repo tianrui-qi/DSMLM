@@ -4,15 +4,14 @@ import torch.utils.data                 # Dataset
 from torch.distributions.multivariate_normal import MultivariateNormal
 from torch import Tensor
 
+import cupy as cp
+import cupyx.scipy.ndimage
+
 import os
-import sys
+import tqdm 
 import tifffile
 import h5py
 import scipy.io
-if 'ipykernel' in sys.modules:
-    import tqdm.notebook as tqdm
-else:
-    import tqdm     # since tqdm does not work in jupyter properly
 
 __all__ = ["RawDataset", "SimDataset"]
 
@@ -127,13 +126,13 @@ class RawDataset(torch.utils.data.Dataset):
         """
         self.averagemax = 0
         for index in tqdm.tqdm(
-            range(len(self.frames_list)//10), unit="frame", 
-            desc="_getAveragemax", smoothing=0.0,
+            range(len(self.frames_list)//10), 
+            unit="frame", desc="_getAveragemax", smoothing=0.0,
         ):
             self.averagemax += torch.from_numpy(tifffile.imread(
                 os.path.join(self.frames_load_fold, self.frames_list[index])
-            )).max().float()
-        self.averagemax /= len(self.frames_list)
+            )).float().max()
+        self.averagemax /= len(self.frames_list)//10
         return self.averagemax
 
     def __getitem__(self, index: int) -> Tensor | tuple[Tensor, Tensor]:
@@ -287,7 +286,7 @@ class RawDataset(torch.utils.data.Dataset):
 class SimDataset(torch.utils.data.Dataset):
     def __init__(
         self, num: int, lum_info: bool, dim_dst: list[int], 
-        scale_list: list[int], std_src: list[list[float]]
+        scale_list: list[int], std_src: list[list[float]], psf_load_path: str,
     ) -> None:
         super(SimDataset, self).__init__()
         self.num = num
@@ -296,19 +295,25 @@ class SimDataset(torch.utils.data.Dataset):
         self.lum_info = lum_info
         # dimension
         self.D = len(dim_dst)                   # # of dimension 
-        self.dim_src = None                     # [D], int
+        self.dim_src = None                     # [D], int          [random]
         self.dim_dst = Tensor(dim_dst).int()    # [D], int
         # scale up factor 
         self.scale_list = Tensor(scale_list).int()          
-        self.scale      = None                  # [D], int
+        self.scale      = None                  # [D], int          [random]
         # molecular profile
         self.std_src = Tensor(std_src)          # [2, D], float
 
+        # psf for convolution
+        self.psf_src = cp.array(
+            tifffile.imread(psf_load_path)
+        ).astype(cp.float32)
+        self.psf_src /= cp.sum(self.psf_src)    # normalize by sumation
+
         # store molecular list for current frame
-        self.N        = None    # # of molecula    
-        self.mean_set = None    # [N, D], float
-        self.vars_set = None    # [N, D], float
-        self.peak_set = None    # [N], float   
+        self.N       : Tensor = None            # [1, ], int        [random]
+        self.mean_set: Tensor = None            # [N, D], float     [random]
+        self.vars_set: Tensor = None            # [N, D], float     [random]
+        self.peak_set: Tensor = None            # [N], float        [random]
 
     def __getitem__(self, index: int) -> tuple[Tensor, Tensor]:
         # generate molecular list for current frame
@@ -346,28 +351,45 @@ class SimDataset(torch.utils.data.Dataset):
             # set the brightness to the peak of gaussian/molecular
             label[tuple(mean.int())] += peak if self.lum_info else 1
 
-        # add noise
+        # convolve frame with wide field psf
+        frame = torch.from_numpy(
+            cupyx.scipy.ndimage.convolve(cp.array(frame), self.psf_src).get()
+        ).float()
+        # normalization
+        # necessary since the range of frame is uncertain after convolve
+        max = torch.max(frame)
+        if max > 0: frame, label = frame / max, label / max
+        # random set a universal luminate to frame
+        # differ from the lum of molecular that let each molecular to have
+        # different relative luminate; this universal luminate is necessary 
+        # since normalization cause every frame have same max, which is bad
+        # for generalization.
+        peak = torch.rand(1)
+        frame, label = frame * peak, label * peak
+
+        # add noise to frame
         save_bit = 2**(3+torch.randint(0, 3, (1,)))     # 8, 16, or 32 bit
-        frame = self._generateNoise(frame, save_bit=save_bit)
+        frame = self.generateNoise(frame, save_bit=save_bit)
         # dim_src -> dim_dst
         frame = F.interpolate(
             frame.unsqueeze(0).unsqueeze(0),
             scale_factor=self.scale.tolist()
         ).squeeze(0).squeeze(0)
 
-        return torch.clip(frame, 0, 1), torch.clip(label, 0, 1)
+        return frame, label
 
     def _generateMlist(self) -> None:
         # random scale up factor
         self.scale = torch.randint(0, len(self.scale_list), (self.D,))
         self.scale = self.scale_list[self.scale]            # [D], int
+        self.scale[2] = self.scale[1]  # same scale in XY
 
         # pixel number of source frame
         self.dim_src = (self.dim_dst / self.scale).int()    # [D], int
 
         # number of molecular
-        self.N = torch.sum(self.dim_src).int()      # max possible # of mol
-        self.N = torch.randint(0, self.N+1, (1,))   # random mol # from 0 to max
+        self.N = torch.sum(self.dim_src).int()  # max possible mol num
+        self.N = torch.randint(0, self.N+1, (1,)).int()     # [1] int
 
         # generate parameters in source dimension
         # moleculars' mean, [N, D]
@@ -380,9 +402,9 @@ class SimDataset(torch.utils.data.Dataset):
         # moleculars' peak, [N]
         self.peak_set  = torch.rand(self.N)
 
-    def _generateNoise(
-        self, frame: Tensor,
-        save_bit: int = 16, camera_bit: int = 16, 
+    @staticmethod
+    def generateNoise(
+        frame: Tensor, save_bit: int = 16, camera_bit: int = 16, 
         qe: float = 0.82, sensitivity: float = 5.88, dark_noise: float = 2.29
     ) -> Tensor:
         ## camera noise

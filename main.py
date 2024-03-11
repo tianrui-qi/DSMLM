@@ -33,7 +33,8 @@ def main() -> None:
         config = getattr(src, args.config)()
         src.Trainer(**config.runner,
             trainset=src.SimDataset(**config.trainset), 
-            validset=src.RawDataset(**config.validset), 
+            #validset=src.RawDataset(**config.validset), 
+            validset=None,
             model=src.ResAttUNet(**config.model), 
         ).fit()
 

@@ -10,12 +10,8 @@ from torch import Tensor
 import numpy as np
 
 import os
-import sys
+import tqdm
 import tifffile
-if 'ipykernel' in sys.modules:
-    import tqdm.notebook as tqdm
-else:
-    import tqdm     # since tqdm does not work in jupyter properly
 
 import src.data, src.model, src.loss, src.drift
 
@@ -91,10 +87,10 @@ class Evaluer:
                 dtype=torch.float16, device=self.device
             )
             for i, frames in tqdm.tqdm(
-                enumerate(self.dataloader), desc=self.data_save_fold,
-                total = len(self.dataloader), unit="frame", 
+                enumerate(self.dataloader), 
+                desc=self.data_save_fold, total = len(self.dataloader), 
+                unit="frame", dynamic_ncols=True, smoothing=0.0,
                 unit_scale=float(1/(self.num_sub_user/self.batch_size)),
-                dynamic_ncols=True, smoothing=0.0,
             ):
                 frame_index = int(i // (self.num_sub_user/self.batch_size))
                 sub_index   = int(i  % (self.num_sub_user/self.batch_size))
@@ -152,10 +148,10 @@ class Evaluer:
                     dtype=torch.float16, device=self.device
                 )
                 for i, frames in tqdm.tqdm(
-                    enumerate(self.dataloader), desc=self.temp_save_fold,
-                    total = len(self.dataloader), unit="frame", 
+                    enumerate(self.dataloader), 
+                    desc=self.temp_save_fold, total = len(self.dataloader), 
+                    unit="frame", dynamic_ncols=True, smoothing=0.0,
                     unit_scale=float(1/(self.num_sub_user/self.batch_size)),
-                    dynamic_ncols=True, smoothing=0.0,
                 ):
                     frame_index = int(i // (self.num_sub_user/self.batch_size))
                     sub_index   = int(i  % (self.num_sub_user/self.batch_size))
@@ -218,10 +214,10 @@ class Evaluer:
                 dtype=torch.float16, device=self.device
             )
             for i, frames in tqdm.tqdm(
-                enumerate(self.dataloader), desc=self.data_save_fold,
-                total = len(self.dataloader), unit="frame", 
+                enumerate(self.dataloader), 
+                desc=self.data_save_fold, total = len(self.dataloader), 
+                unit="frame", dynamic_ncols=True, smoothing=0.0,
                 unit_scale=float(1/(self.num_sub_user/self.batch_size)),
-                dynamic_ncols=True, smoothing=0.0,
             ):
                 frame_index = int(i // (self.num_sub_user/self.batch_size))
                 sub_index   = int(i  % (self.num_sub_user/self.batch_size))
@@ -274,7 +270,7 @@ class Trainer:
     def __init__(
         self, max_epoch: int, accumu_steps: int, 
         ckpt_save_fold: str, ckpt_load_path: str, ckpt_load_lr: bool,
-        batch_size: int, lr: float,
+        batch_size: int, num_workers: int, lr: float, T_max: int,
         trainset: src.data.SimDataset, validset: src.data.RawDataset, 
         model: src.model.ResAttUNet,
     ) -> None:
@@ -290,12 +286,14 @@ class Trainer:
         # data
         self.trainloader = torch.utils.data.DataLoader(
             dataset=trainset,
-            batch_size=batch_size, num_workers=batch_size*4, pin_memory=True
+            batch_size=batch_size, num_workers=num_workers,
+            pin_memory=True, persistent_workers=True
         )
         self.validloader = torch.utils.data.DataLoader(
             dataset=validset, 
-            batch_size=batch_size, num_workers=batch_size*4, pin_memory=True
-        )
+            batch_size=batch_size, num_workers=num_workers, 
+            pin_memory=True, persistent_workers=True
+        ) if validset else None
         # model
         self.model = model.to(self.device)
         # loss
@@ -303,8 +301,8 @@ class Trainer:
         # optimizer
         self.scaler    = torch.cuda.amp.GradScaler()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
-        self.scheduler = torch.optim.lr_scheduler.ExponentialLR(
-            self.optimizer, gamma=0.95
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer, T_max=T_max, eta_min=1e-10,
         )
         # recorder
         self.writer = torch.utils.tensorboard.writer.SummaryWriter()
@@ -313,12 +311,10 @@ class Trainer:
         self.epoch = 1  # epoch index may update in load_ckpt()
 
         # print model info
-        """
         para_num = sum(
             p.numel() for p in self.model.parameters() if p.requires_grad
         )
         print(f'The model has {para_num:,} trainable parameters')
-        """
 
     def fit(self) -> None:
         self._loadCkpt()
@@ -388,6 +384,8 @@ class Trainer:
     def _validEpoch(self) -> None:
         self.model.eval()
 
+        if self.validloader is None: return
+
         # record: progress bar
         pbar = tqdm.tqdm(
             total=int(len(self.validloader)/self.accumu_steps), 
@@ -426,7 +424,7 @@ class Trainer:
     @torch.no_grad()
     def _updateLr(self) -> None:
         # update learning rate
-        if self.scheduler.get_last_lr()[0] > 1e-10: self.scheduler.step()
+        self.scheduler.step()
 
         # record: tensorboard
         self.writer.add_scalar(
