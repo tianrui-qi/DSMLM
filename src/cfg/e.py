@@ -1,5 +1,6 @@
 from src.cfg.config import ConfigTrainer
 
+
 __all__ = ["e08", "e09", "e10", "e11",]
 
 
@@ -27,7 +28,7 @@ class e11(ConfigTrainer):
         self.validset["scale"] = [4, 8, 8]
         self.model["feats"] = [1, 16, 32, 64, 128, 256, 512]
         self.runner["max_epoch"] = 340
-        self.runner["ckpt_load_path"] = "ckpt/e08/200"
+        self.runner["ckpt_load_path"] = "ckpt/e08/200.ckpt"
         self.runner["lr"] = 1e-6
 
 
@@ -40,12 +41,12 @@ class e10(ConfigTrainer):
 
         """
         self.runner["max_epoch"] = 340
-        self.runner["ckpt_load_path"] = "ckpt/e08/200"
+        self.runner["ckpt_load_path"] = "ckpt/e08/200.ckpt"
         self.runner["lr"] = 1e-6
         """
 
         self.runner["max_epoch"] = 450
-        self.runner["ckpt_load_path"] = "ckpt/e10/340"
+        self.runner["ckpt_load_path"] = "ckpt/e10/340.ckpt"
         self.runner["lr"] = 1e-6
 
 
@@ -55,7 +56,7 @@ class e09(ConfigTrainer):
         self.validset["scale"] = [4, 8, 8]
         self.model["feats"] = [1, 16, 32, 64, 128, 256, 512]
         self.runner["max_epoch"] = 340
-        self.runner["ckpt_load_path"] = "ckpt/e08/200"
+        self.runner["ckpt_load_path"] = "ckpt/e08/200.ckpt"
         self.runner["lr"] = 1e-6
 
 
@@ -85,18 +86,18 @@ class e08(ConfigTrainer):
         super().__init__()
         """
         self.runner["max_epoch"] = 100
-        self.runner["ckpt_load_path"] = "ckpt/e03/10"
+        self.runner["ckpt_load_path"] = "ckpt/e03/10.ckpt"
         self.runner["ckpt_load_lr"] = True
         """
 
         """
         self.runner["max_epoch"] = 200
-        self.runner["ckpt_load_path"] = "ckpt/e08/100"
+        self.runner["ckpt_load_path"] = "ckpt/e08/100.ckpt"
         self.runner["lr"] = 5e-6
         """
 
         self.runner["max_epoch"] = 340
-        self.runner["ckpt_load_path"] = "ckpt/e08/200"
+        self.runner["ckpt_load_path"] = "ckpt/e08/200.ckpt"
         self.runner["lr"] = 1e-6
 
 
@@ -129,7 +130,7 @@ class e07(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         self.model["feats"] = [1, 16, 32]
-        self.runner["ckpt_load_path"] = "ckpt/e06/240"
+        self.runner["ckpt_load_path"] = "ckpt/e06/240.ckpt"
         self.runner["lr"] = 1e-4
 
 
@@ -139,7 +140,7 @@ class e06(ConfigTrainer):
         self.trainset["lum_info"] = False
         self.validset["lum_info"] = False
         self.model["feats"] = [1, 16, 32]
-        self.runner["ckpt_load_path"] = "ckpt/d04/140"
+        self.runner["ckpt_load_path"] = "ckpt/d04/140.ckpt"
         self.runner["lr"] = 1e-4
 
 
@@ -171,7 +172,7 @@ class e05(ConfigTrainer):
     def __init__(self) -> None:
         super().__init__()
         self.trainset["scale_list"] = [2, 4, 8, 16]
-        self.runner["ckpt_load_path"] = "ckpt/e04/80"
+        self.runner["ckpt_load_path"] = "ckpt/e04/80.ckpt"
         self.runner["ckpt_load_lr"]   = True
 
 
@@ -181,7 +182,7 @@ class e04(ConfigTrainer):
         self.trainset["lum_info"] = False
         self.trainset["scale_list"] = [2, 4, 8, 16]
         self.validset["lum_info"] = False
-        self.runner["ckpt_load_path"] = "ckpt/e03/10"
+        self.runner["ckpt_load_path"] = "ckpt/e03/10.ckpt"
         self.runner["ckpt_load_lr"]   = True
 
 
@@ -222,7 +223,7 @@ class e02(ConfigTrainer):
         super().__init__()
         self.trainset["scale_list"] = [2, 4, 8, 16]
         self.model["feats"] = [1, 16, 32]
-        self.runner["ckpt_load_path"] = "ckpt/e01/150"
+        self.runner["ckpt_load_path"] = "ckpt/e01/150.ckpt"
 
 
 class e01(ConfigTrainer):
@@ -230,5 +231,5 @@ class e01(ConfigTrainer):
         super().__init__()
         self.trainset["scale_list"] = [2, 4, 8, 16]
         self.model["feats"] = [1, 16, 32]
-        self.runner["ckpt_load_path"] = "ckpt/d04/140"
+        self.runner["ckpt_load_path"] = "ckpt/d04/140.ckpt"
         self.runner["lr"] = 1e-4

@@ -23,7 +23,7 @@ class ConfigEvaluer:
         self.runner = {     # src.runner.Evaluer
             # path
             "data_save_fold": data_save_fold,
-            "ckpt_load_path": ckpt_load_path,  # path without .ckpt
+            "ckpt_load_path": ckpt_load_path,
             "temp_save_fold": temp_save_fold,
             # drift
             "stride": stride,   # unit: frames
@@ -46,7 +46,7 @@ class ConfigTrainer:
             "std_src": [    # std range, [min, max] std, [C, H, W], by pixel
                 [1.0, 1.0, 1.0], [3.0, 2.5, 2.5]
             ],
-            "psf_load_path": "data/psf.tif",
+            "psf_load_path": "",    # empty to disable convolve, data/psf.tif
         }
         self.validset = {   # src.data.RawDataset
             "num": 5000,
@@ -68,12 +68,11 @@ class ConfigTrainer:
             "accumu_steps": 10,
             # checkpoint
             "ckpt_save_fold": "ckpt/" + self.__class__.__name__,
-            "ckpt_load_path": "",       # path without .ckpt
+            "ckpt_load_path": "",
             "ckpt_load_lr"  : False,    # load lr from ckpt
             # data
             "batch_size" : 1,
             "num_workers": 4,
             # optimizer
             "lr": 1e-5,     # initial learning rate (lr)
-            "T_max": 10,    # period of the learning rate scheduler
         }

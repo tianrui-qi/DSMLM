@@ -13,6 +13,7 @@ warnings.filterwarnings('ignore', category=UserWarning, module='cupy')
 
 import src
 
+
 __all__ = []
 
 
@@ -117,9 +118,8 @@ def getArgs():
     parser_evalu.add_argument(
         "-C", type=str, required=False, dest="ckpt_load_path",
         default=None,
-        help="Path to the checkpoint load file without .ckpt. " +
-        "Default: `ckpt/e08/340` or `ckpt/e10/450` " + 
-        "when scale up factor is 4 or 8."
+        help="Path to the checkpoint load file. Default: `ckpt/e08/340.ckpt` " + 
+        "or `ckpt/e10/450.ckpt` when scale up factor is 4 or 8."
     )
     parser_evalu.add_argument(
         "-T", type=str, required=False, dest="temp_save_fold", 
@@ -169,8 +169,8 @@ def getArgs():
     # set default value
     if args.mode == 'evalu':
         if args.ckpt_load_path is None:
-            if args.scale == 4: args.ckpt_load_path = "ckpt/e08/340"
-            if args.scale == 8: args.ckpt_load_path = "ckpt/e10/450"
+            if args.scale == 4: args.ckpt_load_path = "ckpt/e08/340.ckpt"
+            if args.scale == 8: args.ckpt_load_path = "ckpt/e10/450.ckpt"
         if args.temp_save_fold is None:
             args.temp_save_fold = os.path.join(
                 os.path.dirname(os.path.normpath(args.frames_load_fold)), "temp"

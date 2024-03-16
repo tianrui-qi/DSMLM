@@ -15,6 +15,7 @@ import tifffile
 
 import src.data, src.model, src.loss, src.drift
 
+
 __all__ = ["Evaluer", "Trainer"]
 
 
@@ -49,9 +50,7 @@ class Evaluer:
             pin_memory=True, persistent_workers=True
         )
         # model
-        ckpt = torch.load(
-            "{}.ckpt".format(self.ckpt_load_path), map_location=self.device
-        )
+        ckpt = torch.load(self.ckpt_load_path, map_location=self.device)
         self.model = src.model.ResAttUNet(
             ckpt["dim"], ckpt["feats"], ckpt["use_cbam"], ckpt["use_res"]
         ).to(self.device)
@@ -301,8 +300,8 @@ class Trainer:
         # optimizer
         self.scaler    = torch.cuda.amp.GradScaler()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
-        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            self.optimizer, T_max=T_max, eta_min=1e-10,
+        self.scheduler = torch.optim.lr_scheduler.ExponentialLR(
+            self.optimizer, gamma=0.95
         )
         # recorder
         self.writer = torch.utils.tensorboard.writer.SummaryWriter()
@@ -448,13 +447,13 @@ class Trainer:
             "feats": self.model.feats,
             "use_cbam": self.model.use_cbam,
             "use_res": self.model.use_res,
-        }, "{}/{}.ckpt".format(self.ckpt_save_fold, self.epoch))
+        }, os.path.join(self.ckpt_save_fold, "{}.ckpt".format(self.epoch)))
 
     @torch.no_grad()
     def _loadCkpt(self) -> None:
         if self.ckpt_load_path == "": return
-        ckpt = torch.load("{}.ckpt".format(self.ckpt_load_path))
-        
+        ckpt = torch.load(self.ckpt_load_path)
+
         self.epoch = ckpt['epoch']+1  # start train from next epoch index
         self.model.load_state_dict(ckpt['model'], strict=False)
         self.scaler.load_state_dict(ckpt['scaler'])

@@ -13,6 +13,7 @@ import tifffile
 import h5py
 import scipy.io
 
+
 __all__ = ["RawDataset", "SimDataset"]
 
 
@@ -304,10 +305,13 @@ class SimDataset(torch.utils.data.Dataset):
         self.std_src = Tensor(std_src)          # [2, D], float
 
         # psf for convolution
-        self.psf_src = cp.array(
-            tifffile.imread(psf_load_path)
-        ).astype(cp.float32)
-        self.psf_src /= cp.sum(self.psf_src)    # normalize by sumation
+        if psf_load_path == "": 
+            self.psf_src = None
+        else:
+            self.psf_src = cp.array(
+                tifffile.imread(psf_load_path)
+            ).astype(cp.float32)
+            self.psf_src /= cp.sum(self.psf_src)    # normalize by sumation
 
         # store molecular list for current frame
         self.N       : Tensor = None            # [1, ], int        [random]
@@ -354,9 +358,10 @@ class SimDataset(torch.utils.data.Dataset):
         # convolve frame with wide field psf
         frame = torch.from_numpy(
             cupyx.scipy.ndimage.convolve(cp.array(frame), self.psf_src).get()
-        ).float()
+        ).float() if self.psf_src is not None else frame
         # normalization
-        # necessary since the range of frame is uncertain after convolve
+        # necessary, range of frame may exceed 1 after put all slice beck to 
+        # whole frame or uncertain after convolve
         max = torch.max(frame)
         if max > 0: frame, label = frame / max, label / max
         # random set a universal luminate to frame

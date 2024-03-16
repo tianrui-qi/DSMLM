@@ -2,11 +2,10 @@
 
 ## Environment
 
-The code is tested with `Python == 3.11`, `PyTorch == 2.1`, and `CUDA == 12.1`. 
-We recommend you to use 
-[Miniconda](https://docs.conda.io/en/latest/miniconda.html) or 
-[Anaconda](https://www.anaconda.com/) to make sure that all dependencies are in 
-place. To create an conda environment:
+The code is tested with `Python=3.11`, `PyTorch=2.1`, and `CUDA=12.1`. We 
+recommend you to use [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+or [Anaconda](https://www.anaconda.com/) to make sure that all dependencies are 
+in place. To create an conda environment:
 ```bash
 # clone the repository
 git clone git@github.com:tianrui-qi/DSMLM.git
@@ -51,8 +50,8 @@ options:
     parameter with that new folder.
 -   `-S DATA_SAVE_FOLD`: Path to the data save folder. No need to specify when 
     stride or window is set as non-zero. Default: None.
--   `-C CKPT_LOAD_PATH`: Path to the checkpoint load file without .ckpt. 
-    Default: `ckpt/e08/340` or `ckpt/e10/450` when scale up factor is 4 or 8.
+-   `-C CKPT_LOAD_PATH`: Path to the checkpoint load file. Default: 
+    `ckpt/e08/340.ckpt` or `ckpt/e10/450.ckpt` when scale up factor is 4 or 8.
 -   `-T TEMP_SAVE_FOLD`: Path to the temporary save folder for drifting 
     analysis. Must be specified when drift correction will be performed. 
     Recomend to specify different path for different dataset.

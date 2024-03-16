@@ -1,5 +1,6 @@
 from src.cfg.config import ConfigTrainer
 
+
 __all__ = []
 
 
@@ -43,7 +44,7 @@ class d09(ConfigTrainer):
         self.num = [40000 * 256]
 
         ## Eval
-        self.ckpt_load_path = "ckpt/d07/170"
+        self.ckpt_load_path = "ckpt/d07/170.ckpt"
 
 
 class d08(ConfigTrainer):
@@ -59,7 +60,7 @@ class d08(ConfigTrainer):
         self.num = [45000 * 256]
 
         ## Eval
-        self.ckpt_load_path = "ckpt/d07/170"
+        self.ckpt_load_path = "ckpt/d07/170.ckpt"
 
 
 """ luminance information
@@ -97,12 +98,12 @@ class d07(ConfigTrainer):
         super().train()
         ## Train
         self.lr = 1e-5
-        self.ckpt_load_path = "ckpt/d04/140"
+        self.ckpt_load_path = "ckpt/d04/140.ckpt"
 
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path = "ckpt/d07/170"
+        self.ckpt_load_path = "ckpt/d07/170.ckpt"
 
 
 """ threshold
@@ -166,7 +167,7 @@ class d06(ConfigTrainer):
 
     def eval(self) -> None:
         super().eval()
-        self.ckpt_load_path = "ckpt/d04/140"
+        self.ckpt_load_path = "ckpt/d04/140.ckpt"
 
 
 class d06_000(d06):
@@ -268,13 +269,13 @@ class d05(ConfigTrainer):
         self.type_data = ["Raw", "Raw"]
 
         ## Train
-        self.ckpt_load_path = "ckpt/d04/140"
+        self.ckpt_load_path = "ckpt/d04/140.ckpt"
         self.ckpt_load_lr   = True
 
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path = "ckpt/d05/150"
+        self.ckpt_load_path = "ckpt/d05/150.ckpt"
 
 
 """ reduce features number
@@ -316,7 +317,7 @@ class d04(ConfigTrainer):
     def eval(self) -> None:
         super().eval()
         ## Eval
-        self.ckpt_load_path = "ckpt/d04/140"
+        self.ckpt_load_path = "ckpt/d04/140.ckpt"
 
 
 class d03(ConfigTrainer):
@@ -373,7 +374,7 @@ class d02(ConfigTrainer):
         super().train()
         ## Train
         self.lr = 1e-5
-        self.ckpt_load_path = "ckpt/d01/8"
+        self.ckpt_load_path = "ckpt/d01/8.ckpt"
 
     def eval(self) -> None:
         super().eval()
@@ -382,7 +383,7 @@ class d02(ConfigTrainer):
         self.num_workers = 2
         
         ## Eval
-        self.ckpt_load_path = "ckpt/d02/140"
+        self.ckpt_load_path = "ckpt/d02/140.ckpt"
 
 
 class d01(ConfigTrainer):
@@ -405,4 +406,4 @@ class d01(ConfigTrainer):
         self.num_workers = 2
 
         ## Eval
-        self.ckpt_load_path = "ckpt/d01/8"
+        self.ckpt_load_path = "ckpt/d01/8.ckpt"
