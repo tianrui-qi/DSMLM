@@ -397,6 +397,7 @@ class DriftCorrector:
         plt.title("Drift over frames (method: {})".format(self.method))
         plt.xlabel('frame')
         plt.ylabel('drift (pixel)')
+        plt.xlim([0, len(self.drift_dst)])
 
         # Drift in XY plane
         plt.figure()

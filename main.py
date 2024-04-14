@@ -34,8 +34,7 @@ def main() -> None:
         config = getattr(src, args.config)()
         src.Trainer(**config.runner,
             trainset=src.SimDataset(**config.trainset), 
-            #validset=src.RawDataset(**config.validset), 
-            validset=None,
+            validset=src.RawDataset(**config.validset), 
             model=src.ResAttUNet(**config.model), 
         ).fit()
 
@@ -153,15 +152,17 @@ def getArgs():
         "then use MCC or RCC to calculate the final drift. Default: None."
     )
     parser_evalu.add_argument(
-        "-b", type=int, required=True, dest="batch_size",
+        "-b", type=int, required=False, dest="batch_size",
+        default=1,
         help="Batch size. Set this value according to your GPU memory. " +
         "Note that the product of rng_sub_user must divisible " + 
-        "by batch_size."
+        "by batch_size. Default: 1."
     )
     parser_evalu.add_argument(
-        "-w", type=int, required=True, dest="num_workers",
+        "-w", type=int, required=False, dest="num_workers",
+        default=1,
         help="Number of workers for dataloader. Set this value according " + 
-        "to your CPU."
+        "to your CPU. Default: 1."
     )
 
     args = parser.parse_args()

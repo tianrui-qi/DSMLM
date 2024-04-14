@@ -55,8 +55,8 @@ class ConfigTrainer:
 
             "scale": [4, 4, 4],
             "rng_sub_user": None,   # not used for training
-            "frames_load_fold": "C:/Users/tianrui/Desktop/tubulin/frames",
-            "mlists_load_fold": "C:/Users/tianrui/Desktop/tubulin/mlists",
+            "frames_load_fold": "data/frames",
+            "mlists_load_fold": "data/mlists",
         }
         self.model = {      # src.model.ResAttUNet
             "dim"  : 3,

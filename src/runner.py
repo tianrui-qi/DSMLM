@@ -103,7 +103,8 @@ class Evaluer:
                 if (sub_index+1)*self.batch_size < self.num_sub_user: continue
                 # save the current result as .tif
                 if (frame_index+1) & frame_index and \
-                frame_index+1 != self.total: continue
+                frame_index+1 != self.total and \
+                (frame_index+1) % 1000 != 0: continue
                 self._save(sub_cat, frame_index, self.data_save_fold)
         # case 2: perform drift correction; first we predict and save temp 
         # result for drift correction; then, perform drift correction using the 
@@ -235,7 +236,8 @@ class Evaluer:
                 if (sub_index+1)*self.batch_size < self.num_sub_user: continue
                 # save the current result as .tif
                 if (frame_index+1) & frame_index and \
-                frame_index+1 != self.total: continue
+                frame_index+1 != self.total and \
+                (frame_index+1) % 1000 != 0: continue
                 self._save(
                         F.interpolate(
                         sub_cat.unsqueeze(0), 
