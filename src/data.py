@@ -127,7 +127,7 @@ class RawDataset(torch.utils.data.Dataset):
         """
         self.averagemax = 0
         for index in tqdm.tqdm(
-            range(len(self.frames_list)//10), 
+            range(len(self.frames_list)//10), leave=False,
             unit="frame", desc="_getAveragemax", smoothing=0.0,
         ):
             self.averagemax += torch.from_numpy(tifffile.imread(

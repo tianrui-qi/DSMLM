@@ -1,5 +1,3 @@
-# DSMLM
-
 ## Environment
 
 The code is tested with `Python=3.11`, `PyTorch=2.1`, and `CUDA=12.1`. We 
@@ -18,9 +16,9 @@ conda activate DSMLM
 ## Checkpoints
 
 Please download the checkpoints from 
-[iCloud](https://www.icloud.com/iclouddrive/05cFlVujbb2TkrWANiT04tdgQ#340) for 
+[iCloud](https://www.icloud.com/iclouddrive/0692VJtupRWKZjXfehxsrMwYQ#340) for 
 scale up by 4 or 
-[iCloud](https://www.icloud.com/iclouddrive/0e6maAxyFbHaA3MIGSYuivcOw#450) 
+[iCloud](https://www.icloud.com/iclouddrive/072I_w3BxdCt9FcSzXdUGP3Qg#450) 
 for 8. Put the checkpoints under the folder `ckpt/e08/` or `ckpt/e10/`.
 Note that `e08` and `e10` match config in [src/cfg/e.py](src/cfg/e.py) so that 
 you can check the training configuration for each checkpoint.
@@ -161,7 +159,7 @@ python main.py evalu -s 4 -L "data/frames/" -S "data/4-RCC/" -m RCC
 python main.py evalu -s 8 -L "data/frames/" -S "data/8-RCC/" -m RCC
 ```
 
-### Scale Up
+### Scaling Up
 
 We provide the argument `-r RNG_SUB_USER` in purpose; if your whole frames patch 
 into `(1, 32, 32)` sub-regions in `(Z, Y, X)` but your GPU memeory can only 
@@ -188,3 +186,17 @@ Then, you can concatenate results together to get the prediction for whole
 frames. We provide a simple script to do this; please check code cell 5 
 "concatenate two 3D subframes into a 3D frame" in [utils.py](utils.py) for more 
 detail.
+
+## Acknowledgements
+
+This research work was conducted in Dr. 
+[Shu Jia](https://www.linkedin.com/in/shu-jia-29425340/)’s 
+[Jia Laboratory for Systems Biophotonics](https://sites.google.com/site/thejialab/). 
+I am deeply grateful to Dr. Jia for providing the opportunity and resources to 
+carry out this project. I would like to especially thank 
+[Keyi Han](https://www.linkedin.com/in/keyi-han-1a312075/), whose leadership
+were central to this project. His guidance was invaluable, and his dedication 
+was instrumental in driving the research forward. I also extend my sincere 
+thanks to Dr. [Xuanwen Hua](https://www.linkedin.com/in/xuanwen-hua/), whose 
+contributions were vital to the success of this work. The collaboration and 
+support from everyone involved were crucial in achieving our research goals.
