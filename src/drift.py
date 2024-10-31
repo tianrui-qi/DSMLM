@@ -25,6 +25,7 @@ class DriftCorrector:
         self.window = window
         self.window_num = (self.total-self.window)//self.stride+1
         self.crop = [32, 64, 64]
+        self.bound = 48  # px around the initial guess as the bounds for fitting
         self.method = method    # DCC, MCC, or RCC
 
         # result
@@ -136,10 +137,10 @@ class DriftCorrector:
                 else:
                     # set previous drift as the initial guess
                     p0 = np.array([*drift[j-1], 1, 1, 1, 1])
-                # set 10 pixels around the initial guess as the bounds
+                # set self.bound px around the initial guess as the bounds
                 bounds=(
-                    (*(p0[0:3]-10), -np.inf, -np.inf, -np.inf, -np.inf),
-                    (*(p0[0:3]+10),  np.inf,  np.inf,  np.inf,  np.inf)  
+                    (*(p0[0:3]-self.bound), -np.inf, -np.inf, -np.inf, -np.inf),
+                    (*(p0[0:3]+self.bound),  np.inf,  np.inf,  np.inf,  np.inf)  
                 )
                 # fit the correlation with a gaussian to find the drift
                 drift[j] = DriftCorrector.gaussianFit(
@@ -287,10 +288,16 @@ class DriftCorrector:
                     else:
                         # set previous drift as the initial guess
                         p0 = np.array([*drift[i][j-1], 1, 1, 1, 1])
-                    # set 10 pixels around the initial guess as the bounds
+                    # set self.bound px around the initial guess as the bounds
                     bounds=(
-                        (*(p0[0:3]-10), -np.inf, -np.inf, -np.inf, -np.inf),
-                        (*(p0[0:3]+10),  np.inf,  np.inf,  np.inf,  np.inf)  
+                        (
+                            *(p0[0:3]-self.bound), 
+                            -np.inf, -np.inf, -np.inf, -np.inf
+                        ),
+                        (
+                            *(p0[0:3]+self.bound),  
+                            np.inf,  np.inf,  np.inf,  np.inf
+                        )  
                     )
                     # fit the correlation with a gaussian to find the drift
                     drift[i][j] = DriftCorrector.gaussianFit(
