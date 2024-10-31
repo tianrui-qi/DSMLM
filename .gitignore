@@ -1,7 +1,7 @@
 # (main)
-ckpt/
-data/
-runs/
+/ckpt/
+/data/
+/runs/
 
 # (matlab-achieve) generated data by dataGenerator.m and dataGeneratorHelper.m
 generated/

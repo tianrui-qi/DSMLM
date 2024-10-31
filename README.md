@@ -184,8 +184,8 @@ we show above, to avoid overwriting the results.
 
 Then, you can concatenate results together to get the prediction for whole 
 frames. We provide a simple script to do this; please check code cell 5 
-"concatenate two 3D subframes into a 3D frame" in [utils.py](utils.py) for more 
-detail.
+"concatenate two 3D subframes into a 3D frame" in [util.ipynb](util.ipynb) 
+for more detail.
 
 ## Acknowledgements
 
