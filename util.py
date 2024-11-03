@@ -17,6 +17,7 @@ def main() -> None:
     if args.mode == "preprocessPSF":    preprocessPSF(**vars(args))
     if args.mode == "preprocessFrame":  preprocessFrame(**vars(args))
     if args.mode == "preprocessMList":  preprocessMList(**vars(args))
+    if args.mode == "concatSubframe":   concatSubframe(**vars(args))
 
 
 def getArgs():
@@ -55,6 +56,21 @@ def getArgs():
     parser_preprocessMList.add_argument(
         '-S', '--mlists_save_fold', type=str, required=True, 
         dest="mlists_save_fold",
+    )
+
+    # concatSubframe
+    parser_concatSubframe = subparsers.add_parser('concatSubframe')
+    parser_concatSubframe.add_argument(
+        "-L", "--subframes_load_fold", type=str, required=True, 
+        dest="subframes_load_fold", nargs='+', 
+    )
+    parser_concatSubframe.add_argument(
+        "-S", "--frames_save_fold", type=str, required=True, 
+        dest="frames_save_fold",
+    )
+    parser_concatSubframe.add_argument(
+        "-a", "--axis", type=str, required=True, 
+        dest="axis", choices=["horizontal", "vertical"],
     )
 
     return parser.parse_args()
@@ -159,6 +175,28 @@ def preprocessMList(
             "{}/{:05}.mat".format(
                 mlists_save_fold, int(mlists_list[index][11:-4])
             ), {"storm_coords": mlist.numpy()}
+        )
+
+
+def concatSubframe(
+    subframes_load_fold: list[str], frames_save_fold: str, axis: str, **kwargs
+) -> None:
+    # axis = 1 for vertical, 2 for horizontal
+    axis = 1 if axis == "vertical" else 2
+    if not os.path.exists(frames_save_fold): os.makedirs(frames_save_fold)
+    for i in tqdm.tqdm(range(len(os.listdir(subframes_load_fold[0])))):
+        tifffile.imwrite(
+            os.path.join(
+                frames_save_fold, os.listdir(subframes_load_fold[0])[i]
+            ),
+            np.concatenate([
+                tifffile.imread(
+                    os.path.join(
+                        subframes_load_fold[j], 
+                        os.listdir(subframes_load_fold[j])[i]
+                    )
+                ) for j in range(len(subframes_load_fold)) 
+            ], axis=axis)
         )
 
 
