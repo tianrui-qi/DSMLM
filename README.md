@@ -13,16 +13,6 @@ conda env create -f environment.yml
 conda activate DSMLM
 ```
 
-## Checkpoints
-
-Please download the checkpoints from 
-[iCloud](https://www.icloud.com/iclouddrive/0692VJtupRWKZjXfehxsrMwYQ#340) for 
-scale up by 4 or 
-[iCloud](https://www.icloud.com/iclouddrive/072I_w3BxdCt9FcSzXdUGP3Qg#450) 
-for 8. Put the checkpoints under the folder `ckpt/e08/` or `ckpt/e10/`.
-Note that `e08` and `e10` match config in [src/cfg/e.py](src/cfg/e.py) so that 
-you can check the training configuration for each checkpoint.
-
 ## Evaluation
 
 You can check the parameters that must be specified for evaluation mode by:
@@ -73,6 +63,16 @@ options:
     1.
 -   `-w num_workers`: Number of workers for dataloader. Set this value according
     to your CPU. Default: 1.
+
+### Checkpoints
+
+Please download the checkpoints from 
+[iCloud](https://www.icloud.com/iclouddrive/0692VJtupRWKZjXfehxsrMwYQ#340) for 
+scale up by 4 or 
+[iCloud](https://www.icloud.com/iclouddrive/072I_w3BxdCt9FcSzXdUGP3Qg#450) 
+for 8. Put the checkpoints under the folder `ckpt/e08/` or `ckpt/e10/`.
+Note that `e08` and `e10` match config in [src/cfg/e.py](src/cfg/e.py) so that 
+you can check the training configuration for each checkpoint.
 
 ### Without drift correction
 
