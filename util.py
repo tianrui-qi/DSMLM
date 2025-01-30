@@ -46,6 +46,10 @@ def getArgs():
         '-S', '--frames_save_fold', type=str, required=True, 
         dest="frames_save_fold",
     )
+    parser_preprocessFrame.add_argument(
+        '-s', '--start_index', type=int, default=1, 
+        dest="start_index",
+    )
 
     # preprocessMList
     parser_preprocessMList = subparsers.add_parser('preprocessMList')
@@ -99,7 +103,8 @@ def preprocessPSF(
 
 
 def preprocessFrame(
-    frames_load_fold: str, frames_save_fold: str, **kwargs
+    frames_load_fold: str, frames_save_fold: str, 
+    start_index: int = 1, **kwargs
 ) -> None:
     """
     Convert the Xunamen output 
@@ -130,7 +135,7 @@ def preprocessFrame(
         # save 16 bit with file name formation
         tifffile.imwrite(
             "{}/{:05}.tif".format(
-                frames_save_fold, int(frames_list[index][11:-4])
+                frames_save_fold, start_index + index
             ), frame.numpy()
         )
 
